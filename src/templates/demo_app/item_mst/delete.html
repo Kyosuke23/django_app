@@ -1,0 +1,19 @@
+<div class="modal fade" id="delete-Modal-{{ item.pk }}" tabindex="-1" aria-labelledby="item_delete_modal" aria-hidden="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="item_delete_modal">データの削除</h5>
+            </div>
+            <div class="modal-body">
+                <p>本当に削除しますか？</p>
+            </div>
+            <div class="modal-footer">
+                <form method='post' action="{% url 'demo_app:item_mst_delete' item.pk %}">
+                    {% csrf_token %}
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-danger">削除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

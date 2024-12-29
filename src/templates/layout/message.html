@@ -1,0 +1,7 @@
+{% if messages %}
+<ul class="messages list-unstyled text-center" style="margin-bottom:0!important;">
+    {% for message in messages %}
+    <li{% if message.tags %} class="{{ message.tags }} bg-info"{% endif %}>{{ message }}</li>
+    {% endfor %}
+</ul>
+{% endif %}

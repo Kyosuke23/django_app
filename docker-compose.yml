@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      # - postgres:./postgres/init:/docker-entrypoint-initdb.d
+    ports:
+      - 5432:5432
+
+  pgadmin4:
+    image: dpage/pgadmin4:8.4
+    ports:
+      - 8080:80
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./settings/servers.json:/pgadmin4/servers.json
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user@example.com
+      PGADMIN_DEFAULT_PASSWORD: password
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    depends_on:
+      - db
+
+  web:
+    build:
+      context: ./containers/web
+      dockerfile: Dockerfile
+    container_name: django
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    tty: true
+    volumes:
+      - ${SRC_PATH}:/root/workspace/src
+    depends_on:
+      - db
+
+volumes:
+  postgres:
+  pgadmin-data:

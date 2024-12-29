@@ -1,0 +1,119 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block content %}
+<div class="col-sm-4">
+    {# タイトル #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">ユーザー登録フォーム</h1>
+    </div>
+    <form class="row g-3" action="" method="post">
+        {% csrf_token %}
+        {# ユーザー名 #}
+        <div class="col-md-6">
+            <label for="username" class="form-label">{{ form.username.label }}</label>
+            <span class="badge text-bg-danger">必須</span>
+            {{ form.username }}
+            {{ form.username.errors }}
+            <div id="username_help" class="form-text">半角英数字、記号</div>
+        </div>
+        <div class="col-md-6"></div>
+        {# 名 #}
+        <div class="col-md-3">
+            <label for="last_name" class="form-label">{{ form.last_name.label }}</label>
+            {{ form.last_name }}
+            {{ form.last_name.errors }}
+        </div>
+        {# 姓 #}
+        <div class="col-md-3">
+            <label for="first_name" class="form-label">{{ form.first_name.label }}</label>
+            {{ form.first_name }}
+            {{ form.first_name.errors }}
+        </div>
+        <div class="col-md-6"></div>
+        {# E-Mail #}
+        <div class="col-md-6">
+            <label for="email" class="form-label">{{ form.email.label }}</label>
+            {{ form.email }}
+            {{ form.email.errors }}
+            <div id="last_name_help" class="form-text">半角英数字、記号　例）xxx@example.com</div>
+        </div>
+        <div class="col-md-6"></div>
+        {# 性別 #}
+        <div class="col-md-2">
+            <label for="gender" class="form-label">{{ form.gender.label }}</label>
+            {{ form.gender }}
+            {{ form.gender.errors }}
+        </div>
+        {# 誕生日 #}
+        <div class="col-md-4">
+            <label for="birthday" class="form-label">{{ form.birthday.label }}</label>
+            {{ form.birthday }}
+            {{ form.birthday.errors }}
+            <div id="birthday_help" class="form-text">半角数字　例）1988-01-01</div>
+        </div>
+        <div class="col-md-6"></div>
+        {# 電話番号 #}
+        <div class="col-md-4">
+            <label for="tel_number" class="form-label">{{ form.tel_number.label }}</label>
+            {{ form.tel_number }}
+            {{ form.tel_number.errors }}
+            <div id="tel_number_help" class="form-text">半角数字　例）111-2222-3333</div>
+        </div>
+        <div class="col-md-8"></div>
+        {# 郵便番号 #}
+        <div class="col-md-4">
+            <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
+            {{ form.postal_cd }}
+            {{ form.postal_cd.errors }}
+            <div id="postal_cd_help" class="form-text">半角数字　例）111-2222</div>
+        </div>
+        {# 都道府県 #}
+        <div class="col-md-4">
+            <label for="state" class="form-label">{{ form.state.label }}</label>
+            {{ form.state }}
+            {{ form.state.errors }}
+        </div>
+        <div class="col-md-4"></div>
+        {# 住所 #}
+        <div class="col-12">
+            <label for="address" class="form-label">{{ form.address.label }}</label>
+            {{ form.address }}
+            {{ form.address.errors }}
+        </div>
+        {# 住所2 #}
+        <div class="col-12">
+            {{ form.address2 }}
+            {{ form.address2.errors }}
+        </div>
+        {# 権限 #}
+        <div class="col-md-3">
+            <label for="privilege" class="form-label">{{ form.privilege.label }}</label>
+            {{ form.privilege }}
+            {{ form.privilege.errors }}
+        </div>
+        {# パスワード #}
+        <div class="col-12">
+            <label for="password1" class="form-label">{{ form.password1.label }}</label>
+            <span class="badge text-bg-danger">必須</span>
+            {{ form.password1 }}
+            {{ form.password1.errors }}
+            <div id="password1_help" class="form-text">半角英数字、記号、8文字以上</div>
+        </div>
+        {# パスワード（確認用） #}
+        <div class="col-12">
+            <label for="password2" class="form-label">{{ form.password2.label }}</label>
+            <span class="badge text-bg-danger">必須</span>
+            {{ form.password2 }}
+            {{ form.password2.errors }}
+            <div id="password2_help" class="form-text">半角英数字、記号、8文字以上</div>
+        </div>
+        <div class="col-md-9"></div>
+        {# ボタンエリア #}
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">登録</button>
+        </div>
+    </form>
+</div>
+<script type="text/javascript" src="{% static 'js/register/register.js' %}"></script>
+{% endblock %}

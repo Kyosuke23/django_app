@@ -1,0 +1,73 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+{# ページタイトル #}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">アイテムマスタ管理画面</h1>
+</div>
+{# 検索 & 登録画面リンク #}
+<form method="get" action="{% url 'demo_app:item_mst_index' %}">
+    {# 検索フォーム #}
+    <div class="row mb-3">
+        <div class="col col-md-3">
+            <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="キーワードを入力してください">
+        </div>
+        <div class="col">
+            <input type="submit" class="btn btn-primary" value="検索">
+        </div>
+        {# 登録画面リンク #}
+        <div class="col d-flex justify-content-end">
+            <a class="btn btn-outline-primary" href="{% url 'demo_app:item_mst_create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
+        </div>
+    </div>
+</form>
+{# 登録時のモーダル #}
+{% include 'demo_app/item_mst/create.html' %}
+{# 検索結果表示 #} 
+<div class="result-table overflow-auto">
+    <table class="table table-hover table-striped table-responsive">
+        <thead class="table-dark sticky-top">
+            <th>アイテムコード</th>
+            <th>アイテム名称</th>
+            <th>カテゴリ</th>
+            <th>価格</th>
+            <th>作成日</th>
+            <th>作成者</th>
+            <th>更新日</th>
+            <th>更新者</th>
+            <th></th>
+            <th></th>
+        </thead>
+        <tbody>
+            {% for item in items %}
+            <tr>
+                <td>{{ item.item_cd }}</td>
+                <td>{{ item.item_nm }}</td>
+                <td>{{ item.category.category|default_if_none:'' }}</td>
+                <td>
+                    {% if item.price %}¥{% endif %}
+                    {{ item.price|default_if_none:''|intcomma }}
+                </td>
+                <td>{{ item.created_at }}</td>
+                <td>{{ item.created_user }}</td>
+                <td>{{ item.updated_at }}</td>
+                <td>{{ item.updated_user }}</td>
+                <td>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'demo_app:item_mst_update' item.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ item.pk }}">編集</a>
+                </td>
+                <td>
+                    <a class="btn btn-outline-danger btn-sm" href="{% url 'demo_app:item_mst_delete' item.id %}" data-bs-toggle="modal" data-bs-target="#delete-Modal-{{ item.pk }}">削除</a>
+                </td>
+                {# 削除時のモーダル #}
+                {% include 'demo_app/item_mst/delete.html' %}
+                {# 更新時のモーダル #}
+                {% include 'demo_app/item_mst/edit.html' %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script type="text/javascript" src="{% static 'js/item_mst/script.js' %}"></script>
+{% endblock %}
