@@ -91,6 +91,7 @@ class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
             # 作成者と更新者をログインユーザーで設定
             post.created_user = self.request.user
             post.updated_user = self.request.user
+            # 登録処理の実行
             post.save()
             # 処理成功時のURLにフラッシュメッセージを設定
             success_url += '?fm=登録に成功しました'
@@ -129,6 +130,7 @@ class ItemUpdate(LoginRequiredMixin, generic.edit.UpdateView):
         if form.is_valid():
             # 更新ユーザーをログインユーザーで設定
             form.update_user = self.request.user
+            # 保存処理の実行
             form.save()
             # 処理成功時のURLにフラッシュメッセージを設定
             success_url += '?fm=更新に成功しました'
@@ -149,7 +151,23 @@ class ItemDelete(LoginRequiredMixin, generic.edit.DeleteView):
     """
     model = Item
     template_name = 'demo_app/item_mst/delete.html'
-    success_url = reverse_lazy('demo_app:item_mst_index')
 
-    def delete(self, request, *args, **kwargs):
-        return super().delete(request, *args, **kwargs)
+    def get_success_url(self):
+        # 処理後は検索一覧画面に遷移
+        return reverse_lazy('demo_app:item_mst_index')
+
+    def post(self, request, *args, **kwargs):
+        # 削除処理の実行
+        Item.objects.filter(pk=request.POST['pk']).delete()
+        # 処理成功時のURLにフラッシュメッセージを設定
+        success_url = self.get_success_url() + '?fm=削除に成功しました'
+        # 処理結果を格納
+        result = JsonResponse(
+            {
+                'errors': {}  # エラーフィールド
+                , 'success_url': success_url  # 成功時の遷移先URL
+            },
+            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+        )
+        # 処理結果を返却
+        return result

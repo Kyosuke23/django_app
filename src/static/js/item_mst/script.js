@@ -11,9 +11,18 @@ $(function() {
     $('form[id^="update_form_"]').submit(function(e) {
         // ページのリロードを止める
         e.preventDefault();
-        // 登録処理（非同期）
+        // 更新処理（非同期）
         post_data($(this));
     });
+
+    // 削除ボタンにイベントリスナーを設定
+    $('form[id^="delete_form_"]').submit(function(e) {
+        // ページのリロードを止める
+        e.preventDefault();
+        // 削除処理（非同期）
+        post_data($(this));
+    });
+
 
     // モーダル画面を閉じた時の処理
     $('.modal').on('hide.bs.modal', function (e) {
@@ -74,7 +83,7 @@ const show_flash_message = function() {
     // フラッシュメッセージパラメータが設定されていれば表示
     if (params.get('fm')) {
         $('#flash-msg-area').flash_message({
-            text: '登録に成功しました',
+            text: params.get('fm'),
             how: 'append'
         });
     }

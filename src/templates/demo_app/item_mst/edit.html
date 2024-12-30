@@ -54,6 +54,7 @@
                         <input type="text" class="form-control" name="price" value="{{ item.price|default_if_none:'' }}">
                         <div id="price_help" class="form-text">半角数字</div>
                     </div>
+                    {# PK(hidden) #}
                     <input type="hidden" name ="pk" value="{{ item.pk }}">
                 </div>
                 {# フッター #}

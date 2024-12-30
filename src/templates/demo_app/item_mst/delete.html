@@ -2,7 +2,7 @@
 <div class="modal fade" id="delete-Modal-{{ item.pk }}" tabindex="-1" aria-labelledby="item_delete_modal" aria-hidden="false">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form method='post' action="{% url 'demo_app:item_mst_delete' item.pk %}">
+            <form id="delete_form_{{ item.pk }}" method='post' action="{% url 'demo_app:item_mst_delete' item.pk %}">
                 {% csrf_token %}
                 {# ヘッダー #}
                 <div class="modal-header">
@@ -52,6 +52,8 @@
                         <input type="text" class="form-control" name="price" value="" >
                         {% endif %}
                     </div>
+                    {# PK(hidden) #}
+                    <input type="hidden" name ="pk" value="{{ item.pk }}">
                 </div>
                 {# フッター #}
                 <div class="modal-footer">
