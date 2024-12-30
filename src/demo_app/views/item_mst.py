@@ -79,6 +79,8 @@ class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
         return reverse_lazy('demo_app:item_mst_index')
     
     def post(self, request, *args, **kwargs):
+        # 処理成功時のURLを取得
+        success_url = self.get_success_url()
         # フォームの入力データを取得
         self.object = None
         self.object_list = self.get_queryset()
@@ -90,11 +92,13 @@ class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
             post.created_user = self.request.user
             post.updated_user = self.request.user
             post.save()
+            # 処理成功時のURLにフラッシュメッセージを設定
+            success_url += '?fm=登録に成功しました'
         # 処理結果を格納
         result = JsonResponse(
             {
                 'errors': form.errors  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                , 'success_url': success_url  # 成功時の遷移先URL
             },
             json_dumps_params={'ensure_ascii': False}  # 文字化け対策
         )
@@ -115,6 +119,8 @@ class ItemUpdate(LoginRequiredMixin, generic.edit.UpdateView):
         return reverse_lazy('demo_app:item_mst_index')
     
     def post(self, request, *args, **kwargs):
+        # 処理成功時のURLを取得
+        success_url = self.get_success_url()
         # フォームのデータからモデルインスタンスを取得
         item = get_object_or_404(Item, pk=request.POST['pk'])
         # モデルを基にしたフォームを作成
@@ -124,11 +130,13 @@ class ItemUpdate(LoginRequiredMixin, generic.edit.UpdateView):
             # 更新ユーザーをログインユーザーで設定
             form.update_user = self.request.user
             form.save()
+            # 処理成功時のURLにフラッシュメッセージを設定
+            success_url += '?fm=更新に成功しました'
         # 処理結果を格納
         result = JsonResponse(
             {
                 'errors': form.errors  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                , 'success_url': success_url  # 成功時の遷移先URL
             },
             json_dumps_params={'ensure_ascii': False}  # 文字化け対策
         )
