@@ -1,0 +1,16 @@
+## Docker Image再作成&コンテナ再起動
+docker compose build --no-cache && docker-compose up -d --force-recreate コンテナイメージ作成
+
+# Djangoアプリ起動(workspace/srcディレクトリ内で)
+python manage.py runserver 0.0.0.0:8000
+
+# 管理ユーザー作成
+python manage.py createsuperuser
+ユーザー名：admin
+E mail：admin@example.com
+パスワード：admin
+
+# pgAdminログイン
+http://localhost:8080/
+ユーザー：user
+パスワード：password

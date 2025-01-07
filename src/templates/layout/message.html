@@ -1,0 +1,6 @@
+{% if messages %}
+    <div id="flash_message_area"></div>
+    {% for message in messages %}
+    <input type="hidden" class="flash_messages {{ message.tags }}" value="{{ message }}">
+    {% endfor %}
+{% endif %}

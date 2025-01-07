@@ -1,0 +1,30 @@
+{% load static %}
+{% load django_bootstrap5 %}
+<!doctype html>
+<html lang="en" data-bs-theme="auto">
+<head>
+    {% bootstrap_css %}
+    {% bootstrap_javascript %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Django APP{% endblock %}</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="{% static 'js/common/script.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/common/style.css' %}">
+</head>
+<body>
+    {# ヘッダー #}
+    {% include 'layout/nav_top.html' %}
+    {# メッセージ #}
+    {% include 'layout/message.html' %}
+    <div class="d-flex">
+        {# 左サイドバー #}
+        {% include 'layout/nav_left.html' %}
+        {# コンテンツ #}
+        <main class="container-fluid overflow-auto">
+            {% block content %}
+            {% endblock %}
+        </main>
+    </div>    
+</body>
+</html>

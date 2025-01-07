@@ -1,0 +1,66 @@
+{% load humanize %}
+<div class="modal fade" id="delete-Modal-{{ item.pk }}" tabindex="-1" aria-labelledby="item_delete_modal" aria-hidden="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="delete_form_{{ item.pk }}" method='post' action="{% url 'demo_app:item_mst_delete' item.pk %}">
+                {% csrf_token %}
+                {# ヘッダー #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="item_delete_modal">データの削除</h5>
+                </div>
+                <div class="modal-body">
+                    <p>本当に削除しますか？</p>
+                    {# アイテムコード #}
+                    <div class="col-md-12">
+                        <label for="item_cd" class="form-label">{{ form.item_cd.label }}</label>
+                        <input type="text" class="form-control" name="item_cd" value="{{ item.item_cd }}" disabled>
+                    </div>
+                    {# アイテム名称 #}
+                    <div class="col-md-12">
+                        <label for="item_nm" class="form-label">{{ form.item_nm.label }}</label>
+                        <input type="text" class="form-control" name="item_nm" value="{{ item.item_nm }}" disabled>
+                    </div>
+                    {# カテゴリ #}
+                    <div class="col-md-12">
+                        <label for="category" class="form-label">{{ form.category.label }}</label>
+                        <select class="form-control" name="category" disabled>
+                            {% if rec.id == None %}
+                            <option value="" label="-----" selected>"-----"</option>
+                            {% else %}
+                            <option value="" label="-----">"-----"</option>
+                            {% endif %}
+                            {% for rec in category_list %}
+                                {% if rec.id == item.category.id %}
+                                <option value="{{ rec.id }}" label="{{ rec.category }}" selected>{{ rec.category }}</option>
+                                {% else %}
+                                <option value="{{ rec.id }}" label="{{ rec.category }}">{{ rec.category }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {# 説明 #}
+                    <div class="col-md-12">
+                        <label for="description" class="form-label">{{ form.description.label }}</label>
+                        <input type="text" class="form-control" name="description" value="{{ item.description }}" disabled>
+                    </div>
+                    {# 価格 #}
+                    <div class="col-md-12">
+                        <label for="price" class="form-label">{{ form.price.label }}</label>
+                        {% if item.price %}
+                        <input type="text" class="form-control" name="price" value="¥{{ item.price|intcomma }}" disabled>
+                        {% else %}
+                        <input type="text" class="form-control" name="price" value="" disabled>
+                        {% endif %}
+                    </div>
+                    {# PK(hidden) #}
+                    <input type="hidden" name ="pk" value="{{ item.pk }}">
+                </div>
+                {# フッター #}
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-danger">削除</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

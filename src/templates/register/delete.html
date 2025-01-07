@@ -1,0 +1,134 @@
+{% load humanize %}
+<div class="modal fade" id="delete-Modal-{{ user.pk }}" tabindex="-1" aria-labelledby="user_delete_modal" aria-hidden="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="delete_form_{{ user.pk }}" method='post' action="{% url 'register:register_user_delete' user.pk %}">
+                {% csrf_token %}
+                {# ヘッダー #}
+                <div class="modal-header">
+                    <h5 class="modal-title" id="user_delete_modal">ユーザー情報の削除</h5>
+                </div>
+                <div class="modal-body">
+                    <p>本当に削除しますか？</p>
+                    {# ユーザーコード #}
+                    <div class="col-md-12 mb-2">
+                        <label for="username" class="form-label">{{ form.username.label }}</label>
+                        <span class="badge text-bg-danger">必須</span>
+                        <input type="text" class="form-control" name="username" value="{{ user.username }}" disabled>
+                        <div id="username_help" class="form-text">半角英数字、記号</div>
+                    </div>
+                    {# 姓 #}
+                    <div class="col-md-6 mb-2">
+                        <label for="last_name" class="form-label">{{ form.last_name.label }}</label>
+                        <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}" disabled>
+                    </div>
+                    {# 名 #}
+                    <div class="col-md-6 mb-2">
+                        <label for="first_name" class="form-label">{{ form.first_name.label }}</label>
+                        <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}" disabled>
+                    </div>
+                    {# 性別 #}
+                    <div class="col-md-3 mb-2">
+                        <label for="gender" class="form-label">{{ form.gender.label }}</label>
+                        <select class="form-control" name="gender" disabled>
+                            {% if user.gender == None %}
+                            <option value="" label="-----" selected>"-----"</option>
+                            {% else %}
+                            <option value="" label="-----">"-----"</option>
+                            {% endif %}
+                            {% for key, val in gender_list %}
+                                {% if key == user.gender %}
+                                <option value="{{ key }}" label="{{ val }}" selected></option>
+                                {% else %}
+                                <option value="{{ key }}" label="{{ val }}"></option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-9"></div>
+                    {# E-Mail #}
+                    <div class="col-md-12 mb-2">
+                        <label for="email" class="form-label">{{ form.email.label }}</label>
+                        <input type="text" class="form-control" name="email" value="{{ user.email }}" disabled>
+                    </div>
+                    {# 誕生日 #}
+                    <div class="col-md-12 mb-2">
+                        <label for="birthday" class="form-label">{{ form.birthday.label }}</label>
+                        <input type="text" class="form-control" name="birthday" value="{{ user.birthday|default_if_none:'' }}" disabled>
+                    </div>
+                    {# 電話番号 #}
+                    <div class="col-md-12 mb-2">
+                        <label for="tel_number" class="form-label">{{ form.tel_number.label }}</label>
+                        <input type="text" class="form-control" name="tel_number" value="{{ user.tel_number }}" disabled>
+                    </div>
+                    {# 郵便番号 #}
+                    <div class="col-md-3 mb-2">
+                        <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
+                        <input type="text" class="form-control" name="postal_cd" value="{{ user.postal_cd }}" disabled>
+                    </div>
+                    <div class="col-md-9"></div>
+                    {# 都道府県 #}
+                    <div class="col-md-3 mb-2">
+                        <label for="state" class="form-label">{{ form.state.label }}</label>
+                        <select class="form-control" name="state" disabled>
+                            {% if user.state == None %}
+                            <option value="" label="-----" selected>"-----"</option>
+                            {% else %}
+                            <option value="" label="-----">"-----"</option>
+                            {% endif %}
+                            {% for key, val in state_list %}
+                                {% if key == user.state %}
+                                <option value="{{ key }}" label="{{ val }}" selected></option>
+                                {% else %}
+                                <option value="{{ key }}" label="{{ val }}"></option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {# 市町村 #}
+                    <div class="col-md-6 mb-2">
+                        <label for="city" class="form-label">{{ form.city.label }}</label>
+                        <input type="text" class="form-control" name="city" value="{{ user.city|default_if_none:'' }}" disabled>
+                    </div>
+                    <div class="col-md-3"></div>
+                    {# 住所 #}
+                    <div class="col-md-12 mb-2">
+                        <label for="address" class="form-label">{{ form.address.label }}</label>
+                        <input type="text" class="form-control" name="address" value="{{ user.address|default_if_none:'' }}" disabled>
+                    </div>
+                    {# 住所2 #}
+                    <div class="col-md-12 mb-2">
+                        <label for="address2" class="form-label">{{ form.address2.label }}</label>
+                        <input type="text" class="form-control" name="address2" value="{{ user.address2|default_if_none:'' }}" disabled>
+                    </div>
+                    {# 権限 #}
+                    <div class="col-md-3 mb-2">
+                        <label for="privilege" class="form-label">{{ form.privilege.label }}</label>
+                        <select class="form-control" name="privilege" disabled>
+                            {% if user.privilege == None %}
+                            <option value="" label="-----" selected>"-----"</option>
+                            {% else %}
+                            <option value="" label="-----">"-----"</option>
+                            {% endif %}
+                            {% for key, val in privilege_list %}
+                                {% if key == user.privilege %}
+                                <option value="{{ key }}" label="{{ val }}" selected></option>
+                                {% else %}
+                                <option value="{{ key }}" label="{{ val }}"></option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-9"></div>
+                    {# PK(hidden) #}
+                    <input type="hidden" name ="pk" value="{{ user.pk }}">
+                </div>
+                {# フッター #}
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+                    <button type="submit" class="btn btn-danger">削除</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

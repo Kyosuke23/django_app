@@ -1,0 +1,61 @@
+{% if request.user.is_authenticated %}
+<div class="flex-shrink-0 p-3 bg-secondary" style="width: 280px;height:97vh;">
+    <a href="{% url 'dashboard:top' %}" class="d-flex align-items-center pb-3 mb-3 link-body-emphasis text-decoration-none border-bottom">
+        <svg class="bi me-2" width="30" height="24"><use xlink:href="#bootstrap"/></svg>
+        <span class="fs-5 fw-semibold text-light">ダッシュボード</span>
+    </a>
+    <ul class="list-unstyled ps-0">
+        <li class="mb-1">
+            <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#home-collapse" aria-expanded="true">
+            Demo APP
+            </button>
+            <div class="collapse show" id="home-collapse">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li><a href="{% url 'register:register_user_index' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">ユーザーマスタ</a></li>
+                    <li><a href="{% url 'demo_app:item_mst_index' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">アイテムマスタ</a></li>
+                    <li><a href="{% url 'demo_app:ajax_test' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">Ajaxテスト</a></li>
+                </ul>
+            </div>
+        </li>
+        <li class="mb-1">
+            <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#dashboard-collapse" aria-expanded="false">
+            ダッシュボード
+            </button>
+            <div class="collapse" id="dashboard-collapse">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">概要</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">毎週</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">毎月</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">毎年</a></li>
+                </ul>
+            </div>
+        </li>
+        <li class="mb-1">
+            <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#orders-collapse" aria-expanded="false">
+            注文
+            </button>
+            <div class="collapse" id="orders-collapse">
+                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">新品</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">処理済み</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">出荷済み</a></li>
+                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">返品</a></li>
+                </ul>
+            </div>
+        </li>
+        <li class="border-top my-3"></li>
+        <li class="mb-1">
+            <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
+                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">設定</a></li>
+                <li><a href="{% url 'register:register_user_change_password' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">パスワード変更</a></li>
+                <li>
+                    <form action="{% url 'logout' %}" method="POST" name="logout_form">
+                        {% csrf_token %}
+                        <a class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light" href="javascript:logout_form.submit()">ログアウト</a>
+                    </form>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</div>
+{% endif %}
