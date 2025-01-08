@@ -10,16 +10,17 @@
     <title>{% block title %}Django APP{% endblock %}</title>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script type="text/javascript" src="{% static 'js/common/script.js' %}"></script>
+    {% block extra_css %}{% endblock %}
     <link rel="stylesheet" href="{% static 'css/common/style.css' %}">
 </head>
 <body>
     {# ヘッダー #}
-    {% include 'layout/nav_top.html' %}
+    {% if user.is_authenticated %}{% include 'layout/nav_top.html' %}{% endif %}
     {# メッセージ #}
     {% include 'layout/message.html' %}
     <div class="d-flex">
         {# 左サイドバー #}
-        {% include 'layout/nav_left.html' %}
+        {% if user.is_authenticated %}{% include 'layout/nav_left.html' %}{% endif %}
         {# コンテンツ #}
         <main class="container-fluid overflow-auto">
             {% block content %}
