@@ -25,13 +25,7 @@ $(function() {
 
     // Exportボタンにイベントリスナーを設定
     $('.search_form_btn').click(function(e) {
-        // // 元のaction属性を保存
-        // action_org = $(this).parents('form').attr('action')
-        // formのaction属性をExport処理用に変更して実行
         $(this).parents('form').attr('action', $(this).data('action'));
-        $(this).parents('form').submit();
-        // // action属性を元に戻す
-        // $(this).parents('form').attr('action', action_org);
     });
     
     // モーダル画面を閉じた時の処理
