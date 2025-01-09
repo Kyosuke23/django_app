@@ -10,6 +10,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.views import PasswordChangeView
 from .const import GENDER_CHOICES, STATE_CHOICES, PRIVILEGE_CHOICES
+from config.common import Common
 
 
 class RegisterUserList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin):
@@ -45,13 +46,8 @@ class RegisterUserList(LoginRequiredMixin, generic.ListView, generic.edit.ModelF
         context['gender_list'] = GENDER_CHOICES
         context['state_list'] = STATE_CHOICES
         context['privilege_list'] = PRIVILEGE_CHOICES
-        page: Page = context['page_obj']
         # ページネーション設定
-        context['paginator_range'] = page.paginator.get_elided_page_range(
-            page.number
-            , on_each_side=1
-            , on_ends=1
-        )
+        context = Common.set_pagination(context, self.request.GET.urlencode())
         # フォームの値を設定
         context['form'] = self.get_form
         return context
