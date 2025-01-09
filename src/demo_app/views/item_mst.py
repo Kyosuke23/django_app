@@ -8,6 +8,9 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from config.common import Common
+from django.http import HttpResponse
+from openpyxl import Workbook
+from datetime import datetime
 
 
 class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin):
@@ -163,3 +166,33 @@ class ItemDelete(LoginRequiredMixin, generic.edit.DeleteView):
         )
         # 処理結果を返却
         return result
+
+class ItemExport(LoginRequiredMixin, generic.TemplateView):
+    def get(self, request, *args, **kwargs):
+        # 出力ファイル名を設定
+        file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
+        # Excelオブジェクト（ワークブック）を取得
+        wb = Workbook()
+        ws = wb.active
+        # データのカラムを定義
+        columns = ['id', 'item_cd', 'item_nm']
+        ws.append(columns)
+        # 検索キーワードを取得
+        searchInputText = self.request.GET.get('search')
+        # データを取得
+        if searchInputText:
+            data = Item.objects.filter(
+                Q(item_cd__icontains=searchInputText) | Q(item_nm__icontains=searchInputText)
+            )
+        else:
+            data = Item.objects.all()
+        # ワークブックにデータを追加
+        for item in data:
+            row = [item.id, item.item_cd, item.item_nm]
+            ws.append(row)
+        # 保存したワークブックをレスポンスに格納
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        wb.save(response)
+        # 処理結果を返却
+        return response
