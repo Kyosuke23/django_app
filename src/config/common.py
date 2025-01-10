@@ -19,3 +19,33 @@ class Common:
         context['query_str'] = url_params
         # 処理結果を返却
         return context
+
+    @classmethod
+    def get_models_field_value_all(cls, model):
+        """
+        モデルのフィールド値をリストで取得
+        """
+        # モデルフィールドのメタ情報を取得
+        fields = model._meta.get_fields()
+        # 空の配列にモデルフィールドの名前を追加
+        result = list()
+        for i, v in enumerate(fields):
+            if i > 0:
+                result.append(v.value_from_object(model))
+        # 処理結果を返却
+        return result
+    
+    @classmethod
+    def get_models_field_name_all(cls, model):
+        """
+        モデルのフィールド名をリストで取得
+        """
+        # モデルフィールドのメタ情報を取得
+        fields = model._meta.get_fields()
+        # 空の配列にモデルフィールドの名前を追加
+        result = list()
+        for i, v in enumerate(fields):
+            if i > 0:
+                result.append(v.name)
+        # 処理結果を返却
+        return result

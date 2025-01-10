@@ -171,12 +171,14 @@ class ItemExport(LoginRequiredMixin, generic.TemplateView):
     def get(self, request, *args, **kwargs):
         # 出力ファイル名を設定
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
+
         # Excelオブジェクト（ワークブック）を取得
         wb = Workbook()
         ws = wb.active
-        # データのカラムを定義
-        columns = ['id', 'item_cd', 'item_nm']
-        ws.append(columns)
+        # データモデルの全ての列名を取得
+        col_nm_list = Common.get_models_field_name_all(Item)
+        # 列名をワークブックに適用
+        ws.append(col_nm_list)
         # 検索キーワードを取得
         searchInputText = self.request.GET.get('search')
         # データを取得
@@ -188,7 +190,13 @@ class ItemExport(LoginRequiredMixin, generic.TemplateView):
             data = Item.objects.all()
         # ワークブックにデータを追加
         for item in data:
-            row = [item.id, item.item_cd, item.item_nm]
+            # 全てのフィールド値を取得
+            row = Common.get_models_field_value_all(item)
+            # フィールドの型がdatetimeの場合、timezoneを削除（Excel出力時にエラーとなるため）
+            for i, v in enumerate(row):
+                if type(v) is datetime:
+                    row[i] = v.replace(tzinfo=None)
+            # ワークブックにデータを追加
             ws.append(row)
         # 保存したワークブックをレスポンスに格納
         response = HttpResponse(content_type='application/vnd.ms-excel')
