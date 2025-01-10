@@ -2,15 +2,14 @@ from django.views import generic
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
+from django.db.models import Q, Manager
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from config.common import Common
-from django.http import HttpResponse
-from openpyxl import Workbook
 from datetime import datetime
+
 
 
 class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin):
@@ -27,21 +26,16 @@ class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin
         # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg).filter(is_deleted=False)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        searchInputText = self.request.GET.get('search') or ''
-        # 検索キーワードでフィルタ
-        if searchInputText:
-            query_set = query_set.filter(
-                Q(item_cd__icontains=searchInputText) | Q(item_nm__icontains=searchInputText)
-            )
-        return query_set
+        keyword = self.request.GET.get('search') or ''
+        return self.search_data(query_set, keyword=keyword)
 
     def get_context_data(self, **kwarg):
         # コンテキストデータの取得
         context = super().get_context_data(**kwarg)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        searchInputText = self.request.GET.get('search') or ''
+        search_input_text = self.request.GET.get('search') or ''
         # 検索フォームにキーワードを残す
-        context['search'] = searchInputText
+        context['search'] = search_input_text
         # カテゴリマスタのデータをフォームに適用
         categories = Category.objects.order_by('id')
         context['category_list'] = categories
@@ -63,6 +57,15 @@ class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+        
+    def search_data(self, query_set, keyword):
+        # 検索キーワードでフィルタ
+        if keyword:
+            query_set = query_set.filter(
+                Q(item_cd__icontains=keyword) | Q(item_nm__icontains=keyword)
+            )
+        return query_set
+        
     
 class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
     """
@@ -171,36 +174,12 @@ class ItemExport(LoginRequiredMixin, generic.TemplateView):
     def get(self, request, *args, **kwargs):
         # 出力ファイル名を設定
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
-
-        # Excelオブジェクト（ワークブック）を取得
-        wb = Workbook()
-        ws = wb.active
-        # データモデルの全ての列名を取得
-        col_nm_list = Common.get_models_field_name_all(Item)
-        # 列名をワークブックに適用
-        ws.append(col_nm_list)
-        # 検索キーワードを取得
-        searchInputText = self.request.GET.get('search')
-        # データを取得
-        if searchInputText:
-            data = Item.objects.filter(
-                Q(item_cd__icontains=searchInputText) | Q(item_nm__icontains=searchInputText)
-            )
-        else:
-            data = Item.objects.all()
-        # ワークブックにデータを追加
-        for item in data:
-            # 全てのフィールド値を取得
-            row = Common.get_models_field_value_all(item)
-            # フィールドの型がdatetimeの場合、timezoneを削除（Excel出力時にエラーとなるため）
-            for i, v in enumerate(row):
-                if type(v) is datetime:
-                    row[i] = v.replace(tzinfo=None)
-            # ワークブックにデータを追加
-            ws.append(row)
-        # 保存したワークブックをレスポンスに格納
-        response = HttpResponse(content_type='application/vnd.ms-excel')
-        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
-        wb.save(response)
+        # queryセットを取得
+        query_set = Item.objects.all()
+        # 検索キーワードを取得して検索
+        keyword = self.request.GET.get('search')
+        query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
+        # Excel出力用のレスポンスを取得
+        result = Common.export_excel(model=Item, data=query_set, file_name=file_name)
         # 処理結果を返却
-        return response
+        return result

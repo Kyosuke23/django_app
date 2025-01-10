@@ -1,5 +1,8 @@
 import re
 from django.core.paginator import Page
+from django.http import HttpResponse
+from openpyxl import Workbook
+from datetime import datetime
 
 class Common:
     @classmethod
@@ -49,3 +52,32 @@ class Common:
                 result.append(v.name)
         # 処理結果を返却
         return result
+    
+    @classmethod
+    def export_excel(cls, model, data, file_name):
+        """
+        Excel出力用のレスポンスを作成する（全カラムを出力）
+        """
+        # Excelオブジェクト（ワークブック）を取得
+        wb = Workbook()
+        ws = wb.active
+        # データモデルの全ての列名を取得
+        col_nm_list = cls.get_models_field_name_all(model=model)
+        # 列名をワークブックに適用
+        ws.append(col_nm_list)
+        # ワークブックにデータを追加
+        for rec in data:
+            # 全てのフィールド値を取得
+            row = cls.get_models_field_value_all(model=rec)
+            # フィールドの型がdatetimeの場合、timezoneを削除（Excel出力時にエラーとなるため）
+            for i, v in enumerate(row):
+                if type(v) is datetime:
+                    row[i] = v.replace(tzinfo=None)
+            # ワークブックにデータを追加
+            ws.append(row)
+        # 保存したワークブックをレスポンスに格納
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        wb.save(response)
+        # 処理結果を返却
+        return response
