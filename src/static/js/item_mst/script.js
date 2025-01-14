@@ -23,6 +23,11 @@ $(function() {
         $().post_data($(this));
     });
 
+    // Exportボタンにイベントリスナーを設定
+    $('.search_form_btn').click(function(e) {
+        $(this).parents('form').attr('action', $(this).data('action'));
+    });
+    
     // モーダル画面を閉じた時の処理
     $('.modal').on('hide.bs.modal', function (e) {
         // 前回のエラー表示をクリア

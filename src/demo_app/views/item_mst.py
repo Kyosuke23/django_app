@@ -2,12 +2,13 @@ from django.views import generic
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from config.common import Common
+from datetime import datetime
+
 
 
 class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin):
@@ -24,21 +25,16 @@ class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin
         # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg).filter(is_deleted=False)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        searchInputText = self.request.GET.get('search') or ''
-        # 検索キーワードでフィルタ
-        if searchInputText:
-            query_set = query_set.filter(
-                Q(item_cd__icontains=searchInputText) | Q(item_nm__icontains=searchInputText)
-            )
-        return query_set
+        keyword = self.request.GET.get('search') or ''
+        return self.search_data(query_set, keyword=keyword)
 
     def get_context_data(self, **kwarg):
         # コンテキストデータの取得
         context = super().get_context_data(**kwarg)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        searchInputText = self.request.GET.get('search') or ''
+        search_input_text = self.request.GET.get('search') or ''
         # 検索フォームにキーワードを残す
-        context['search'] = searchInputText
+        context['search'] = search_input_text
         # カテゴリマスタのデータをフォームに適用
         categories = Category.objects.order_by('id')
         context['category_list'] = categories
@@ -60,6 +56,15 @@ class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin
             return self.form_valid(form)
         else:
             return self.form_invalid(form)
+        
+    def search_data(self, query_set, keyword):
+        # 検索キーワードでフィルタ
+        if keyword:
+            query_set = query_set.filter(
+                Q(item_cd__icontains=keyword) | Q(item_nm__icontains=keyword)
+            )
+        return query_set
+        
     
 class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
     """
@@ -161,5 +166,33 @@ class ItemDelete(LoginRequiredMixin, generic.edit.DeleteView):
             },
             json_dumps_params={'ensure_ascii': False}  # 文字化け対策
         )
+        # 処理結果を返却
+        return result
+
+class ItemExportExcel(LoginRequiredMixin, generic.TemplateView):
+    def get(self, request, *args, **kwargs):
+        # 出力ファイル名を設定
+        file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
+        # queryセットを取得
+        query_set = Item.objects.all()
+        # 検索キーワードを取得して検索
+        keyword = self.request.GET.get('search')
+        query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
+        # Excel出力用のレスポンスを取得
+        result = Common.export_excel(model=Item, data=query_set, file_name=file_name)
+        # 処理結果を返却
+        return result
+
+class ItemExportCSV(LoginRequiredMixin, generic.TemplateView):
+    def get(self, request, *args, **kwargs):
+        # 出力ファイル名を設定
+        file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.csv'
+        # queryセットを取得
+        query_set = Item.objects.all()
+        # 検索キーワードを取得して検索
+        keyword = self.request.GET.get('search')
+        query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
+        # Excel出力用のレスポンスを取得
+        result = Common.export_csv(model=Item, data=query_set, file_name=file_name)
         # 処理結果を返却
         return result
