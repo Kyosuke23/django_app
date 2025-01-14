@@ -2,7 +2,6 @@ from django.views import generic
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q, Manager
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -170,7 +169,7 @@ class ItemDelete(LoginRequiredMixin, generic.edit.DeleteView):
         # 処理結果を返却
         return result
 
-class ItemExport(LoginRequiredMixin, generic.TemplateView):
+class ItemExportExcel(LoginRequiredMixin, generic.TemplateView):
     def get(self, request, *args, **kwargs):
         # 出力ファイル名を設定
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
@@ -181,5 +180,19 @@ class ItemExport(LoginRequiredMixin, generic.TemplateView):
         query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
         # Excel出力用のレスポンスを取得
         result = Common.export_excel(model=Item, data=query_set, file_name=file_name)
+        # 処理結果を返却
+        return result
+
+class ItemExportCSV(LoginRequiredMixin, generic.TemplateView):
+    def get(self, request, *args, **kwargs):
+        # 出力ファイル名を設定
+        file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.csv'
+        # queryセットを取得
+        query_set = Item.objects.all()
+        # 検索キーワードを取得して検索
+        keyword = self.request.GET.get('search')
+        query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
+        # Excel出力用のレスポンスを取得
+        result = Common.export_csv(model=Item, data=query_set, file_name=file_name)
         # 処理結果を返却
         return result

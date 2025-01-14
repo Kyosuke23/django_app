@@ -9,9 +9,12 @@
     {# ページタイトル #}
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">アイテムマスタ管理画面</h1>
-        {# Exportボタン #}
+        {# 出力ボタンエリア #}
         <div class="col d-flex justify-content-end">
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'demo_app:item_mst_export' %}" value="Export">
+            {# CSV出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'demo_app:item_mst_export_csv' %}" value="CSV">
+            {# Excel出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'demo_app:item_mst_export_excel' %}" value="Excel">
         </div>
     </div>
     {# 検索フォーム #}
