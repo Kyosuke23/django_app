@@ -1,0 +1,65 @@
+[
+	{
+		"model": "register.customuser",
+		"pk": 1,
+		"fields": {
+			"password": "pbkdf2_sha256$870000$PSFqcRprvjcLfoL2Cj2brT$BVyR2IgMGq1UJcZrV8FbnaIQ+DbyrUz7zyWnyRICy4U=",
+			"last_login": "2025-03-18T08:22:22.761Z",
+			"is_superuser": true,
+			"first_name": "",
+			"last_name": "",
+			"email": "admin@example.com",
+			"is_staff": true,
+			"is_active": true,
+			"date_joined": "2025-03-18T07:54:40.858Z",
+			"username": "admin",
+			"gender": "0",
+			"tel_number": "",
+			"postal_cd": "",
+			"state": null,
+			"city": null,
+			"address": null,
+			"address2": null,
+			"birthday": null,
+			"privilege": "2",
+			"groups": [],
+			"user_permissions": []
+		}
+	},
+	{
+		"model": "demo_app.category",
+		"pk": 1,
+		"fields": {
+			"category": "Category-A",
+			"is_deleted": false,
+			"created_at": "2025-03-18T08:22:43.626Z",
+			"updated_at": "2025-03-18T08:22:43.626Z",
+			"created_user": 1,
+			"updated_user": 1
+		}
+	},
+	{
+		"model": "demo_app.category",
+		"pk": 2,
+		"fields": {
+			"category": "Category-B",
+			"is_deleted": false,
+			"created_at": "2025-03-18T08:22:49.694Z",
+			"updated_at": "2025-03-18T08:22:49.694Z",
+			"created_user": 1,
+			"updated_user": 1
+		}
+	},
+	{
+		"model": "demo_app.category",
+		"pk": 3,
+		"fields": {
+			"category": "Category-C",
+			"is_deleted": false,
+			"created_at": "2025-03-18T08:22:56.561Z",
+			"updated_at": "2025-03-18T08:22:56.561Z",
+			"created_user": 1,
+			"updated_user": 1
+		}
+	}
+]
