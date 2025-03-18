@@ -8,3 +8,4 @@ psycopg2==2.9.10
 pytz==2024.2
 setuptools==75.6.0
 sqlparse==0.5.3
+openpyxl==3.1.5
