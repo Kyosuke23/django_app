@@ -52,7 +52,7 @@
         </thead>
         <tbody>
             {% for item in items %}
-            <tr>
+            <tr class="align-middle">
                 <td>{{ item.item_cd }}</td>
                 <td>{{ item.item_nm }}</td>
                 <td>{{ item.category.category|default_if_none:'' }}</td>
