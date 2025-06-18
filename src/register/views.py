@@ -27,11 +27,17 @@ class RegisterUserList(LoginRequiredMixin, generic.ListView, generic.edit.ModelF
         # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        searchInputText = self.request.GET.get('search') or ''
-        # 検索キーワードでフィルタ
-        if searchInputText:
+        search_key = self.request.GET.get('search_key') or ''
+        search_gender = self.request.GET.get('search_gender')
+        # キーワードでユーザーコード、氏名をフィルタ
+        if search_key:
             query_set = query_set.filter(
-                Q(username__icontains=searchInputText) | Q(first_name__icontains=searchInputText) | Q(last_name__icontains=searchInputText)
+                Q(username__icontains=search_key) | Q(first_name__icontains=search_key) | Q(last_name__icontains=search_key)
+            )
+        # 性別でフィルタ
+        if search_gender:
+            query_set = query_set.filter(
+                Q(gender__icontains=search_gender)
             )
         return query_set
 
@@ -39,9 +45,11 @@ class RegisterUserList(LoginRequiredMixin, generic.ListView, generic.edit.ModelF
         # コンテキストデータの取得
         context = super().get_context_data(**kwarg)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        searchInputText = self.request.GET.get('search') or ''
+        search_key = self.request.GET.get('search_key') or ''
+        search_gender = self.request.GET.get('search_gender')
         # 検索フォームにキーワードを残す
-        context['search'] = searchInputText
+        context['search_key'] = search_key
+        context['search_gender'] = search_gender
         # 各種リストのデータをフォームに適用
         context['gender_list'] = GENDER_CHOICES
         context['state_list'] = STATE_CHOICES
@@ -122,6 +130,7 @@ class RegisterUserUpdate(LoginRequiredMixin, generic.edit.UpdateView):
         user = get_object_or_404(CustomUser, pk=request.POST['pk'])
         # モデルを基にしたフォームを作成
         form = EditForm(request.POST, instance=user)
+        print(user.gender)
         # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
             # 更新ユーザーをログインユーザーで設定

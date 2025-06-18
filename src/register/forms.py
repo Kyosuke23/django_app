@@ -33,14 +33,13 @@ class SignUpForm(UserCreationForm):
         for error in self.errors:
             self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
         # プレースホルダの設定
-        self.fields['username'].widget.attrs['placeholder'] = 'ユーザー名'
-        self.fields['last_name'].widget.attrs['placeholder'] = '姓'
-        self.fields['first_name'].widget.attrs['placeholder'] = '名'
-        self.fields['email'].widget.attrs['placeholder'] = 'xxx@example.com'
-        self.fields['birthday'].widget.attrs['placeholder'] = 'yyyy-MM-dd'
-        self.fields['tel_number'].widget.attrs['placeholder'] = '111-2222-3333'
-        self.fields['postal_cd'].widget.attrs['placeholder'] = '111-2222'
-        self.fields['address'].widget.attrs['placeholder'] = '住所（市町村・町名・番地）'
+        self.fields['username'].widget.attrs['placeholder'] = '半角数字または記号'
+        self.fields['last_name'].widget.attrs['placeholder'] = '例）山田'
+        self.fields['first_name'].widget.attrs['placeholder'] = '例）太郎'
+        self.fields['email'].widget.attrs['placeholder'] = '例）xxx@test.com'
+        self.fields['tel_number'].widget.attrs['placeholder'] = '例）09012345678'
+        self.fields['postal_cd'].widget.attrs['placeholder'] = '例）1300012	'
+        self.fields['address'].widget.attrs['placeholder'] = '住所（市区町村・町名・番地）'
         self.fields['address2'].widget.attrs['placeholder'] = '住所2（建物名）'
 
 class EditForm(forms.ModelForm):
@@ -71,14 +70,13 @@ class EditForm(forms.ModelForm):
         for error in self.errors:
             self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
         # プレースホルダの設定
-        self.fields['username'].widget.attrs['placeholder'] = 'ユーザー名'
-        self.fields['last_name'].widget.attrs['placeholder'] = '姓'
-        self.fields['first_name'].widget.attrs['placeholder'] = '名'
-        self.fields['email'].widget.attrs['placeholder'] = 'xxx@example.com'
-        self.fields['birthday'].widget.attrs['placeholder'] = 'yyyy-MM-dd'
-        self.fields['tel_number'].widget.attrs['placeholder'] = '111-2222-3333'
-        self.fields['postal_cd'].widget.attrs['placeholder'] = '111-2222'
-        self.fields['address'].widget.attrs['placeholder'] = '住所（市町村・町名・番地）'
+        self.fields['username'].widget.attrs['placeholder'] = '半角数字または記号'
+        self.fields['last_name'].widget.attrs['placeholder'] = '例）山田'
+        self.fields['first_name'].widget.attrs['placeholder'] = '例）太郎'
+        self.fields['email'].widget.attrs['placeholder'] = '例）xxx@test.com'
+        self.fields['tel_number'].widget.attrs['placeholder'] = '例）09012345678'
+        self.fields['postal_cd'].widget.attrs['placeholder'] = '例）1300012	'
+        self.fields['address'].widget.attrs['placeholder'] = '住所（市区町村・町名・番地）'
         self.fields['address2'].widget.attrs['placeholder'] = '住所2（建物名）'
 
 

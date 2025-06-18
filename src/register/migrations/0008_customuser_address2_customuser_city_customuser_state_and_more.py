@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='customuser',
             name='city',
-            field=models.CharField(blank=True, max_length=255, null=True, verbose_name='市町村'),
+            field=models.CharField(blank=True, max_length=255, null=True, verbose_name='市区町村'),
         ),
         migrations.AddField(
             model_name='customuser',

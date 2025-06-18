@@ -14,7 +14,6 @@
                         <label for="username" class="form-label">{{ form.username.label }}</label>
                         <span class="badge text-bg-danger">必須</span>
                         <input type="text" class="form-control" name="username" value="{{ user.username }}">
-                        <div id="username_help" class="form-text">半角英数字、記号</div>
                     </div>
                     {# 姓 #}
                     <div class="col-md-6 mb-2">
@@ -30,11 +29,6 @@
                     <div class="col-md-3 mb-2">
                         <label for="gender" class="form-label">{{ form.gender.label }}</label>
                         <select class="form-control" name="gender">
-                            {% if user.gender == None %}
-                            <option value="" label="-----" selected>"-----"</option>
-                            {% else %}
-                            <option value="" label="-----">"-----"</option>
-                            {% endif %}
                             {% for key, val in gender_list %}
                                 {% if key == user.gender %}
                                 <option value="{{ key }}" label="{{ val }}" selected></option>
@@ -53,7 +47,8 @@
                     {# 誕生日 #}
                     <div class="col-md-12 mb-2">
                         <label for="birthday" class="form-label">{{ form.birthday.label }}</label>
-                        <input type="text" class="form-control" name="birthday" value="{{ user.birthday|default_if_none:'' }}">
+                        {# date形式のinputに合わせるためY-m-d形式。表示はY/m/dになる。 #}
+                        <input type="date" class="form-control" name="birthday" value="{{ user.birthday|default_if_none:''|date:'Y-m-d' }}">
                     </div>
                     {# 電話番号 #}
                     <div class="col-md-12 mb-2">
@@ -61,11 +56,11 @@
                         <input type="text" class="form-control" name="tel_number" value="{{ user.tel_number }}">
                     </div>
                     {# 郵便番号 #}
-                    <div class="col-md-3 mb-2">
+                    <div class="col-md-8 mb-2">
                         <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
                         <input type="text" class="form-control" name="postal_cd" value="{{ user.postal_cd }}">
                     </div>
-                    <div class="col-md-9"></div>
+                    <div class="col-md-4"></div>
                     {# 都道府県 #}
                     <div class="col-md-3 mb-2">
                         <label for="state" class="form-label">{{ form.state.label }}</label>
@@ -84,7 +79,7 @@
                             {% endfor %}
                         </select>
                     </div>
-                    {# 市町村 #}
+                    {# 市区町村 #}
                     <div class="col-md-6 mb-2">
                         <label for="city" class="form-label">{{ form.city.label }}</label>
                         <input type="text" class="form-control" name="city" value="{{ user.city|default_if_none:'' }}">
