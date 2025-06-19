@@ -1,7 +1,6 @@
 from django.views import generic
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
@@ -12,7 +11,7 @@ from django.db.models import Q
 
 
 
-class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin):
+class ItemList(generic.ListView, generic.edit.ModelFormMixin):
     """
     アイテムマスタ画面の一覧表示
     """
@@ -67,7 +66,7 @@ class ItemList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin
         return query_set
         
     
-class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
+class ItemCreate(generic.edit.CreateView):
     """
     サンプルマスタ情報の登録処理
     """
@@ -106,7 +105,7 @@ class ItemCreate(LoginRequiredMixin, generic.edit.CreateView):
         # 処理結果を返却
         return result
 
-class ItemUpdate(LoginRequiredMixin, generic.edit.UpdateView):
+class ItemUpdate(generic.edit.UpdateView):
     """
     サンプルマスタ情報の更新処理
     """
@@ -143,7 +142,7 @@ class ItemUpdate(LoginRequiredMixin, generic.edit.UpdateView):
         # 処理結果を返却
         return result
     
-class ItemDelete(LoginRequiredMixin, generic.edit.DeleteView):
+class ItemDelete(generic.edit.DeleteView):
     """
     サンプルマスタ情報の削除処理
     """
@@ -170,7 +169,7 @@ class ItemDelete(LoginRequiredMixin, generic.edit.DeleteView):
         # 処理結果を返却
         return result
 
-class ItemExportExcel(LoginRequiredMixin, generic.TemplateView):
+class ItemExportExcel(generic.TemplateView):
     def get(self, request, *args, **kwargs):
         # 出力ファイル名を設定
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
@@ -184,7 +183,7 @@ class ItemExportExcel(LoginRequiredMixin, generic.TemplateView):
         # 処理結果を返却
         return result
 
-class ItemExportCSV(LoginRequiredMixin, generic.TemplateView):
+class ItemExportCSV(generic.TemplateView):
     def get(self, request, *args, **kwargs):
         # 出力ファイル名を設定
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.csv'

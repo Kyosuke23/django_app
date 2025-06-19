@@ -3,7 +3,6 @@ from register.models import CustomUser
 from django.views import generic
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.paginator import Page
 from django.http import JsonResponse
 from django.db.models import Q
@@ -13,7 +12,7 @@ from .const import GENDER_CHOICES, STATE_CHOICES, PRIVILEGE_CHOICES
 from config.common import Common
 
 
-class RegisterUserList(LoginRequiredMixin, generic.ListView, generic.edit.ModelFormMixin):
+class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     """
     ユーザーの一覧表示
     """
@@ -73,7 +72,7 @@ class RegisterUserList(LoginRequiredMixin, generic.ListView, generic.edit.ModelF
         else:
             return self.form_invalid(form)
 
-class RegisterUserCreate(LoginRequiredMixin, generic.edit.CreateView):
+class RegisterUserCreate(generic.edit.CreateView):
     """
     ユーザー情報の登録処理
     """
@@ -111,7 +110,7 @@ class RegisterUserCreate(LoginRequiredMixin, generic.edit.CreateView):
         # 処理結果を返却
         return result
     
-class RegisterUserUpdate(LoginRequiredMixin, generic.edit.UpdateView):
+class RegisterUserUpdate(generic.edit.UpdateView):
     """
     ユーザー情報の更新処理
     """
@@ -150,7 +149,7 @@ class RegisterUserUpdate(LoginRequiredMixin, generic.edit.UpdateView):
         # 処理結果を返却
         return result
     
-class RegisterUserDelete(LoginRequiredMixin, generic.edit.DeleteView):
+class RegisterUserDelete(generic.edit.DeleteView):
     """
     ユーザー情報の削除処理
     """
@@ -177,7 +176,7 @@ class RegisterUserDelete(LoginRequiredMixin, generic.edit.DeleteView):
         # 処理結果を返却
         return result
     
-class RegisterUserChangePassword(LoginRequiredMixin, PasswordChangeView):
+class RegisterUserChangePassword(PasswordChangeView):
     """
     パスワードの変更処理
     """
