@@ -1,0 +1,76 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+{# 検索画面リンク #}
+<form id="search_form" method="get" action="{% url 'login:access_history' %}">
+    {% csrf_token %}
+    {# ページタイトル #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">アクセスログ確認画面</h1>
+        {# 出力ボタンエリア #}
+        <div class="col d-flex justify-content-end">
+            {% comment %} {# CSV出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:access_history_export_csv' %}" value="CSV">
+            {# Excel出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:access_history_export_excel' %}" value="Excel"> {% endcomment %}
+        </div>
+    </div>
+    {# 検索フォーム #}
+    <div class="row mb-3">
+        {# 検索キーワード #}
+        <div class="col col-md-2">
+            <label for="search_username" class="form-label">ユーザーコード</label>
+            <input type="text" name="search_username" class="form-control" value="{{ search_username }}" placeholder="ユーザーコード">
+        </div>
+        <div class="col col-md-1">
+            <label for="search_accesstype" class="form-label">アクセス種別</label>
+            <select class="form-control" name="search_accesstype">
+                {% for key, val in accesstype_list %}
+                    {% if key == search_accesstype %}
+                    <option value="{{ key }}" label="{{ val }}" selected></option>
+                    {% else %}
+                    <option value="{{ key }}" label="{{ val }}"></option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col col-md-1">
+            <label for="search_accessat_from" class="form-label">アクセス日時(from)</label>
+            <input type="date" name="search_accessat_from" class="form-control" value="{{ search_accessat_from }}">
+        </div>
+        <div class="col col-md-1">
+            <label for="search_accessat_to" class="form-label">アクセス日時(to)</label>
+            <input type="date" name="search_accessat_to" class="form-control" value="{{ search_accessat_to }}">
+        </div>
+        {# 検索ボタン #}
+        <div class="col d-flex align-items-end">
+            <input type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'login:access_history' %}" value="検索">
+        </div>
+    </div>
+</form>
+{# 検索結果表示 #} 
+<div class="result-table overflow-auto">
+    <table class="table table-hover table-striped table-responsive">
+        <thead class="table-dark sticky-top">
+            <th>ユーザーコード</th>
+            <th>アクセス種別</th>
+            <th>アクセス日時</th>
+            <th>IPアドレス</th>
+        </thead>
+        <tbody>
+            {% for access_log in access_logs %}
+            <tr class="align-middle">
+                <td>{{ access_log.username }}</td>
+                <td>{{ access_log.access_type }}</td>
+                <td>{{ access_log.access_at }}</td>
+                <td>{{ access_log.ip }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{# ページネーション #}
+{% include 'layout/pagination.html' %}
+{% endblock %}

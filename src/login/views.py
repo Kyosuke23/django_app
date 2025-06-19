@@ -1,6 +1,10 @@
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
+from django.views import generic
+from .models import AccessLog
+from .const import *
+from config.common import Common
 
 
 class Login(LoginView):
@@ -47,3 +51,43 @@ class PasswordResetComplete(PasswordResetCompleteView):
     パスワード再設定の完了画面
     """
     template_name = 'login/password_reset_complete.html'
+
+class AccessLogListView(generic.ListView):
+    model = AccessLog
+    context_object_name = 'access_logs'
+    template_name = 'login/index.html'
+    paginate_by = 50
+
+    def get_queryset(self):
+        # query setを取得
+        query_set = super().get_queryset()
+        # 検索条件を取得
+        username = self.request.GET.get('search_username') or ''
+        accesstype = self.request.GET.get('search_accesstype')
+        accessat_from = self.request.GET.get('search_accessat_from')
+        accessat_to = self.request.GET.get('search_accessat_to')
+        # query setをフィルタ
+        if username:
+            query_set = query_set.filter(username__icontains=username)
+        if accesstype:
+            query_set = query_set.filter(access_type=accesstype)
+        if accessat_from:
+            query_set = query_set.filter(access_at__gte=accessat_from)
+        if accessat_to:
+            query_set = query_set.filter(access_at__lte=accessat_to)
+        # query setを返却
+        return query_set
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # 検索フォーム設定
+        context['search_username'] = self.request.GET.get('search_username') or ''
+        context['search_accesstype'] = self.request.GET.get('search_accesstype')
+        context['search_accessat_from'] = self.request.GET.get('search_accessat_from')
+        context['search_accessat_to'] = self.request.GET.get('search_accessat_to')
+        context['accesstype_list'] = ACCESSTYPE_CHOICES # アクセス種別リスト
+        # ページネーション設定
+        context = Common.set_pagination(context, self.request.GET.urlencode())
+        # コンテキストを返却
+        return context
+    

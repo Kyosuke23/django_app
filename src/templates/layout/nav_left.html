@@ -18,28 +18,12 @@
             </div>
         </li>
         <li class="mb-1">
-            <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#dashboard-collapse" aria-expanded="false">
-            ダッシュボード
-            </button>
-            <div class="collapse" id="dashboard-collapse">
-                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">概要</a></li>
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">毎週</a></li>
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">毎月</a></li>
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">毎年</a></li>
-                </ul>
-            </div>
-        </li>
-        <li class="mb-1">
             <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#orders-collapse" aria-expanded="false">
-            注文
+            特権ユーザー専用
             </button>
             <div class="collapse" id="orders-collapse">
                 <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">新品</a></li>
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">処理済み</a></li>
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">出荷済み</a></li>
-                    <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">返品</a></li>
+                    <li><a href="{% url 'login:access_history' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">ログイン履歴</a></li>
                 </ul>
             </div>
         </li>
