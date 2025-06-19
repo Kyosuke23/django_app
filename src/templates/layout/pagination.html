@@ -2,7 +2,6 @@
 <p class="mt-2">
     {{ paginator.count }}件中　{{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
 </p>
-{% if is_paginated %}
 {# ページング #}
 <nav aria-label="Topics pagination">
     <ul class="pagination">
@@ -46,4 +45,3 @@
         {% endif %}
     </ul>
 </nav>
-{% endif %}
