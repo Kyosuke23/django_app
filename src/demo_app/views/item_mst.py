@@ -1,7 +1,7 @@
 from django.views import generic
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
-from django.urls import reverse_lazy
+from django.urls import reverse
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
@@ -77,7 +77,7 @@ class ItemCreate(generic.edit.CreateView):
     
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('demo_app:item_mst_index')
+        return reverse('demo_app:item_mst_index')
     
     def post(self, request, *args, **kwargs):
         # フォームの入力データを取得
@@ -116,7 +116,7 @@ class ItemUpdate(generic.edit.UpdateView):
     
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('demo_app:item_mst_index')
+        return reverse('demo_app:item_mst_index')
     
     def post(self, request, *args, **kwargs):
         # フォームのデータからモデルインスタンスを取得
@@ -151,7 +151,7 @@ class ItemDelete(generic.edit.DeleteView):
 
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('demo_app:item_mst_index')
+        return reverse('demo_app:item_mst_index')
 
     def post(self, request, *args, **kwargs):
         # 削除処理の実行

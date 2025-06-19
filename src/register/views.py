@@ -1,7 +1,7 @@
 from .forms import SignUpForm, EditForm, ChangePasswordForm
 from register.models import CustomUser
 from django.views import generic
-from django.urls import reverse_lazy
+from django.urls import reverse
 from django.contrib import messages
 from django.core.paginator import Page
 from django.http import JsonResponse
@@ -84,7 +84,7 @@ class RegisterUserCreate(generic.edit.CreateView):
     
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('register:register_user_index')
+        return reverse('register:register_user_index')
     
     def post(self, request, *args, **kwargs):
         # フォームの入力データを取得
@@ -122,7 +122,7 @@ class RegisterUserUpdate(generic.edit.UpdateView):
     
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('register:register_user_index')
+        return reverse('register:register_user_index')
     
     def post(self, request, *args, **kwargs):
         # フォームのデータからモデルインスタンスを取得
@@ -158,7 +158,7 @@ class RegisterUserDelete(generic.edit.DeleteView):
 
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('register:register_user_index')
+        return reverse('register:register_user_index')
 
     def post(self, request, *args, **kwargs):
         # 削除処理の実行
@@ -187,4 +187,4 @@ class RegisterUserChangePassword(PasswordChangeView):
         # 処理成功のフラッシュメッセージを設定
         messages.success(self.request, 'パスワードが変更されました')
         # 処理後は検索一覧画面に遷移
-        return reverse_lazy('dashboard:top')
+        return reverse('dashboard:top')
