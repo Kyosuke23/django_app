@@ -3,7 +3,6 @@ from register.models import CustomUser
 from django.views import generic
 from django.urls import reverse
 from django.contrib import messages
-from django.core.paginator import Page
 from django.http import JsonResponse
 from django.db.models import Q
 from django.shortcuts import get_object_or_404

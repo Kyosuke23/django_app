@@ -100,3 +100,15 @@ class Common:
             writer.writerow(cls.get_models_field_value_all(model=rec))
         # 処理結果を返却
         return response
+    
+    @classmethod
+    def get_ip_address(cls, request):
+        # 'HTTP_X_FORWARDED_FOR'ヘッダを参照して転送経路のIPアドレスを取得する。
+        forwarded_addresses = request.META.get('HTTP_X_FORWARDED_FOR')
+        if forwarded_addresses:
+            # 'HTTP_X_FORWARDED_FOR'ヘッダがある場合: 転送経路の先頭要素を取得する。
+            client_addr = forwarded_addresses.split(',')[0]
+        else:
+            # 'HTTP_X_FORWARDED_FOR'ヘッダがない場合: 直接接続なので'REMOTE_ADDR'ヘッダを参照する。
+            client_addr = request.META.get('REMOTE_ADDR')
+        return client_addr
