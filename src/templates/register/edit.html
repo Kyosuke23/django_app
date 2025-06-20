@@ -56,39 +56,28 @@
                         <input type="text" class="form-control" name="tel_number" value="{{ user.tel_number }}">
                     </div>
                     {# 郵便番号 #}
-                    <div class="col-md-8 mb-2">
+                    <div class="col-md-7 mb-2">
                         <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
-                        <input type="text" class="form-control" name="postal_cd" value="{{ user.postal_cd }}">
+                        <input type="text" class="form-control edit" name="postal_cd" value="{{ user.postal_cd }}">
                     </div>
-                    <div class="col-md-4"></div>
+                    <div class="col d-flex align-items-end mb-2">
+                        <input type="button" class="btn btn-secondary btn-search-postal-code" value="住所検索" data-type="edit">
+                    </div>
                     {# 都道府県 #}
                     <div class="col-md-3 mb-2">
                         <label for="state" class="form-label">{{ form.state.label }}</label>
-                        <select class="form-control" name="state">
-                            {% if user.state == None %}
-                            <option value="" label="-----" selected>"-----"</option>
-                            {% else %}
-                            <option value="" label="-----">"-----"</option>
-                            {% endif %}
-                            {% for key, val in state_list %}
-                                {% if key == user.state %}
-                                <option value="{{ key }}" label="{{ val }}" selected></option>
-                                {% else %}
-                                <option value="{{ key }}" label="{{ val }}"></option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
+                        <input type="text" class="form-control edit" name="state" value="{{ user.state|default_if_none:'' }}">
                     </div>
                     {# 市区町村 #}
                     <div class="col-md-6 mb-2">
                         <label for="city" class="form-label">{{ form.city.label }}</label>
-                        <input type="text" class="form-control" name="city" value="{{ user.city|default_if_none:'' }}">
+                        <input type="text" class="form-control edit" name="city" value="{{ user.city|default_if_none:'' }}">
                     </div>
                     <div class="col-md-3"></div>
                     {# 住所 #}
                     <div class="col-md-12 mb-2">
                         <label for="address" class="form-label">{{ form.address.label }}</label>
-                        <input type="text" class="form-control" name="address" value="{{ user.address|default_if_none:'' }}">
+                        <input type="text" class="form-control edit" name="address" value="{{ user.address|default_if_none:'' }}">
                     </div>
                     {# 住所2 #}
                     <div class="col-md-12 mb-2">

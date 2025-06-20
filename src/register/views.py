@@ -4,12 +4,14 @@ from django.views import generic
 from django.urls import reverse
 from django.contrib import messages
 from django.http import JsonResponse
+from django.http import HttpResponse
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.views import PasswordChangeView
-from .const import GENDER_CHOICES, STATE_CHOICES, PRIVILEGE_CHOICES
+from .const import *
 from config.common import Common
-
+import json
+import requests
 
 class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     """
@@ -50,7 +52,6 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
         context['search_gender'] = search_gender
         # 各種リストのデータをフォームに適用
         context['gender_list'] = GENDER_CHOICES
-        context['state_list'] = STATE_CHOICES
         context['privilege_list'] = PRIVILEGE_CHOICES
         # ページネーション設定
         context = Common.set_pagination(context, self.request.GET.urlencode())
@@ -187,3 +188,20 @@ class RegisterUserChangePassword(PasswordChangeView):
         messages.success(self.request, 'パスワードが変更されました')
         # 処理後は検索一覧画面に遷移
         return reverse('dashboard:top')
+
+class GetPostalCode(generic.TemplateView):
+    """
+    郵便番号による住所検索処理（Ajax）
+    """
+    def post(self, request, *args, **kwargs):
+        # 入力された郵便番号を取得
+        postal_cd = request.POST.get('postal_cd')
+        # APIで住所検索
+        res = requests.get(
+            POSTAL_API_URL
+            , params=({'zipcode': postal_cd})
+        )
+        # 取得結果を返却
+        return HttpResponse(json.dumps({
+            'address_info': res.json()
+        }))

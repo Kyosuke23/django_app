@@ -47,26 +47,28 @@
                         {{ form.tel_number }}
                     </div>
                     {# 郵便番号 #}
-                    <div class="col-md-8 mb-2">
+                    <div class="col-md-7 mb-2">
                         <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
-                        {{ form.postal_cd }}
+                        <input type="text" class="form-control create" name="postal_cd" value="{{ user.postal_cd }}">
                     </div>
-                    <div class="col-md-4"></div>
+                    <div class="col d-flex align-items-end mb-2">
+                        <input type="button" class="btn btn-secondary btn-search-postal-code" value="住所検索" data-type="create">
+                    </div>
                     {# 都道府県 #}
                     <div class="col-md-3 mb-2">
                         <label for="state" class="form-label">{{ form.state.label }}</label>
-                        {{ form.state }}
+                        <input type="text" class="form-control create" name="state" value="{{ user.state|default_if_none:'' }}">
                     </div>
                     {# 市区町村 #}
                     <div class="col-md-6 mb-2">
                         <label for="city" class="form-label">{{ form.city.label }}</label>
-                        {{ form.city }}
+                        <input type="text" class="form-control create" name="city" value="{{ user.city|default_if_none:'' }}">
                     </div>
                     <div class="col-md-3"></div>
                     {# 住所 #}
                     <div class="col-md-12 mb-2">
                         <label for="address" class="form-label">{{ form.address.label }}</label>
-                        {{ form.address }}
+                        <input type="text" class="form-control create" name="address" value="{{ user.address|default_if_none:'' }}">
                     </div>
                     {# 住所2 #}
                     <div class="col-md-12 mb-2">

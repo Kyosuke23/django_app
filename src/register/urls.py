@@ -9,4 +9,7 @@ urlpatterns = [
     path('update/<int:pk>/', views.RegisterUserUpdate.as_view(), name='register_user_update'),
     path('delete/<int:pk>/', views.RegisterUserDelete.as_view(), name='register_user_delete'),
     path('change_password/', views.RegisterUserChangePassword.as_view(), name='register_user_change_password'),
+
+    # 住所検索
+    path('get_postal_code/', views.GetPostalCode.as_view(), name='get_postal_code'),
 ]
