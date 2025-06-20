@@ -15,13 +15,13 @@
 			"username": "admin",
 			"gender": "0",
 			"tel_number": "12345678900",
-			"postal_cd": "123-4567",
+			"postal_cd": "1234567",
 			"state": null,
 			"city": null,
 			"address": null,
 			"address2": null,
 			"birthday": null,
-			"privilege": "2",
+			"privilege": "1",
 			"groups": [],
 			"user_permissions": []
 		}
