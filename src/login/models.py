@@ -31,9 +31,9 @@ class AccessLog(models.Model):
     access_type = models.CharField(max_length=50, verbose_name='アクセス種別')
     access_at=models.DateTimeField(auto_now=True, verbose_name='アクセス日時')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
-    created_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='accesslog_creater', verbose_name='作成者')
+    created_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='access_log_creater', verbose_name='作成者')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
-    updated_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='accesslog_updater', verbose_name='更新者')
+    updated_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='access_log_updater', verbose_name='更新者')
 
     def __str__(self) -> str:
         return 'ip : %s / access at : %s' % (self.ip,self.access_at)

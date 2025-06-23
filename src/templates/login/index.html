@@ -4,7 +4,7 @@
 {% load humanize %}
 {% block content %}
 {# 検索画面リンク #}
-<form id="search_form" method="get" action="{% url 'login:access_history' %}">
+<form id="search_form" method="get" action="{% url 'login:access_log' %}">
     {% csrf_token %}
     {# ページタイトル #}
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -12,9 +12,9 @@
         {# 出力ボタンエリア #}
         <div class="col d-flex justify-content-end">
             {# CSV出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:accesslog_export_csv' %}" value="CSV">
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:access_log_export_csv' %}" value="CSV">
             {# Excel出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:accesslog_export_excel' %}" value="Excel">
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:access_log_export_excel' %}" value="Excel">
         </div>
     </div>
     {# 検索フォーム #}
@@ -46,7 +46,7 @@
         </div>
         {# 検索ボタン #}
         <div class="col d-flex align-items-end">
-            <input type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'login:access_history' %}" value="検索">
+            <input type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'login:access_log' %}" value="検索">
         </div>
     </div>
 </form>
