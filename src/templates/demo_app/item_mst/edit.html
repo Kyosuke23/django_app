@@ -29,9 +29,9 @@
                         <label for="category" class="form-label">{{ form.category.label }}</label>
                         <select class="form-control" name="category">
                             {% if rec.id == None %}
-                            <option value="" label="-----" selected>"-----"</option>
+                            <option value="" label= selected></option>
                             {% else %}
-                            <option value="" label="-----">"-----"</option>
+                            <option value="" label=></option>
                             {% endif %}
                             {% for rec in category_list %}
                                 {% if rec.id == item.category.id %}

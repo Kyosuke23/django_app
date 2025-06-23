@@ -60,26 +60,26 @@
             <th></th>
         </thead>
         <tbody>
-            {% for user in users %}
+            {% for data in users %}
             <tr class="align-middle">
-                <td>{{ user.username }}</td>
-                <td>{{ user.last_name|default_if_none:'' }}&nbsp;{{ user.first_name|default_if_none:'' }}</td>
-                <td>{{ user.email|default_if_none:'' }}</td>
-                <td>{{ user.get_gender_display|default_if_none:'' }}</td>
-                <td>{{ user.birthday|default_if_none:''|date:'Y/m/d' }}</td>
-                <td>{{ user.tel_number|default_if_none:'' }}</td>
-                <td>{{ user.postal_cd|default_if_none:'' }}</td>
-                <td>{{ user.state|default_if_none:'' }}</td>
-                <td>{{ user.city|default_if_none:'' }}</td>
-                <td>{{ user.address|default_if_none:'' }}</td>
-                <td>{{ user.address2|default_if_none:'' }}</td>
-                <td>{{ user.get_privilege_display }}</td>
-                {% if user.privilege <= "1" %}
+                <td>{{ data.username }}</td>
+                <td>{{ data.last_name|default_if_none:'' }}&nbsp;{{ data.first_name|default_if_none:'' }}</td>
+                <td>{{ data.email|default_if_none:'' }}</td>
+                <td>{{ data.get_gender_display|default_if_none:'' }}</td>
+                <td>{{ data.birthday|default_if_none:''|date:'Y/m/d' }}</td>
+                <td>{{ data.tel_number|default_if_none:'' }}</td>
+                <td>{{ data.postal_cd|default_if_none:'' }}</td>
+                <td>{{ data.state|default_if_none:'' }}</td>
+                <td>{{ data.city|default_if_none:'' }}</td>
+                <td>{{ data.address|default_if_none:'' }}</td>
+                <td>{{ data.address2|default_if_none:'' }}</td>
+                <td>{{ data.get_privilege_display }}</td>
+                {% if user.privilege == "1" and user.username == data.username or user.privilege == "0" %}
                 <td>
-                    <a class="btn btn-outline-primary btn-sm" href="{% url 'register:register_user_update' user.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ user.pk }}">編集</a>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'register:register_user_update' data.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ data.pk }}">編集</a>
                 </td>
                 <td>
-                    <a class="btn btn-outline-danger btn-sm" href="" data-bs-toggle="modal" data-bs-target="#delete-Modal-{{ user.pk }}">削除</a>
+                    <a class="btn btn-outline-danger btn-sm" href="" data-bs-toggle="modal" data-bs-target="#delete-Modal-{{ data.pk }}">削除</a>
                 </td>
                 {% else %}
                     <td></td>

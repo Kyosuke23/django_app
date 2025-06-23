@@ -66,9 +66,9 @@
                         <label for="state" class="form-label">{{ form.state.label }}</label>
                         <select class="form-control" name="state" disabled>
                             {% if user.state == None %}
-                            <option value="" label="-----" selected>"-----"</option>
+                            <option value="" label= selected></option>
                             {% else %}
-                            <option value="" label="-----">"-----"</option>
+                            <option value="" label=></option>
                             {% endif %}
                             {% for key, val in state_list %}
                                 {% if key == user.state %}
@@ -100,9 +100,9 @@
                         <label for="privilege" class="form-label">{{ form.privilege.label }}</label>
                         <select class="form-control" name="privilege" disabled>
                             {% if user.privilege == None %}
-                            <option value="" label="-----" selected>"-----"</option>
+                            <option value="" label= selected></option>
                             {% else %}
-                            <option value="" label="-----">"-----"</option>
+                            <option value="" label=></option>
                             {% endif %}
                             {% for key, val in privilege_list %}
                                 {% if key == user.privilege %}
