@@ -56,16 +56,16 @@
             {% for item in items %}
             <tr class="align-middle">
                 <td>{{ item.item_cd }}</td>
-                <td>{{ item.item_nm }}</td>
+                <td>{{ item.item_nm|default_if_none:'' }}</td>
                 <td>{{ item.category.category|default_if_none:'' }}</td>
                 <td>
                     {% if item.price %}¥{% endif %}
                     {{ item.price|default_if_none:''|intcomma }}
                 </td>
                 <td>{{ item.created_at }}</td>
-                <td>{{ item.created_user }}</td>
+                <td>{{ item.created_user|default_if_none:'' }}</td>
                 <td>{{ item.updated_at }}</td>
-                <td>{{ item.updated_user }}</td>
+                <td>{{ item.updated_user|default_if_none:'' }}</td>
                 {% if user.privilege <= "1" %}
                 <td>
                     <a class="btn btn-outline-primary btn-sm" href="{% url 'demo_app:item_mst_update' item.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ item.pk }}">編集</a>

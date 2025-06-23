@@ -63,12 +63,12 @@
             {% for user in users %}
             <tr class="align-middle">
                 <td>{{ user.username }}</td>
-                <td>{{ user.last_name }}&nbsp;{{ user.first_name }}</td>
-                <td>{{ user.email }}</td>
+                <td>{{ user.last_name|default_if_none:'' }}&nbsp;{{ user.first_name|default_if_none:'' }}</td>
+                <td>{{ user.email|default_if_none:'' }}</td>
                 <td>{{ user.get_gender_display|default_if_none:'' }}</td>
                 <td>{{ user.birthday|default_if_none:''|date:'Y/m/d' }}</td>
-                <td>{{ user.tel_number }}</td>
-                <td>{{ user.postal_cd }}</td>
+                <td>{{ user.tel_number|default_if_none:'' }}</td>
+                <td>{{ user.postal_cd|default_if_none:'' }}</td>
                 <td>{{ user.state|default_if_none:'' }}</td>
                 <td>{{ user.city|default_if_none:'' }}</td>
                 <td>{{ user.address|default_if_none:'' }}</td>
