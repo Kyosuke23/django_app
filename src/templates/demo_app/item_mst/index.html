@@ -28,7 +28,7 @@
             <input type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'demo_app:item_mst_index' %}" value="検索">
         </div>
         {# 登録画面リンク #}
-        {% if user.privilege <= "1" %}
+        {% if user.privilege <= PRIVILEGE_EDITOR %}
         <div class="col d-flex justify-content-end">
             <a class="btn btn-outline-primary" href="{% url 'demo_app:item_mst_create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
         </div>
@@ -70,7 +70,7 @@
                 <td>{{ item.created_user|default_if_none:'' }}</td>
                 <td>{{ item.updated_at }}</td>
                 <td>{{ item.updated_user|default_if_none:'' }}</td>
-                {% if user.privilege <= "1" %}
+                {% if user.privilege <= PRIVILEGE_EDITOR %}
                 <td>
                     <a class="btn btn-outline-primary btn-sm" href="{% url 'demo_app:item_mst_update' item.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ item.pk }}">編集</a>
                 </td>

@@ -17,7 +17,7 @@
                 </ul>
             </div>
         </li>
-        {% if user.privilege == "0" %}
+        {% if user.privilege == PRIVILEGE_ADMIN %}
         <li class="mb-1">
             <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#orders-collapse" aria-expanded="false">
             特権ユーザー専用

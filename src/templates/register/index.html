@@ -38,7 +38,7 @@
             <input type="submit" class="btn btn-primary" value="検索">
         </div>
         {# 登録画面リンク #}
-        {% if user.privilege <= "1" %}
+        {% if user.privilege <= PRIVILEGE_EDITOR %}
         <div class="col d-flex align-items-end justify-content-end">
             <a class="btn btn-outline-primary" href="{% url 'register:register_user_create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
         </div>
@@ -85,7 +85,7 @@
                 <td>{{ data.address|default_if_none:'' }}</td>
                 <td>{{ data.address2|default_if_none:'' }}</td>
                 <td>{{ data.get_privilege_display }}</td>
-                {% if user.privilege == "1" and user.username == data.username or user.privilege == "0" %}
+                {% if user.privilege == PRIVILEGE_EDITOR and user.username == data.username or user.privilege == PRIVILEGE_ADMIN %}
                 <td>
                     <a class="btn btn-outline-primary btn-sm" href="{% url 'register:register_user_update' data.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ data.pk }}">編集</a>
                 </td>

@@ -88,7 +88,7 @@
                     <div class="col-md-3 mb-2">
                         <label for="privilege" class="form-label">{{ form.privilege.label }}</label>
                         <select class="form-control" name="privilege">
-                            {% if user.privilege == "0" %}
+                            {% if user.privilege == PRIVILEGE_ADMIN %}
                                 {% for key, val in privilege_list %}
                                     {% if key == data.privilege %}
                                     <option value="{{ key }}" label="{{ val }}" selected></option>
@@ -96,7 +96,7 @@
                                     <option value="{{ key }}" label="{{ val }}"></option>
                                     {% endif %}
                                 {% endfor %}
-                            {% elif user.privilege == "1" %}
+                            {% elif user.privilege == PRIVILEGE_EDITOR %}
                                 {% for key, val in privilege_list %}
                                     {% if key == data.privilege and key != "0" %}
                                     <option value="{{ key }}" label="{{ val }}" selected></option>
