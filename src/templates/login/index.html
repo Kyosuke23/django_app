@@ -11,10 +11,10 @@
         <h1 class="h2">アクセスログ確認画面</h1>
         {# 出力ボタンエリア #}
         <div class="col d-flex justify-content-end">
-            {% comment %} {# CSV出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:access_history_export_csv' %}" value="CSV">
+            {# CSV出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:accesslog_export_csv' %}" value="CSV">
             {# Excel出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:access_history_export_excel' %}" value="Excel"> {% endcomment %}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'login:accesslog_export_excel' %}" value="Excel">
         </div>
     </div>
     {# 検索フォーム #}
@@ -77,4 +77,5 @@
 </div>
 {# ページネーション #}
 {% include 'layout/pagination.html' %}
+<script type="text/javascript" src="{% static 'js/login/script.js' %}"></script>
 {% endblock %}

@@ -26,6 +26,7 @@ class ItemList(generic.ListView, generic.edit.ModelFormMixin):
         query_set = super().get_queryset(**kwarg).filter(is_deleted=False)
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
         keyword = self.request.GET.get('search') or ''
+        # 検索結果を返却
         return self.search_data(query_set, keyword=keyword)
 
     def get_context_data(self, **kwarg):

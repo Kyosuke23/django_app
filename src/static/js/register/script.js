@@ -23,6 +23,11 @@ $(function() {
         $().post_data($(this));
     });
 
+    // Exportボタンにイベントリスナーを設定
+    $('.search_form_btn').click(function(e) {
+        $(this).parents('form').attr('action', $(this).data('action'));
+    });
+
     // 住所検索ボタンにイベントリスナーを設定
     $('.btn-search-postal-code').on('click', function(e) {
         // ページのリロードを止める

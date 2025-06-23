@@ -26,17 +26,17 @@ class Common:
         return context
 
     @classmethod
-    def get_models_field_value_all(cls, model):
+    def get_models_field_value_all(cls, data):
         """
         モデルのフィールド値をリストで取得
         """
         # モデルフィールドのメタ情報を取得
-        fields = model._meta.get_fields()
+        fields = data._meta.get_fields()
         # 空の配列にモデルフィールドの名前を追加
         result = list()
         for i, v in enumerate(fields):
-            if i > 0:
-                result.append(v.value_from_object(model))
+            if i > 0 and not hasattr(v, 'field_name'):
+                result.append(v.value_from_object(data))
         # 処理結果を返却
         return result
     
@@ -50,7 +50,7 @@ class Common:
         # 空の配列にモデルフィールドの名前を追加
         result = list()
         for i, v in enumerate(fields):
-            if i > 0:
+            if i > 0 and not hasattr(v, 'field_name'):
                 result.append(v.name)
         # 処理結果を返却
         return result
@@ -70,7 +70,7 @@ class Common:
         # ワークブックにデータを追加
         for rec in data:
             # 全てのフィールド値を取得
-            row = cls.get_models_field_value_all(model=rec)
+            row = cls.get_models_field_value_all(data=rec)
             # フィールドの型がdatetimeの場合、timezoneを削除（Excel出力時にエラーとなるため）
             for i, v in enumerate(row):
                 if type(v) is datetime:
@@ -97,7 +97,7 @@ class Common:
         writer.writerow(cls.get_models_field_name_all(model=model))
         # データの書き込み
         for rec in data:
-            writer.writerow(cls.get_models_field_value_all(model=rec))
+            writer.writerow(cls.get_models_field_value_all(data=rec))
         # 処理結果を返却
         return response
     

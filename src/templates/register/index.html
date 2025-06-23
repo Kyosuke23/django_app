@@ -3,12 +3,19 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-{# ページタイトル #}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">ユーザー管理画面</h1>
-</div>
 {# 検索 & 登録画面リンク #}
-<form method="get" action="{% url 'register:register_user_index' %}">
+<form id="search_form" method="get" action="{% url 'register:register_user_index' %}">
+    {# ページタイトル #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">ユーザー管理画面</h1>
+        {# 出力ボタンエリア #}
+        <div class="col d-flex justify-content-end">
+            {# CSV出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:register_user_export_csv' %}" value="CSV">
+            {# Excel出力ボタン #}
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:register_user_export_excel' %}" value="Excel">
+        </div>
+    </div>
     {# 検索フォーム #}
     <div class="row mb-3">
         <div class="col col-md-2">

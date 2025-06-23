@@ -13,4 +13,7 @@ urlpatterns = [
     path('password_reset/done/', views.PasswordResetDone.as_view(), name='password_reset_done'),
     path('password_reset/complete/', views.PasswordResetComplete.as_view(), name='password_reset_complete'),
     path('password_reset/', views.PasswordReset.as_view(), name='password_reset'),
+    # データダウンロード
+    path('export/csv', views.ExportCSV.as_view(), name='accesslog_export_csv'),
+    path('export/excel', views.ExportExcel.as_view(), name='accesslog_export_excel'),
 ]
