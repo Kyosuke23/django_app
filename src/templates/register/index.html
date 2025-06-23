@@ -34,6 +34,19 @@
                 {% endfor %}
             </select>
         </div>
+        <div class="col col-md-1">
+            <label for="search_privilege" class="form-label">権限</label>
+            <select class="form-control" name="search_privilege">
+                <option value="" label=""></option>
+                {% for key, val in privilege_list %}
+                    {% if key == search_privilege %}
+                    <option value="{{ key }}" label="{{ val }}" selected></option>
+                    {% else %}
+                    <option value="{{ key }}" label="{{ val }}"></option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
         <div class="col d-flex align-items-end">
             <input type="submit" class="btn btn-primary" value="検索">
         </div>

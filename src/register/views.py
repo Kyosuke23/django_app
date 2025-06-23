@@ -36,9 +36,11 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
         # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
         search_key = self.request.GET.get('search_key') or ''
         search_gender = self.request.GET.get('search_gender')
+        search_privilege = self.request.GET.get('search_privilege')
         # 検索フォームにキーワードを残す
         context['search_key'] = search_key
         context['search_gender'] = search_gender
+        context['search_privilege'] = search_privilege
         # 各種リストのデータをフォームに適用
         context['gender_list'] = GENDER_CHOICES
         context['privilege_list'] = PRIVILEGE_CHOICES
@@ -68,13 +70,16 @@ def search_data(request, query_set):
     # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
     keyword = request.GET.get('search_key') or ''
     gender = request.GET.get('search_gender')
+    privilege = request.GET.get('search_privilege')
     # 検索条件を適用
     if keyword: # キーワード
         query_set = query_set.filter(
             Q(username__icontains=keyword) | Q(first_name__icontains=keyword) | Q(last_name__icontains=keyword)
         )
     if gender: # 性別
-        query_set = query_set.filter(gender__icontains=gender)
+        query_set = query_set.filter(gender=gender)
+    if privilege: # 権限
+        query_set = query_set.filter(privilege=privilege)
     # 結果を返却
     return query_set
 
