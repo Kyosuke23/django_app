@@ -24,10 +24,8 @@ class ItemList(generic.ListView, generic.edit.ModelFormMixin):
     def get_queryset(self, **kwarg):
         # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg).filter(is_deleted=False)
-        # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        keyword = self.request.GET.get('search') or ''
-        # 検索結果を返却
-        return self.search_data(query_set, keyword=keyword)
+        # 検索を実行
+        return search_data(request=self.request, query_set=query_set)
 
     def get_context_data(self, **kwarg):
         # コンテキストデータの取得
@@ -58,13 +56,18 @@ class ItemList(generic.ListView, generic.edit.ModelFormMixin):
         else:
             return self.form_invalid(form)
         
-    def search_data(self, query_set, keyword):
-        # 検索キーワードでフィルタ
-        if keyword:
-            query_set = query_set.filter(
-                Q(item_cd__icontains=keyword) | Q(item_nm__icontains=keyword)
-            )
-        return query_set
+def search_data(request, query_set):
+    '''
+    クエリセットに検索条件を適用
+    '''
+    # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
+    keyword = request.GET.get('search') or ''
+    # 検索条件を取得
+    if keyword:
+        query_set = query_set.filter(
+            Q(item_cd__icontains=keyword) | Q(item_nm__icontains=keyword)
+        )
+    return query_set
         
     
 class ItemCreate(generic.edit.CreateView):
@@ -176,9 +179,8 @@ class ItemExportExcel(generic.TemplateView):
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
         # queryセットを取得
         query_set = Item.objects.all()
-        # 検索キーワードを取得して検索
-        keyword = self.request.GET.get('search')
-        query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
+        # 検索条件を適用
+        query_set = search_data(request=request, query_set=query_set)
         # Excel出力用のレスポンスを取得
         result = Common.export_excel(model=Item, data=query_set, file_name=file_name)
         # 処理結果を返却
@@ -190,9 +192,8 @@ class ItemExportCSV(generic.TemplateView):
         file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.csv'
         # queryセットを取得
         query_set = Item.objects.all()
-        # 検索キーワードを取得して検索
-        keyword = self.request.GET.get('search')
-        query_set = ItemList.search_data(self=self, query_set=query_set, keyword=keyword)
+        # 検索条件を適用
+        query_set = search_data(request=request, query_set=query_set)
         # Excel出力用のレスポンスを取得
         result = Common.export_csv(model=Item, data=query_set, file_name=file_name)
         # 処理結果を返却

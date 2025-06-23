@@ -75,6 +75,8 @@ class Common:
             for i, v in enumerate(row):
                 if type(v) is datetime:
                     row[i] = v.replace(tzinfo=None)
+                elif type(v) is list:
+                    row[i] = ','.join(v)
             # ワークブックにデータを追加
             ws.append(row)
         # 保存したワークブックをレスポンスに格納

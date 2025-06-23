@@ -27,11 +27,8 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     def get_queryset(self, **kwarg):
         # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg)
-        # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        search_key = self.request.GET.get('search_key') or ''
-        search_gender = self.request.GET.get('search_gender')
-        # 検索結果を返却
-        return self.search_data(query_set=query_set, key=search_key, gender=search_gender)
+        # 検索を実行
+        return search_data(request=self.request, query_set=query_set)
 
     def get_context_data(self, **kwarg):
         # コンテキストデータの取得
@@ -64,16 +61,22 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
         else:
             return self.form_invalid(form)
         
-    def search_data(self, query_set, key, gender):
-        # キーワードでユーザーコード、氏名をフィルタ
-        if key:
-            query_set = query_set.filter(
-                Q(username__icontains=key) | Q(first_name__icontains=key) | Q(last_name__icontains=key)
-            )
-        # 性別でフィルタ
-        if gender:
-            query_set = query_set.filter(gender__icontains=gender)
-        return query_set
+def search_data(request, query_set):
+    '''
+    クエリセットに検索条件を適用
+    '''
+    # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
+    keyword = request.GET.get('search_key') or ''
+    gender = request.GET.get('search_gender')
+    # 検索条件を適用
+    if keyword: # キーワード
+        query_set = query_set.filter(
+            Q(username__icontains=keyword) | Q(first_name__icontains=keyword) | Q(last_name__icontains=keyword)
+        )
+    if gender: # 性別
+        query_set = query_set.filter(gender__icontains=gender)
+    # 結果を返却
+    return query_set
 
 class RegisterUserCreate(generic.edit.CreateView):
     """
@@ -215,10 +218,8 @@ class ExportExcel(generic.TemplateView):
         file_name = f'user_mst_{datetime.now().replace(microsecond=0)}.xlsx'
         # queryセットを取得
         query_set = CustomUser.objects.all()
-        # 検索キーワードを取得して検索
-        search_key = self.request.GET.get('search_key') or ''
-        search_gender = self.request.GET.get('search_gender')
-        query_set = RegisterUserList.search_data(self=self, query_set=query_set, key=search_key, gender=search_gender)
+        # 検索条件を適用
+        query_set = search_data(request=request, query_set=query_set)
         # Excel出力用のレスポンスを取得
         result = Common.export_excel(model=CustomUser, data=query_set, file_name=file_name)
         # 処理結果を返却
@@ -230,10 +231,8 @@ class ExportCSV(generic.TemplateView):
         file_name = f'user_mst_{datetime.now().replace(microsecond=0)}.csv'
         # queryセットを取得
         query_set = CustomUser.objects.all()
-        # 検索キーワードを取得して検索
-        search_key = self.request.GET.get('search_key') or ''
-        search_gender = self.request.GET.get('search_gender')
-        query_set = RegisterUserList.search_data(self=self, query_set=query_set, key=search_key, gender=search_gender)
+        # 検索条件を適用
+        query_set = search_data(request=request, query_set=query_set)
         # Excel出力用のレスポンスを取得
         result = Common.export_csv(model=CustomUser, data=query_set, file_name=file_name)
         # 処理結果を返却

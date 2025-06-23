@@ -62,14 +62,8 @@ class AccessLogListView(generic.ListView):
     def get_queryset(self):
         # query setを取得
         query_set = super().get_queryset()
-        # 検索条件を取得
-        username = self.request.GET.get('search_username') or ''
-        actype = self.request.GET.get('search_accesstype')
-        acat_from = self.request.GET.get('search_accessat_from')
-        acat_to = self.request.GET.get('search_accessat_to')
-        query_set = self.search_data(qs=query_set, username=username, actype=actype, acat_from=acat_from, acat_to=acat_to)
-        # query setを返却
-        return query_set
+        # 検索を実行
+        return search_data(request=self.request, query_set=query_set)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -84,18 +78,26 @@ class AccessLogListView(generic.ListView):
         # コンテキストを返却
         return context
     
-    def search_data(self, qs, username, actype, acat_from, acat_to):
-        # query setをフィルタ
-        if username:
-            qs = qs.filter(username__icontains=username)
-        if actype:
-            qs = qs.filter(access_type=actype)
-        if acat_from:
-            qs = qs.filter(access_at__gte=acat_from)
-        if acat_to:
-            qs = qs.filter(access_at__lte=acat_to)
-        # 結果を返却
-        return qs
+def search_data(request, query_set):
+    '''
+    クエリセットに検索条件を適用
+    '''
+    # 検索条件を取得
+    username = request.GET.get('search_username') or ''
+    access_type= request.GET.get('search_accesstype')
+    accessat_from = request.GET.get('search_accessat_from')
+    accessat_to = request.GET.get('search_accessat_to')
+    # 検索条件を適用
+    if username: # ユーザーコード
+        query_set = query_set.filter(username__icontains=username)
+    if access_type: # アクセス種別
+        query_set = query_set.filter(access_type=access_type)
+    if accessat_from: # アクセス日時(From)
+        query_set = query_set.filter(access_at__gte=accessat_from)
+    if accessat_to: # アクセス日時(To)
+        query_set = query_set.filter(access_at__lte=accessat_to)
+    # 結果を返却
+    return query_set
 
 class ExportExcel(generic.TemplateView):
     def get(self, request, *args, **kwargs):
@@ -103,12 +105,8 @@ class ExportExcel(generic.TemplateView):
         file_name = f'access_log_{datetime.now().replace(microsecond=0)}.xlsx'
         # queryセットを取得
         query_set = AccessLog.objects.all()
-        # 検索処理を実行
-        username = self.request.GET.get('search_username') or ''
-        actype = self.request.GET.get('search_accesstype')
-        acat_from = self.request.GET.get('search_accessat_from')
-        acat_to = self.request.GET.get('search_accessat_to')
-        query_set = AccessLogListView.search_data(self=self, qs=query_set, username=username, actype=actype, acat_from=acat_from, acat_to=acat_to)
+        # 検索条件を適用
+        query_set = search_data(request=request, query_set=query_set)
         # Excel出力用のレスポンスを取得
         result = Common.export_excel(model=AccessLog, data=query_set, file_name=file_name)
         # 処理結果を返却
@@ -120,12 +118,8 @@ class ExportCSV(generic.TemplateView):
         file_name = f'access_log_{datetime.now().replace(microsecond=0)}.csv'
         # queryセットを取得
         query_set = AccessLog.objects.all()
-        # 検索処理を実行
-        username = self.request.GET.get('search_username') or ''
-        actype = self.request.GET.get('search_accesstype')
-        acat_from = self.request.GET.get('search_accessat_from')
-        acat_to = self.request.GET.get('search_accessat_to')
-        query_set = AccessLogListView.search_data(self=self, qs=query_set, username=username, actype=actype, acat_from=acat_from, acat_to=acat_to)
+        # 検索条件を適用
+        query_set = search_data(request=request, query_set=query_set)
         # Excel出力用のレスポンスを取得
         result = Common.export_csv(model=AccessLog, data=query_set, file_name=file_name)
         # 処理結果を返却
