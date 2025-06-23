@@ -70,8 +70,8 @@ class AccessLogListView(generic.ListView):
         # 検索フォーム設定
         context['search_username'] = self.request.GET.get('search_username') or ''
         context['search_accesstype'] = self.request.GET.get('search_accesstype')
-        context['search_accessat_from'] = self.request.GET.get('search_accessat_from')
-        context['search_accessat_to'] = self.request.GET.get('search_accessat_to')
+        context['search_access_at_from'] = self.request.GET.get('search_access_at_from')
+        context['search_access_at_to'] = self.request.GET.get('search_access_at_to')
         context['accesstype_list'] = ACCESSTYPE_CHOICES # アクセス種別リスト
         # ページネーション設定
         context = Common.set_pagination(context, self.request.GET.urlencode())
@@ -85,17 +85,17 @@ def search_data(request, query_set):
     # 検索条件を取得
     username = request.GET.get('search_username') or ''
     access_type= request.GET.get('search_accesstype')
-    accessat_from = request.GET.get('search_accessat_from')
-    accessat_to = request.GET.get('search_accessat_to')
+    access_at_from = request.GET.get('search_access_at_from')
+    access_at_to = request.GET.get('search_access_at_to')
     # 検索条件を適用
     if username: # ユーザーコード
         query_set = query_set.filter(username__icontains=username)
     if access_type: # アクセス種別
         query_set = query_set.filter(access_type=access_type)
-    if accessat_from: # アクセス日時(From)
-        query_set = query_set.filter(access_at__gte=accessat_from)
-    if accessat_to: # アクセス日時(To)
-        query_set = query_set.filter(access_at__lte=accessat_to)
+    if access_at_from: # アクセス日時(From)
+        query_set = query_set.filter(access_at__gte=access_at_from)
+    if access_at_to: # アクセス日時(To)
+        query_set = query_set.filter(access_at__lte=access_at_to)
     # 結果を返却
     return query_set
 
