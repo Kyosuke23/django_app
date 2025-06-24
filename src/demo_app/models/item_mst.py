@@ -18,9 +18,9 @@ class Item(models.Model):
     price = models.IntegerField(blank=True, null=True, verbose_name='価格')
     is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
+    create_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_item_creator', verbose_name='作成者')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
-    created_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_item_creator', verbose_name='作成者')
-    updated_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_item_updater', verbose_name='更新者')
+    update_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_item_updater', verbose_name='更新者')
 
     def __str__(self):
         return f'{self.item_nm}({self.item_cd})'
@@ -40,8 +40,8 @@ class Category(models.Model):
     is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
-    created_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_category_creator', verbose_name='作成者')
-    updated_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_category_updater', verbose_name='更新者')
+    create_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_category_creator', verbose_name='作成者')
+    update_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='sample_category_updater', verbose_name='更新者')
 
     def __str__(self):
         return self.category

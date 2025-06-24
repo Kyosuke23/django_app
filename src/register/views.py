@@ -104,8 +104,8 @@ class RegisterUserCreate(generic.edit.CreateView):
         if form.is_valid():
             post = form.save(commit=False)
             # 作成者と更新者をログインユーザーで設定
-            post.created_user = self.request.user
-            post.updated_user = self.request.user
+            post.create_user = self.request.user
+            post.update_user = self.request.user
             # 登録処理の実行
             post.save()
             # 処理成功のフラッシュメッセージを設定
