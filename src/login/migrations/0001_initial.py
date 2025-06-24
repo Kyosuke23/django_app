@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('access_at', models.DateTimeField(auto_now=True, verbose_name='アクセス日時')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='作成日時')),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='更新日時')),
-                ('created_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='accesslog_creater', to=settings.AUTH_USER_MODEL, verbose_name='作成者')),
+                ('created_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='accesslog_creator', to=settings.AUTH_USER_MODEL, verbose_name='作成者')),
                 ('updated_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='accesslog_updater', to=settings.AUTH_USER_MODEL, verbose_name='更新者')),
             ],
             options={

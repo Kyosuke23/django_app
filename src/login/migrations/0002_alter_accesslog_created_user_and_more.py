@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='accesslog',
             name='created_user',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='access_log_creater', to=settings.AUTH_USER_MODEL, verbose_name='作成者'),
+            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='access_log_creator', to=settings.AUTH_USER_MODEL, verbose_name='作成者'),
         ),
         migrations.AlterField(
             model_name='accesslog',

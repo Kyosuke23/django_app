@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('is_deleted', models.BooleanField(default=False, verbose_name='削除フラグ')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='作成日時')),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='更新日時')),
-                ('created_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sample_category_creater', to=settings.AUTH_USER_MODEL, verbose_name='作成者')),
+                ('created_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sample_category_creator', to=settings.AUTH_USER_MODEL, verbose_name='作成者')),
                 ('updated_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sample_category_updater', to=settings.AUTH_USER_MODEL, verbose_name='更新者')),
             ],
             options={
@@ -42,7 +42,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='作成日時')),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='更新日時')),
                 ('category', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='demo_app.category', verbose_name='カテゴリ')),
-                ('created_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sample_item_creater', to=settings.AUTH_USER_MODEL, verbose_name='作成者')),
+                ('created_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sample_item_creator', to=settings.AUTH_USER_MODEL, verbose_name='作成者')),
                 ('updated_user', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='sample_item_updater', to=settings.AUTH_USER_MODEL, verbose_name='更新者')),
             ],
             options={
