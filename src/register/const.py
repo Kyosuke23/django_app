@@ -7,8 +7,7 @@ GENDER_MALE = '0'
 GENDER_FEMALE = '1'
 GENDER_OTHER = '2'
 GENDER_CHOICES = (
-    ('', '')
-    , (GENDER_MALE, '男性')
+    (GENDER_MALE, '男性')
     , (GENDER_FEMALE, '女性')
     , (GENDER_OTHER, 'その他')
 )

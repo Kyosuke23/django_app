@@ -28,7 +28,16 @@
                     {# 性別 #}
                     <div class="col-md-3 mb-2">
                         <label for="gender" class="form-label">{{ form.gender.label }}</label>
-                        {{ form.gender }}
+                        <select class="form-control" name="gender">
+                            <option value="" label=""></option>
+                            {% for key, val in gender_list %}
+                                {% if key == data.gender %}
+                                <option value="{{ key }}" label="{{ val }}" selected></option>
+                                {% else %}
+                                <option value="{{ key }}" label="{{ val }}"></option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
                     </div>
                     <div class="col-md-9"></div>
                     {# E-Mail #}

@@ -25,6 +25,7 @@
         <div class="col col-md-1">
             <label for="search_gender" class="form-label">性別</label>
             <select class="form-control" name="search_gender">
+                <option value="" label=""></option>
                 {% for key, val in gender_list %}
                     {% if key == search_gender %}
                     <option value="{{ key }}" label="{{ val }}" selected></option>

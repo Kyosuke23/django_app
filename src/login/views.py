@@ -1,3 +1,4 @@
+import csv
 from django.contrib.auth.views import LoginView, LogoutView
 from django.urls import reverse_lazy
 from django.contrib.auth.views import PasswordResetView, PasswordResetDoneView, PasswordResetConfirmView, PasswordResetCompleteView
@@ -6,6 +7,11 @@ from .models import AccessLog
 from .const import *
 from config.common import Common
 from datetime import datetime
+from django.http import HttpResponse
+from openpyxl import Workbook
+
+# 出力データカラム
+OUTPUT_DATA_COLUMNS = ['usernmae', 'ip', 'access_type', 'access_at'] + Common.COMMON_DATA_COLUMNS
 
 
 class Login(LoginView):
@@ -101,27 +107,62 @@ def search_data(request, query_set):
 
 class ExportExcel(generic.TemplateView):
     def get(self, request, *args, **kwargs):
+        """
+        Excelデータの出力処理
+        """
         # 出力ファイル名を設定
         file_name = f'access_log_{datetime.now().replace(microsecond=0)}.xlsx'
         # queryセットを取得
-        query_set = AccessLog.objects.all()
+        data = AccessLog.objects.all()
         # 検索条件を適用
-        query_set = search_data(request=request, query_set=query_set)
+        data = search_data(request=request, query_set=data)
         # Excel出力用のレスポンスを取得
-        result = Common.export_excel(model=AccessLog, data=query_set, file_name=file_name)
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        # Excelオブジェクト（ワークブック）を取得
+        wb = Workbook()
+        ws = wb.active
+        # 列名をワークブックに適用
+        ws.append(OUTPUT_DATA_COLUMNS)
+        # ワークブックにデータを追加
+        for rec in data:
+            # ワークブックにデータを追加
+            ws.append([
+                rec.username
+                , rec.ip
+                , rec.access_type
+                , rec.access_at.replace(tzinfo=None)
+            ] + Common.get_common_columns(rec=rec))
+        # 保存したワークブックをレスポンスに格納
+        wb.save(response)
         # 処理結果を返却
-        return result
+        return response
 
 class ExportCSV(generic.TemplateView):
     def get(self, request, *args, **kwargs):
+        """
+        CSVデータの出力処理
+        """
         # 出力ファイル名を設定
         file_name = f'access_log_{datetime.now().replace(microsecond=0)}.csv'
         # queryセットを取得
-        query_set = AccessLog.objects.all()
+        data = AccessLog.objects.all()
         # 検索条件を適用
-        query_set = search_data(request=request, query_set=query_set)
-        # Excel出力用のレスポンスを取得
-        result = Common.export_csv(model=AccessLog, data=query_set, file_name=file_name)
+        data = search_data(request=request, query_set=data)
+        # CSV出力用のレスポンスを取得
+        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
+        # ヘッダの書き込み
+        writer = csv.writer(response)
+        writer.writerow(OUTPUT_DATA_COLUMNS)
+        # データの書き込み
+        for rec in data:
+            writer.writerow([
+                rec.username
+                , rec.ip
+                , rec.access_type
+                , rec.access_at.replace(tzinfo=None)
+            ] + Common.get_common_columns(rec=rec))
         # 処理結果を返却
-        return result
+        return response
     

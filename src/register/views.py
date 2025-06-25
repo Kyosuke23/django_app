@@ -1,3 +1,4 @@
+import csv
 from .forms import SignUpForm, EditForm, ChangePasswordForm
 from register.models import CustomUser
 from django.views import generic
@@ -11,8 +12,13 @@ from django.contrib.auth.views import PasswordChangeView
 from .const import *
 from config.common import Common
 from datetime import datetime
+from openpyxl import Workbook
 import json
 import requests
+
+# 出力データカラム
+OUTPUT_DATA_COLUMNS = ['usernmae', 'first_name', 'last_name', 'email', 'gender', 'birthday', 'tel_number', 'postal_cd', 'state', 'city', 'address', 'address2', 'privilege']
+
 
 class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     """
@@ -219,26 +225,79 @@ class GetPostalCode(generic.TemplateView):
     
 class ExportExcel(generic.TemplateView):
     def get(self, request, *args, **kwargs):
+        """
+        Excelデータの出力処理
+        """
         # 出力ファイル名を設定
         file_name = f'user_mst_{datetime.now().replace(microsecond=0)}.xlsx'
         # queryセットを取得
-        query_set = CustomUser.objects.all()
+        data = CustomUser.objects.all()
         # 検索条件を適用
-        query_set = search_data(request=request, query_set=query_set)
+        data = search_data(request=request, query_set=data)
         # Excel出力用のレスポンスを取得
-        result = Common.export_excel(model=CustomUser, data=query_set, file_name=file_name)
+        response = HttpResponse(content_type='application/vnd.ms-excel')
+        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
+        # Excelオブジェクト（ワークブック）を取得
+        wb = Workbook()
+        ws = wb.active
+        # 列名をワークブックに適用
+        ws.append(OUTPUT_DATA_COLUMNS)
+        # ワークブックにデータを追加
+        for rec in data:
+            # ワークブックにデータを追加
+            ws.append([
+                rec.username
+                , rec.first_name
+                , rec.last_name
+                , rec.email
+                , GENDER_CHOICES[int(rec.gender)][1]
+                , rec.birthday
+                , rec.tel_number
+                , rec.postal_cd
+                , rec.state
+                , rec.city
+                , rec.address
+                , rec.address2
+                , PRIVILEGE_CHOICES[int(rec.privilege)][1]
+            ])
+        # 保存したワークブックをレスポンスに格納
+        wb.save(response)
         # 処理結果を返却
-        return result
+        return response
 
 class ExportCSV(generic.TemplateView):
     def get(self, request, *args, **kwargs):
+        """
+        CSVデータの出力処理
+        """
         # 出力ファイル名を設定
         file_name = f'user_mst_{datetime.now().replace(microsecond=0)}.csv'
         # queryセットを取得
-        query_set = CustomUser.objects.all()
+        data = CustomUser.objects.all()
         # 検索条件を適用
-        query_set = search_data(request=request, query_set=query_set)
-        # Excel出力用のレスポンスを取得
-        result = Common.export_csv(model=CustomUser, data=query_set, file_name=file_name)
+        data = search_data(request=request, query_set=data)
+        # CSV出力用のレスポンスを取得
+        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
+        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
+        # ヘッダの書き込み
+        writer = csv.writer(response)
+        writer.writerow(OUTPUT_DATA_COLUMNS)
+        # データの書き込み
+        for rec in data:
+            writer.writerow([
+                rec.username
+                , rec.first_name
+                , rec.last_name
+                , rec.email
+                , GENDER_CHOICES[int(rec.gender)][1]
+                , rec.birthday
+                , rec.tel_number
+                , rec.postal_cd
+                , rec.state
+                , rec.city
+                , rec.address
+                , rec.address2
+                , PRIVILEGE_CHOICES[int(rec.privilege)][1]
+            ])
         # 処理結果を返却
-        return result
+        return response
