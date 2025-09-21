@@ -1,0 +1,22 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% load humanize %}
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/graph/style.css' %}">
+{% endblock %}
+{% block content %}
+{# 検索 & 登録画面リンク #}
+<form id="search_form" method="get" action="{% url 'demo_app:graph_index' %}">
+    {% csrf_token %}
+    {# ページタイトル #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">グラフライブラリ開発</h1>
+    </div>
+</form>
+<div id="graph"></div>
+
+<canvas id="canvas" width="480" height="320"></canvas>
+
+<script type="text/javascript" src="{% static 'js/graph/script.js' %}"></script>
+{% endblock %}

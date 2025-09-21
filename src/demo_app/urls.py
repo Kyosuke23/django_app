@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import item_mst, ajax_test
+from .views import item_mst, ajax_test, graph
 
 app_name = 'demo_app'
 
@@ -11,6 +11,9 @@ urlpatterns = [
     path('item_mst/delete/<int:pk>/', item_mst.ItemDelete.as_view(), name='item_mst_delete'),
     path('item_mst/export/csv', item_mst.ItemExportCSV.as_view(), name='item_mst_export_csv'),
     path('item_mst/export/excel', item_mst.ItemExportExcel.as_view(), name='item_mst_export_excel'),
+
+    # グラフアプリ
+    path('graph/', graph.GraphIndex.as_view(), name='graph_index'),
 
     # Ajaxテスト画面
     path('greet/', ajax_test.AjaxTest.as_view(), name='ajax_test'),
