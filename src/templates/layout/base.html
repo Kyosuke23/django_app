@@ -15,12 +15,12 @@
 </head>
 <body>
     {# ヘッダー #}
-    {% if user.is_authenticated %}{% include 'layout/nav_top.html' %}{% endif %}
+    {% include 'layout/nav_top.html' %}
     {# メッセージ #}
     {% include 'layout/message.html' %}
     <div class="d-flex">
         {# 左サイドバー #}
-        {% if user.is_authenticated %}{% include 'layout/nav_left.html' %}{% endif %}
+        {% include 'layout/nav_left.html' %}
         {# コンテンツ #}
         <main class="container-fluid overflow-auto">
             {% block content %}
