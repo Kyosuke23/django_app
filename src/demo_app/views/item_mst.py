@@ -1,6 +1,5 @@
-import csv
 from django.views import generic
-from ..views.base import CSVImportBaseView
+from ..views.base import CSVImportBaseView, CSVExportBaseView
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.urls import reverse
@@ -214,34 +213,23 @@ class ItemExportExcel(generic.TemplateView):
         # 処理結果を返却
         return response
 
-class ItemExportCSV(generic.TemplateView):
-    def get(self, request, *args, **kwargs):
-        """
-        CSVデータの出力処理
-        """
-        # 出力ファイル名を設定
-        file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.csv'
-        # queryセットを取得
-        data = Item.objects.all()
-        # 検索条件を適用
-        data = search_data(request=request, query_set=data)
-        # CSV出力用のレスポンスを取得
-        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
-        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
-        # ヘッダの書き込み
-        writer = csv.writer(response)
-        writer.writerow(DATA_COLUMNS)
-        # データの書き込み
-        for rec in data:
-            writer.writerow([
-                rec.item_cd
-                , rec.item_nm
-                , rec.category.category
-                , rec.description
-                , rec.price
-            ] + Common.get_common_columns(rec=rec))
-        # 処理結果を返却
-        return response
+class ItemExportCSV(CSVExportBaseView):
+    model_class = Item
+    filename_prefix = 'item_mst'
+    headers = DATA_COLUMNS
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return search_data(request=request, query_set=qs)
+
+    def row(self, rec):
+        return [
+            rec.item_cd,
+            rec.item_nm,
+            rec.category.category if rec.category else "",
+            rec.description,
+            rec.price
+        ] + Common.get_common_columns(rec=rec)
 
 class ItemImportCSV(CSVImportBaseView):
     expected_headers = DATA_COLUMNS  # 期待されるカラム

@@ -2,7 +2,45 @@ import csv
 from django.http import JsonResponse
 from django.views import View
 from django.db import transaction, IntegrityError
+from datetime import datetime
+from django.http import HttpResponse
 
+class CSVExportBaseView(View):
+    model_class = None  # 出力対象のモデルクラス
+    filename_prefix = 'export'  # サブクラスで指定
+    headers: list[str] = []  # 出力ヘッダ定義
+
+    def get(self, request, *args, **kwargs):
+        # --- ファイル名設定 ---
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        file_name = f'{self.filename_prefix}_{timestamp}.csv'
+
+        # --- データ取得 ---
+        data = self.get_queryset(request)
+
+        # --- レスポンス準備 ---
+        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{file_name}"
+
+        writer = csv.writer(response)
+
+        # --- ヘッダ出力 ---
+        writer.writerow(self.headers)
+
+        # --- データ出力 ---
+        for rec in data:
+            writer.writerow(self.row(rec))
+
+        return response
+
+    def get_queryset(self, request):
+        '''サブクラスで必要に応じてフィルタリングを行う'''
+        return self.model_class.objects.all()
+
+    def row(self, rec):
+        '''サブクラスで1行分のリストを返す'''
+        raise NotImplementedError('サブクラスで row() を実装してください')
+    
 
 class CSVImportBaseView(View):
     '''
@@ -28,14 +66,14 @@ class CSVImportBaseView(View):
         decoded_file = decoded_data.splitlines()
         reader = csv.DictReader(decoded_file)
 
-        # --- header check ---
+        # --- ヘッダチェック ---
         if reader.fieldnames is None or any(h not in reader.fieldnames for h in self.expected_headers):
             return JsonResponse({
                 'error': 'CSVヘッダが正しくありません',
                 'details': f'期待: {self.expected_headers}, 実際: {reader.fieldnames}'
             }, status=400)
 
-        # --- row validation ---
+        # --- バリデーション ---
         existing = set(self.model_class.objects.values_list(self.unique_field, flat=True))
         objects_to_create = []
         errors = []
