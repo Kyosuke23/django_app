@@ -84,6 +84,11 @@ body {
   height: 1rem;
 }
 
+.sidebar {
+  /* サイドバーのheightはヘッダのheightを引いた高さに設定 */
+  height: calc(100vh - 34px);
+}
+
 @media (min-width: 768px) {
   .sidebar .offcanvas-lg {
     position: -webkit-sticky;
