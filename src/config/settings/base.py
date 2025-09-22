@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     'login.apps.LoginConfig',
     'dashboard.apps.DashboardConfig',
     'demo_app.apps.DemoappConfig',
+    'product_mst.apps.ProductMstConfig',
 ]
 
 MIDDLEWARE = [
