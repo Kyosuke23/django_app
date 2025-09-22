@@ -10,13 +10,15 @@ from config.common import Common
 from django.db.models import Q
 
 
-# 出力データカラム
+# CSV/Excel の共通出力カラム定義
+# アプリ固有のカラムに加え、共通カラムも連結
 DATA_COLUMNS = ['item_cd', 'item_nm', 'category', 'description', 'price'] + Common.COMMON_DATA_COLUMNS
 
 
 class ItemList(generic.ListView, generic.edit.ModelFormMixin):
     """
-    アイテムマスタ画面の一覧表示
+    アイテムマスタ一覧画面
+    - 一覧表示・検索・ページネーションを提供
     """
     model = Item
     form_class = ItemCreationForm
@@ -25,32 +27,42 @@ class ItemList(generic.ListView, generic.edit.ModelFormMixin):
     paginate_by = 50
 
     def get_queryset(self, **kwarg):
-        # query_setをクレンジングして取得
-        query_set = super().get_queryset(**kwarg).filter(is_deleted=False)
-        # 検索を実行
+        """
+        一覧用のクエリセットを返す
+        - 論理削除されていないデータのみ対象
+        - category を select_related で事前取得して N+1 を防止
+        - 検索条件を適用
+        """
+        query_set = super().get_queryset(**kwarg).filter(is_deleted=False).select_related('category')
         return search_data(request=self.request, query_set=query_set)
 
     def get_context_data(self, **kwarg):
-        # コンテキストデータの取得
+        """
+        テンプレートに渡す追加コンテキストを設定
+        - 検索ワードやカテゴリ一覧をセット
+        - ページネーション情報を付加
+        - 入力フォームを設定
+        """
         context = super().get_context_data(**kwarg)
-        # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        search_input_text = self.request.GET.get('search') or ''
-        # 検索フォームにキーワードを残す
-        context['search'] = search_input_text
-        # カテゴリマスタのデータをフォームに適用
-        categories = Category.objects.order_by('id')
-        context['category_list'] = categories
-        # ページネーション設定
+        context['search'] = self.request.GET.get('search') or ''
+        context['category_list'] = Category.objects.order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
-        # フォームの値を設定
-        context['form'] = self.get_form
+        context['form'] = self.get_form()
         return context
     
     def get(self, request, *args, **kwargs):
+        """
+        GETリクエスト処理
+        - object をリセットして一覧を表示
+        """
         self.object = None
         return super().get(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
+        """
+        POSTリクエスト処理
+        - フォーム送信時にバリデーションを実行
+        """
         self.object = None
         self.object_list = self.get_queryset()
         form = self.get_form()
@@ -59,13 +71,13 @@ class ItemList(generic.ListView, generic.edit.ModelFormMixin):
         else:
             return self.form_invalid(form)
         
+
 def search_data(request, query_set):
-    '''
-    クエリセットに検索条件を適用
-    '''
-    # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
+    """
+    共通検索処理
+    - 検索キーワードを item_cd / item_nm に部分一致で適用
+    """
     keyword = request.GET.get('search') or ''
-    # 検索条件を取得
     if keyword:
         query_set = query_set.filter(
             Q(item_cd__icontains=keyword) | Q(item_nm__icontains=keyword)
@@ -75,7 +87,9 @@ def search_data(request, query_set):
     
 class ItemCreate(generic.edit.CreateView):
     """
-    サンプルマスタ情報の登録処理
+    アイテムマスタの新規登録処理
+    - フォームをバリデーションし、作成者・更新者を設定して登録
+    - 結果は JSON で返却
     """
     model = Item
     form_class = ItemCreationForm
@@ -83,38 +97,33 @@ class ItemCreate(generic.edit.CreateView):
     template_name = 'demo_app/item_mst/create.html'
     
     def get_success_url(self):
-        # 処理後は検索一覧画面に遷移
         return reverse('demo_app:item_mst_index')
     
     def post(self, request, *args, **kwargs):
-        # フォームの入力データを取得
         self.object = None
         self.object_list = self.get_queryset()
         form = self.get_form()
-        # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
             post = form.save(commit=False)
-            # 作成者と更新者をログインユーザーで設定
             post.create_user = self.request.user
             post.update_user = self.request.user
-            # 登録処理の実行
             post.save()
-            # 処理成功のフラッシュメッセージを設定
             messages.success(request, '登録が完了しました')
-        # 処理結果を格納
-        result = JsonResponse(
+        return JsonResponse(
             {
-                'errors': form.errors  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                'errors': form.errors,
+                'success_url': self.get_success_url()
             },
-            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+            json_dumps_params={'ensure_ascii': False}
         )
-        # 処理結果を返却
-        return result
+
 
 class ItemUpdate(generic.edit.UpdateView):
     """
-    サンプルマスタ情報の更新処理
+    アイテムマスタの更新処理
+    - 指定された PK のデータを更新
+    - update_user をログインユーザーに設定
+    - 結果は JSON で返却
     """
     model = Item
     form_class = ItemCreationForm
@@ -122,61 +131,56 @@ class ItemUpdate(generic.edit.UpdateView):
     template_name = 'demo_app/item_mst/edit.html'
     
     def get_success_url(self):
-        # 処理後は検索一覧画面に遷移
         return reverse('demo_app:item_mst_index')
     
     def post(self, request, *args, **kwargs):
-        # フォームのデータからモデルインスタンスを取得
         item = get_object_or_404(Item, pk=request.POST['pk'])
-        # モデルを基にしたフォームを作成
         form = ItemCreationForm(request.POST, instance=item)
-        # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
-            # 更新ユーザーをログインユーザーで設定
-            form.update_user = self.request.user
-            # 保存処理の実行
-            form.save()
-            # 処理成功のフラッシュメッセージを設定
+            post = form.save(commit=False)
+            post.update_user = self.request.user
+            post.save()
             messages.success(request, '更新が完了しました')
-        # 処理結果を格納
-        result = JsonResponse(
+        return JsonResponse(
             {
-                'errors': form.errors  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                'errors': form.errors,
+                'success_url': self.get_success_url()
             },
-            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+            json_dumps_params={'ensure_ascii': False}
         )
-        # 処理結果を返却
-        return result
     
+
 class ItemDelete(generic.edit.DeleteView):
     """
-    サンプルマスタ情報の削除処理
+    アイテムマスタの削除処理
+    - 指定された PK を物理削除
+    - 結果は JSON で返却
     """
     model = Item
     template_name = 'demo_app/item_mst/delete.html'
 
     def get_success_url(self):
-        # 処理後は検索一覧画面に遷移
         return reverse('demo_app:item_mst_index')
 
     def post(self, request, *args, **kwargs):
-        # 削除処理の実行
-        Item.objects.filter(pk=request.POST['pk']).delete()
-        # 処理成功のフラッシュメッセージを設定
+        item = get_object_or_404(Item, pk=request.POST['pk'])
+        item.delete()
         messages.success(request, '削除が完了しました')
-        # 処理結果を格納
-        result = JsonResponse(
+        return JsonResponse(
             {
-                'errors': {}  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                'errors': {},
+                'success_url': self.get_success_url()
             },
-            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+            json_dumps_params={'ensure_ascii': False}
         )
-        # 処理結果を返却
-        return result
+
 
 class ItemExportExcel(ExcelExportBaseView):
+    """
+    アイテムマスタの Excel 出力
+    - 共通の get_row を利用して1行を生成
+    - 検索条件を適用したデータを出力
+    """
     model_class = Item
     filename_prefix = 'item_mst'
     headers = DATA_COLUMNS
@@ -186,15 +190,15 @@ class ItemExportExcel(ExcelExportBaseView):
         return search_data(request=request, query_set=qs)
 
     def row(self, rec):
-        return [
-            rec.item_cd,
-            rec.item_nm,
-            rec.category.category if rec.category else "",
-            rec.description,
-            rec.price
-        ] + Common.get_common_columns(rec=rec)
+        return get_row(rec=rec)
+
 
 class ItemExportCSV(CSVExportBaseView):
+    """
+    アイテムマスタの CSV 出力
+    - 共通の get_row を利用して1行を生成
+    - 検索条件を適用したデータを出力
+    """
     model_class = Item
     filename_prefix = 'item_mst'
     headers = DATA_COLUMNS
@@ -204,41 +208,63 @@ class ItemExportCSV(CSVExportBaseView):
         return search_data(request=request, query_set=qs)
 
     def row(self, rec):
-        return [
-            rec.item_cd,
-            rec.item_nm,
-            rec.category.category if rec.category else "",
-            rec.description,
-            rec.price
-        ] + Common.get_common_columns(rec=rec)
+        return get_row(rec=rec)
+
 
 class ItemImportCSV(CSVImportBaseView):
-    expected_headers = DATA_COLUMNS  # 期待されるカラム
-    model_class = Item  # 登録対象のモデルクラス
-    unique_field = 'item_cd'  # 重複チェックに使うフィールド名
+    """
+    アイテムマスタの CSV インポート
+    - ヘッダ検証と行ごとのバリデーションを実施
+    - 正常データを一括登録する
+    """
+    expected_headers = DATA_COLUMNS
+    model_class = Item
+    unique_field = 'item_cd'
 
     def validate_row(self, row, idx, existing, request):
-        # バリデーションチェック
+        """
+        CSVの1行をバリデーションし、問題なければ Item オブジェクトを返す
+        - item_cd の必須/重複チェック
+        - category の外部参照チェック
+        - price を数値に変換
+        """
         item_cd = row.get('item_cd')
         if not item_cd:
             return None, f'{idx}行目: item_cd が空です'
         if item_cd in existing:
             return None, f'{idx}行目: item_cd "{item_cd}" は既に存在します'
 
-        # 外部参照の整合性チェック
         category_name = row.get('category')
         try:
             category = Category.objects.get(category=category_name)
         except Category.DoesNotExist:
             return None, f'{idx}行目: category "{category_name}" が存在しません'
 
-        # 登録データの作成
+        try:
+            price = int(price) if price else 0
+        except ValueError:
+            return None, f'{idx}行目: price "{price}" は数値である必要があります'
+
         obj = Item(
             item_cd=item_cd,
             item_nm=row.get('item_nm'),
             category=category,
             description=row.get('description') or '',
-            price=row.get('price') or 0,
+            price=int(price) if price else 0,
             update_user=request.user
         )
         return obj, None
+    
+
+def get_row(rec):
+    """
+    共通の出力行生成処理
+    - CSV/Excel エクスポートで共通利用
+    """
+    return [
+        rec.item_cd,
+        rec.item_nm,
+        rec.category.category if rec.category else "",
+        rec.description,
+        rec.price
+    ] + Common.get_common_columns(rec=rec)
