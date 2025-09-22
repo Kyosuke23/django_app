@@ -34,7 +34,7 @@ $(function() {
     };
 
     /**
-     * 非同期通信処理
+     * データ登録処理（非同期）
      * @param {*} form 
      */
     $.fn.post_data = function(form) {
@@ -83,13 +83,61 @@ $(function() {
         });
     }
 
+    /**
+     * データのimport処理（非同期）
+     * @returns 
+     */
+    $.fn.import_data = function(form) {
+        let file = form.files[0]
+        if (!file) return;
+
+        let formData = new FormData();
+        formData.append('file', file);
+        formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
+
+        // テンプレートから渡された action-url を取得
+        let url = $('#import-btn').data('action');
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: formData,
+            contentType: false,
+            processData: false,
+            xhr: function () {
+                var xhr = $.ajaxSettings.xhr();
+                if (xhr.upload) {
+                    xhr.upload.addEventListener('progress', function (e) {
+                        if (e.lengthComputable) {
+                            var percent = Math.round((e.loaded / e.total) * 100);
+                            $('.progress').show();
+                            $('#progress-bar').css('width', percent + '%').text(percent + '%');
+                        }
+                    }, false);
+                }
+                return xhr;
+            }
+        })
+        .done(function(response) {
+            alert('アップロード完了: ' + response.message);
+            location.reload();
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            $('.progress-bar')
+                .removeClass('bg-success')
+                .addClass('bg-danger')
+                .text('Import時にエラー発生');
+            alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
+        });
+    };
+
     // AjaxのPOST通信に必要な処理 /////////////////////////////////
     $.fn.getCookie = function(name) {
-        var cookieValue = null;
+        let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
-            var cookies = document.cookie.split(';');
-            for (var i = 0; i < cookies.length; i++) {
-                var cookie = jQuery.trim(cookies[i]);
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = jQuery.trim(cookies[i]);
                 if (cookie.substring(0, name.length + 1) === (name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
