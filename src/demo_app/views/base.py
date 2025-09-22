@@ -4,6 +4,52 @@ from django.views import View
 from django.db import transaction, IntegrityError
 from datetime import datetime
 from django.http import HttpResponse
+import openpyxl
+
+
+class ExcelExportBaseView(View):
+    model_class = None  # 出力対象のモデルクラス
+    filename_prefix = 'export'  # サブクラスで指定
+    headers: list[str] = []  # 出力ヘッダ定義
+
+    def get(self, request, *args, **kwargs):
+        # --- ファイル名設定 ---
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        file_name = f'{self.filename_prefix}_{timestamp}.xlsx'
+
+        # --- データ取得 ---
+        data = self.get_queryset(request)
+
+        # --- Workbook 作成 ---
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'data'
+
+        # --- ヘッダ書き込み ---
+        for col, header in enumerate(self.headers, start=1):
+            ws.cell(row=1, column=col, value=header)
+
+        # --- データ書き込み ---
+        for row_idx, rec in enumerate(data, start=2):
+            values = self.row(rec)
+            for col_idx, val in enumerate(values, start=1):
+                ws.cell(row=row_idx, column=col_idx, value=val)
+
+        # --- レスポンス作成 ---
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f"attachment; filename*=UTF-8''{file_name}"
+
+        wb.save(response)
+        return response
+
+    def get_queryset(self, request):
+        return self.model_class.objects.all()
+
+    def row(self, rec):
+        raise NotImplementedError('サブクラスで row() を実装してください')
+
 
 class CSVExportBaseView(View):
     model_class = None  # 出力対象のモデルクラス

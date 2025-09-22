@@ -1,5 +1,5 @@
 from django.views import generic
-from ..views.base import CSVImportBaseView, CSVExportBaseView
+from ..views.base import CSVImportBaseView, CSVExportBaseView, ExcelExportBaseView
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.urls import reverse
@@ -7,10 +7,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from config.common import Common
-from datetime import datetime
 from django.db.models import Q
-from django.http import HttpResponse
-from openpyxl import Workbook
 
 
 # 出力データカラム
@@ -179,39 +176,23 @@ class ItemDelete(generic.edit.DeleteView):
         # 処理結果を返却
         return result
 
-class ItemExportExcel(generic.TemplateView):
-    def get(self, request, *args, **kwargs):
-        """
-        Excelデータの出力処理
-        """
-        # 出力ファイル名を設定
-        file_name = f'item_mst_{datetime.now().replace(microsecond=0)}.xlsx'
-        # queryセットを取得
-        data = Item.objects.all()
-        # 検索条件を適用
-        data = search_data(request=request, query_set=data)
-        # Excel出力用のレスポンスを取得
-        response = HttpResponse(content_type='application/vnd.ms-excel')
-        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
-        # Excelオブジェクト（ワークブック）を取得
-        wb = Workbook()
-        ws = wb.active
-        # 列名をワークブックに適用
-        ws.append(DATA_COLUMNS)
-        # ワークブックにデータを追加
-        for rec in data:
-            # ワークブックにデータを追加
-            ws.append([
-                rec.item_cd
-                , rec.item_nm
-                , rec.category.category
-                , rec.description
-                , rec.price
-            ] + Common.get_common_columns(rec=rec))
-        # 保存したワークブックをレスポンスに格納
-        wb.save(response)
-        # 処理結果を返却
-        return response
+class ItemExportExcel(ExcelExportBaseView):
+    model_class = Item
+    filename_prefix = 'item_mst'
+    headers = DATA_COLUMNS
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return search_data(request=request, query_set=qs)
+
+    def row(self, rec):
+        return [
+            rec.item_cd,
+            rec.item_nm,
+            rec.category.category if rec.category else "",
+            rec.description,
+            rec.price
+        ] + Common.get_common_columns(rec=rec)
 
 class ItemExportCSV(CSVExportBaseView):
     model_class = Item
