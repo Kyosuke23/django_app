@@ -11,6 +11,7 @@ from datetime import datetime
 from django.db.models import Q
 from django.http import HttpResponse
 from openpyxl import Workbook
+from django.shortcuts import redirect
 
 # 出力データカラム
 OUTPUT_DATA_COLUMNS = ['item_cd', 'item_nm', 'category', 'description', 'price'] + Common.COMMON_DATA_COLUMNS
@@ -240,3 +241,45 @@ class ItemExportCSV(generic.TemplateView):
             ] + Common.get_common_columns(rec=rec))
         # 処理結果を返却
         return response
+
+class ItemImportCSV(generic.TemplateView):
+    """
+    CSVファイルからアイテムマスタをインポート
+    """
+    def post(self, request, *args, **kwargs):
+        file = request.FILES.get("file")
+        if not file:
+            return JsonResponse({"error": "ファイルが選択されていません"}, status=400)
+
+        # Shift-JIS / UTF-8 両対応
+        file_data = file.read()  # 一度だけ read
+        try:
+            decoded_data = file_data.decode("utf-8-sig")
+        except UnicodeDecodeError:
+            decoded_data = file_data.decode("cp932")
+
+        decoded_file = decoded_data.splitlines()
+        reader = csv.DictReader(decoded_file)
+
+        count = 0
+        for row in reader:
+            try:
+                category = Category.objects.get(category=row["category"])
+            except Category.DoesNotExist:
+                category = None
+
+            print(f'------>: {row}')
+
+            # Item.objects.update_or_create(
+            #     item_cd=row["item_cd"],
+            #     defaults={
+            #         "item_nm": row["item_nm"],
+            #         "category": category,
+            #         "description": row.get("description", ""),
+            #         "price": row.get("price") or 0,
+            #         "update_user": request.user,
+            #     }
+            # )
+            count += 1
+
+        return JsonResponse({"message": f"{count} 件をインポートしました"})

@@ -11,7 +11,10 @@
         <h1 class="h2">アイテムマスタ管理画面</h1>
         {# 出力ボタンエリア #}
         <div class="col d-flex justify-content-end">
-            {# CSV出力ボタン #}
+            {# CSVインポートボタン #}
+            <input type="file" id="file-input" name="file" accept=".csv" style="display:none;">
+            <input type="button" id="import-btn" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'demo_app:item_mst_import_csv' %}" value="IMPORT">
+            {# CSVエクスポートボタン #}
             <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'demo_app:item_mst_export_csv' %}" value="CSV">
             {# Excel出力ボタン #}
             <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'demo_app:item_mst_export_excel' %}" value="Excel">
@@ -37,6 +40,10 @@
 </form>
 {# 登録時のモーダル #}
 {% include 'demo_app/item_mst/create.html' %}
+{# プログレスバー #}
+<div class="progress mt-3" style="height: 25px; display: none;">
+  <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+</div>
 {# 件数表示 #}
 <p class="mt-2">
     {{ paginator.count }}件中　{{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
