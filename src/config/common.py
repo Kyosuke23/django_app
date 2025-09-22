@@ -2,8 +2,6 @@ import csv
 from django.http import HttpResponse
 import re
 from django.core.paginator import Page
-from openpyxl import Workbook
-from datetime import datetime
 
 class Common:
     # 共通データカラムリスト

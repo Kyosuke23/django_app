@@ -1,5 +1,6 @@
 import csv
 from django.views import generic
+from ..views.base import CSVImportBaseView
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.urls import reverse
@@ -11,7 +12,6 @@ from datetime import datetime
 from django.db.models import Q
 from django.http import HttpResponse
 from openpyxl import Workbook
-from django.db import transaction, IntegrityError
 
 
 # 出力データカラム
@@ -243,78 +243,33 @@ class ItemExportCSV(generic.TemplateView):
         # 処理結果を返却
         return response
 
-class ItemImportCSV(generic.TemplateView):
-    def post(self, request, *args, **kwargs):
-        file = request.FILES.get('file')
-        if not file:
-            return JsonResponse({'error': 'ファイルが選択されていません'}, status=400)
+class ItemImportCSV(CSVImportBaseView):
+    expected_headers = DATA_COLUMNS  # 期待されるカラム
+    model_class = Item  # 登録対象のモデルクラス
+    unique_field = 'item_cd'  # 重複チェックに使うフィールド名
 
-        file_data = file.read()
+    def validate_row(self, row, idx, existing, request):
+        # バリデーションチェック
+        item_cd = row.get('item_cd')
+        if not item_cd:
+            return None, f'{idx}行目: item_cd が空です'
+        if item_cd in existing:
+            return None, f'{idx}行目: item_cd "{item_cd}" は既に存在します'
+
+        # 外部参照の整合性チェック
+        category_name = row.get('category')
         try:
-            decoded_data = file_data.decode('utf-8-sig')
-        except UnicodeDecodeError:
-            decoded_data = file_data.decode('cp932')
+            category = Category.objects.get(category=category_name)
+        except Category.DoesNotExist:
+            return None, f'{idx}行目: category "{category_name}" が存在しません'
 
-        decoded_file = decoded_data.splitlines()
-        reader = csv.DictReader(decoded_file)
-
-        # ヘッダチェック
-        expected_headers = DATA_COLUMNS
-        actual_headers = reader.fieldnames
-        if actual_headers is None or any(h not in actual_headers for h in expected_headers):
-            return JsonResponse({
-                'error': f'CSVヘッダが正しくありません。',
-                'details': f'期待: {expected_headers}, 実際: {actual_headers}'
-            }, status=400)
-
-        items_to_create = []
-        errors = []
-        existing_codes = set(Item.objects.values_list('item_cd', flat=True))
-
-        for idx, row in enumerate(reader, start=2):  # 2行目以降がデータ
-            item_cd = row.get('item_cd')
-            if not item_cd:
-                errors.append(f'{idx}行目: item_cd が空です')
-                continue
-
-            if item_cd in existing_codes:
-                errors.append(f'{idx}行目: item_cd "{item_cd}" は既に存在します')
-                continue
-
-            try:
-                category = Category.objects.get(category=row.get('category'))
-            except Category.DoesNotExist:
-                errors.append(f'{idx}行目: category "{row.get('category')}" が存在しません')
-                category = None
-
-            # エラーが発生した行はスキップ
-            if errors:
-                continue
-
-            items_to_create.append(Item(
-                item_cd=item_cd,
-                item_nm=row.get('item_nm'),
-                category=category,
-                description=row.get('description', ''),
-                price=row.get('price') or 0,
-                update_user=request.user
-            ))
-
-        # エラーがある場合: 登録せず返却
-        if errors:
-            return JsonResponse({
-                'error': 'CSVに問題があります',
-                'details': errors
-            }, status=400)
-
-        # 問題なければ一括登録
-        try:
-            with transaction.atomic():
-                Item.objects.bulk_create(items_to_create)
-        except IntegrityError as e:
-            return JsonResponse({
-                'error': '登録中にDBエラーが発生しました',
-                'details': [str(e)]
-            }, status=500)
-
-        return JsonResponse({'message': f'{len(items_to_create)} 件をインポートしました'})
+        # 登録データの作成
+        obj = Item(
+            item_cd=item_cd,
+            item_nm=row.get('item_nm'),
+            category=category,
+            description=row.get('description') or '',
+            price=row.get('price') or 0,
+            update_user=request.user
+        )
+        return obj, None
