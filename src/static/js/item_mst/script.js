@@ -74,7 +74,7 @@ $(function () {
                 .removeClass("bg-success")
                 .addClass("bg-danger")
                 .text("Import時にエラー発生");
-            alert(['アップロード失敗:', jqXHR.responseJSON?.error || ''].join('\n'));
+            alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
         });
     });
 

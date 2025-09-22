@@ -11,7 +11,8 @@ from datetime import datetime
 from django.db.models import Q
 from django.http import HttpResponse
 from openpyxl import Workbook
-from django.shortcuts import redirect
+from django.db import transaction, IntegrityError
+
 
 # 出力データカラム
 DATA_COLUMNS = ['item_cd', 'item_nm', 'category', 'description', 'price'] + Common.COMMON_DATA_COLUMNS
@@ -243,16 +244,12 @@ class ItemExportCSV(generic.TemplateView):
         return response
 
 class ItemImportCSV(generic.TemplateView):
-    """
-    CSVファイルからアイテムマスタをインポート
-    """
     def post(self, request, *args, **kwargs):
         file = request.FILES.get("file")
         if not file:
             return JsonResponse({"error": "ファイルが選択されていません"}, status=400)
 
-        # Shift-JIS / UTF-8 両対応
-        file_data = file.read()  # 一度だけ read
+        file_data = file.read()
         try:
             decoded_data = file_data.decode("utf-8-sig")
         except UnicodeDecodeError:
@@ -264,29 +261,60 @@ class ItemImportCSV(generic.TemplateView):
         # ヘッダチェック
         expected_headers = DATA_COLUMNS
         actual_headers = reader.fieldnames
-
         if actual_headers is None or any(h not in actual_headers for h in expected_headers):
             return JsonResponse({
-                "error": f"CSVヘッダが正しくありません。正常: {expected_headers}, 実際: {actual_headers}"
+                "error": f"CSVヘッダが正しくありません。",
+                'details': f'期待: {expected_headers}, 実際: {actual_headers}'
             }, status=400)
 
-        count = 0
-        for row in reader:
+        items_to_create = []
+        errors = []
+        existing_codes = set(Item.objects.values_list("item_cd", flat=True))
+
+        for idx, row in enumerate(reader, start=2):  # 2行目以降がデータ
+            item_cd = row.get("item_cd")
+            if not item_cd:
+                errors.append(f"{idx}行目: item_cd が空です")
+                continue
+
+            if item_cd in existing_codes:
+                errors.append(f"{idx}行目: item_cd '{item_cd}' は既に存在します")
+                continue
+
             try:
-                category = Category.objects.get(category=row["category"])
+                category = Category.objects.get(category=row.get("category"))
             except Category.DoesNotExist:
+                errors.append(f"{idx}行目: category '{row.get('category')}' が存在しません")
                 category = None
 
-            Item.objects.update_or_create(
-                item_cd=row["item_cd"],
-                defaults={
-                    "item_nm": row["item_nm"],
-                    "category": category,
-                    "description": row.get("description", ""),
-                    "price": row.get("price") or 0,
-                    "update_user": request.user,
-                }
-            )
-            count += 1
+            # エラーが発生した行はスキップ
+            if errors:
+                continue
 
-        return JsonResponse({"message": f"{count} 件をインポートしました"})
+            items_to_create.append(Item(
+                item_cd=item_cd,
+                item_nm=row.get("item_nm"),
+                category=category,
+                description=row.get("description", ""),
+                price=row.get("price") or 0,
+                update_user=request.user
+            ))
+
+        # エラーがある場合: 登録せず返却
+        if errors:
+            return JsonResponse({
+                "error": "CSVに問題があります",
+                "details": errors
+            }, status=400)
+
+        # 問題なければ一括登録
+        try:
+            with transaction.atomic():
+                Item.objects.bulk_create(items_to_create)
+        except IntegrityError as e:
+            return JsonResponse({
+                "error": "登録中にDBエラーが発生しました",
+                "details": [str(e)]
+            }, status=500)
+
+        return JsonResponse({"message": f"{len(items_to_create)} 件をインポートしました"})
