@@ -1,47 +1,75 @@
 {% if request.user.is_authenticated %}
-<div class="flex-shrink-0 p-3 bg-secondary" style="width: 280px;height:97vh;">
-    <a href="{% url 'dashboard:top' %}" class="d-flex align-items-center pb-3 mb-3 link-body-emphasis text-decoration-none border-bottom">
-        <svg class="bi me-2" width="30" height="24"><use xlink:href="#bootstrap"/></svg>
-        <span class="fs-5 fw-semibold text-light">ダッシュボード</span>
-    </a>
-    <ul class="list-unstyled ps-0">
-        <li class="mb-1">
-            <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#home-collapse" aria-expanded="true">
-            Demo APP
-            </button>
-            <div class="collapse show" id="home-collapse">
-                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li><a href="{% url 'register:register_user_index' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">ユーザーマスタ</a></li>
-                    <li><a href="{% url 'demo_app:item_mst_index' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">アイテムマスタ</a></li>
-                    <li><a href="{% url 'demo_app:ajax_test' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">Ajaxテスト</a></li>
-                </ul>
-            </div>
-        </li>
-        {% if user.privilege == PRIVILEGE_ADMIN %}
-        <li class="mb-1">
-            <button class="btn btn-toggle d-inline-flex align-items-center rounded border-0" data-bs-toggle="collapse" data-bs-target="#orders-collapse" aria-expanded="false">
-            特権ユーザー専用
-            </button>
-            <div class="collapse" id="orders-collapse">
-                <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                    <li><a href="{% url 'login:access_log' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">ログイン履歴</a></li>
-                </ul>
-            </div>
-        </li>
-        {% endif %}
-        <li class="border-top my-3"></li>
-        <li class="mb-1">
-            <ul class="btn-toggle-nav list-unstyled fw-normal pb-1 small">
-                <li><a href="#" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">設定</a></li>
-                <li><a href="{% url 'register:register_user_change_password' %}" class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light">パスワード変更</a></li>
-                <li>
-                    <form action="{% url 'logout' %}" method="POST" name="logout_form">
-                        {% csrf_token %}
-                        <a class="link-body-emphasis d-inline-flex text-decoration-none rounded text-light" href="javascript:logout_form.submit()">ログアウト</a>
-                    </form>
-                </li>
-            </ul>
-        </li>
-    </ul>
-</div>
+  <div class="sidebar border border-right col-md-3 col-lg-2 p-0 bg-body-tertiary">
+    <div class="offcanvas-lg offcanvas-end bg-body-tertiary" tabindex="-1" id="sidebarMenu" aria-labelledby="sidebarMenuLabel">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="sidebarMenuLabel">Company name</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebarMenu" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body d-md-flex flex-column p-0 pt-lg-3 overflow-y-auto">
+        <ul class="nav flex-column">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2 active" aria-current="page" href="#">
+              <svg class="bi">
+                <use xlink:href="#house-fill" />
+              </svg>ダッシュボード
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:register_user_index' %}">
+              <svg class="bi">
+                <use xlink:href="#people" />
+              </svg>ユーザーマスタ
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'demo_app:item_mst_index' %}">
+              <svg class="bi">
+                <use xlink:href="#cart" />
+              </svg>アイテムマスタ
+            </a>
+          </li>
+        </ul>
+
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+          <span>管理者メニュー</span>
+          <a class="link-secondary" href="#" aria-label="Add a new report">
+            <svg class="bi">
+              <use xlink:href="#plus-circle" />
+            </svg>
+          </a>
+        </h6>
+        <ul class="nav flex-column mb-auto">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'login:access_log' %}">
+              <svg class="bi">
+                <use xlink:href="#file-earmark-text" />
+              </svg>ログイン履歴
+            </a>
+          </li>
+        </ul>
+
+        <hr class="my-3" />
+
+        <ul class="nav flex-column mb-auto">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:register_user_change_password' %}">
+              <svg class="bi">
+                <use xlink:href="#file-earmark-text" />
+              </svg>パスワード再設定
+            </a>
+          </li>
+          <li class="nav-item">
+            <form action="{% url 'logout' %}" method="POST" name="logout_form">
+              {% csrf_token %}
+              <a class="nav-link d-flex align-items-center gap-2" href="javascript:logout_form.submit()">
+                <svg class="bi">
+                  <use xlink:href="#door-closed" />
+                </svg>ログアウト
+              </a>
+            </form>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
 {% endif %}
