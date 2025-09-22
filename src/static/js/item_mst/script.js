@@ -63,14 +63,14 @@ $(function () {
                     }, false);
                 }
                 return xhr;
-            },
-            success: function (response) {
-                alert("アップロード完了: " + response.message);
-                location.reload();
-            },
-            error: function () {
-                alert("アップロード失敗");
             }
+        })
+        .done(function(response) {
+            alert("アップロード完了: " + response.message);
+            location.reload();
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            alert(['アップロード失敗:', jqXHR.responseJSON.error].join('\n'));
         });
     });
 

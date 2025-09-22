@@ -14,7 +14,7 @@ from openpyxl import Workbook
 from django.shortcuts import redirect
 
 # 出力データカラム
-OUTPUT_DATA_COLUMNS = ['item_cd', 'item_nm', 'category', 'description', 'price'] + Common.COMMON_DATA_COLUMNS
+DATA_COLUMNS = ['item_cd', 'item_nm', 'category', 'description', 'price'] + Common.COMMON_DATA_COLUMNS
 
 
 class ItemList(generic.ListView, generic.edit.ModelFormMixin):
@@ -229,7 +229,7 @@ class ItemExportCSV(generic.TemplateView):
         response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
         # ヘッダの書き込み
         writer = csv.writer(response)
-        writer.writerow(OUTPUT_DATA_COLUMNS)
+        writer.writerow(DATA_COLUMNS)
         # データの書き込み
         for rec in data:
             writer.writerow([
@@ -261,6 +261,15 @@ class ItemImportCSV(generic.TemplateView):
         decoded_file = decoded_data.splitlines()
         reader = csv.DictReader(decoded_file)
 
+        # ヘッダチェック
+        expected_headers = DATA_COLUMNS
+        actual_headers = reader.fieldnames
+
+        if actual_headers is None or any(h not in actual_headers for h in expected_headers):
+            return JsonResponse({
+                "error": f"CSVヘッダが正しくありません。正常: {expected_headers}, 実際: {actual_headers}"
+            }, status=400)
+
         count = 0
         for row in reader:
             try:
@@ -268,18 +277,16 @@ class ItemImportCSV(generic.TemplateView):
             except Category.DoesNotExist:
                 category = None
 
-            print(f'------>: {row}')
-
-            # Item.objects.update_or_create(
-            #     item_cd=row["item_cd"],
-            #     defaults={
-            #         "item_nm": row["item_nm"],
-            #         "category": category,
-            #         "description": row.get("description", ""),
-            #         "price": row.get("price") or 0,
-            #         "update_user": request.user,
-            #     }
-            # )
+            Item.objects.update_or_create(
+                item_cd=row["item_cd"],
+                defaults={
+                    "item_nm": row["item_nm"],
+                    "category": category,
+                    "description": row.get("description", ""),
+                    "price": row.get("price") or 0,
+                    "update_user": request.user,
+                }
+            )
             count += 1
 
         return JsonResponse({"message": f"{count} 件をインポートしました"})
