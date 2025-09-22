@@ -23,8 +23,24 @@ class ProductListView(LoginRequiredMixin, generic.ListView):
     context_object_name = 'products'
     paginate_by = 20
 
+
     def get_queryset(self):
-        return Product.objects.filter(is_deleted=False).order_by('product_cd')
+        queryset = Product.objects.filter(is_deleted=False)
+
+        search = self.request.GET.get('search')
+        category = self.request.GET.get('search_product_category')
+
+        if search:
+            queryset = queryset.filter(
+                Q(product_cd__icontains=search) |
+                Q(product_nm__icontains=search) |
+                Q(description__icontains=search)
+            )
+
+        if category:
+            queryset = queryset.filter(product_category_id=category)
+
+        return queryset.order_by('product_cd')
     
     def get_context_data(self, **kwarg):
         '''
@@ -35,6 +51,8 @@ class ProductListView(LoginRequiredMixin, generic.ListView):
         '''
         context = super().get_context_data(**kwarg)
         context['search'] = self.request.GET.get('search') or ''
+        context['search_product_category'] = self.request.GET.get('search_product_category') or ''
+        context['categories'] = ProductCategory.objects.filter(is_deleted=False).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -183,7 +201,7 @@ def get_row(rec):
     return [
         rec.product_cd,
         rec.product_nm,
-        rec.category.category if rec.category else '',
+        rec.product_category.product_category_nm if rec.product_category else '',
         rec.description,
         rec.price
     ] + Common.get_common_columns(rec=rec)

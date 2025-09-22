@@ -1,16 +1,14 @@
 from django.db import models
 from config.base import BaseModel
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
-from datetime import datetime
-from django.utils import timezone
+from datetime import date
 
 
 class Product(BaseModel):
-    DEFAULT_START = timezone.make_aware(datetime(1900, 1, 1))
-    DEFAULT_END = timezone.make_aware(datetime(9999, 12, 31))
-    
+    DEFAULT_START = date(1900, 1, 1)
+    DEFAULT_END = date(9999, 12, 31)
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -38,8 +36,8 @@ class Product(BaseModel):
     )
     description = models.TextField(blank=True, null=True, verbose_name='商品説明')
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="価格")
-    start_date = models.DateTimeField(default=DEFAULT_START, verbose_name='適用開始日')
-    end_date = models.DateTimeField(default=DEFAULT_END, verbose_name='適用終了日')
+    start_date = models.DateField(default=DEFAULT_START, verbose_name='適用開始日')
+    end_date = models.DateField(default=DEFAULT_END, verbose_name='適用終了日')
 
     def __str__(self):
         return f'{self.product_nm}({self.product_cd})'
@@ -49,9 +47,9 @@ class Product(BaseModel):
 
     def save(self, *args, **kwargs):
         if self.start_date is None:
-            self.start_date = timezone.make_aware(datetime(1900, 1, 1))
+            self.start_date = self.DEFAULT_START
         if self.end_date is None:
-            self.end_date = timezone.make_aware(datetime(9999, 12, 31))
+            self.end_date = self.DEFAULT_END
         super().save(*args, **kwargs)
 
 
