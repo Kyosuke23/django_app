@@ -70,7 +70,11 @@ $(function () {
             location.reload();
         })
         .fail(function(jqXHR, textStatus, errorThrown) {
-            alert(['アップロード失敗:', jqXHR.responseJSON.error].join('\n'));
+            $(".progress-bar")
+                .removeClass("bg-success")
+                .addClass("bg-danger")
+                .text("Import時にエラー発生");
+            alert(['アップロード失敗:', jqXHR.responseJSON?.error || ''].join('\n'));
         });
     });
 
