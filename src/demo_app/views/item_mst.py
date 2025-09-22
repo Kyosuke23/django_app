@@ -1,5 +1,5 @@
 from django.views import generic
-from ..views.base import CSVImportBaseView, CSVExportBaseView, ExcelExportBaseView
+from config.base import CSVImportBaseView, CSVExportBaseView, ExcelExportBaseView
 from ..models.item_mst import Item, Category
 from ..form import ItemCreationForm
 from django.urls import reverse
