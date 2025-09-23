@@ -6,9 +6,6 @@ from datetime import date
 
 
 class Product(BaseModel):
-    DEFAULT_START = date(1900, 1, 1)
-    DEFAULT_END = date(9999, 12, 31)
-
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -34,10 +31,10 @@ class Product(BaseModel):
         null=True,
         verbose_name='商品カテゴリ'
     )
-    description = models.TextField(blank=True, null=True, verbose_name='商品説明')
     price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="価格")
-    start_date = models.DateField(default=DEFAULT_START, verbose_name='適用開始日')
-    end_date = models.DateField(default=DEFAULT_END, verbose_name='適用終了日')
+    start_date = models.DateField(verbose_name='適用開始日')
+    end_date = models.DateField(verbose_name='適用終了日')
+    description = models.TextField(blank=True, null=True, verbose_name='商品説明')
 
     def __str__(self):
         return f'{self.product_nm}({self.product_cd})'

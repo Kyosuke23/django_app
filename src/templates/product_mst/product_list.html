@@ -26,6 +26,9 @@
   </div>
 </div>
 
+{# メッセージ #}
+{% include 'layout/message.html' %}
+
 {# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'product_mst:product_list' %}">
   {% csrf_token %}
@@ -62,9 +65,7 @@
     {# 登録画面リンク #}
     {% if user.privilege <= PRIVILEGE_EDITOR %}
     <div class="col d-flex justify-content-end">
-      <a class="btn btn-outline-primary"
-         href="{% url 'product_mst:product_create' %}"
-         data-bs-toggle="modal" data-bs-target="#create-Modal">
+      <a class="btn btn-outline-primary" href="{% url 'product_mst:product_create' %}">
         + 新規登録
       </a>
     </div>
@@ -92,6 +93,7 @@
         <th scope="col">価格</th>
         <th scope="col">適用開始日</th>
         <th scope="col">適用終了日</th>
+        <th scope="col">操作</th>
       </tr>
     </thead>
     <tbody>
@@ -107,6 +109,13 @@
         </td>
         <td>{{ product.start_date }}</td>
         <td>{{ product.end_date }}</td>
+        <td>
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
+          <a href="{% url 'product_mst:product_update' product.id %}" class="btn btn-sm btn-outline-secondary">
+            編集
+          </a>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

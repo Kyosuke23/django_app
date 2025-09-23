@@ -1,0 +1,36 @@
+{% extends "layout/base.html" %}
+{% load static %}
+{% block content %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">商品削除確認</h1>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <p>以下の商品を削除してもよろしいですか？（論理削除され、一覧からは表示されなくなります）</p>
+
+    <ul class="list-group mb-3">
+      <li class="list-group-item"><strong>商品コード：</strong> {{ object.product_cd }}</li>
+      <li class="list-group-item"><strong>商品名称：</strong> {{ object.product_nm }}</li>
+      <li class="list-group-item"><strong>商品カテゴリ：</strong> {{ object.product_category }}</li>
+      <li class="list-group-item"><strong>価格：</strong> {{ object.price }}</li>
+      <li class="list-group-item"><strong>適用開始日：</strong> {{ object.start_date }}</li>
+      <li class="list-group-item"><strong>適用終了日：</strong> {{ object.end_date }}</li>
+    </ul>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="d-flex justify-content-between">
+        <div>
+          <a href="{% url 'product_mst:product_list' %}" class="btn btn-outline-secondary me-2">一覧へ戻る</a>
+          <a href="{% url 'product_mst:product_detail' object.id %}" class="btn btn-outline-secondary">詳細へ戻る</a>
+        </div>
+        <button type="submit" class="btn btn-danger"
+                onclick="return confirm('本当に削除しますか？');">削除する</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

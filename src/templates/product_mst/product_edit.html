@@ -1,0 +1,89 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block content %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+  <h1 class="h2">
+    {% if is_update %}商品マスタ編集{% else %}商品マスタ登録{% endif %}
+  </h1>
+</div>
+
+<div class="container-sm">
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <form method="post"
+            action="{% if is_update %}
+                      {% url 'product_mst:product_update' object.id %}
+                    {% else %}
+                      {% url 'product_mst:product_create' %}
+                    {% endif %}">
+        {% csrf_token %}
+        <div class="row g-3">
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              {{ form.product_cd }}
+              <label for="id_product_cd">商品コード</label>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="form-floating">
+              {{ form.product_nm }}
+              <label for="id_product_nm">商品名称</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              {{ form.product_category }}
+              <label for="id_product_category">商品カテゴリ</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              {{ form.price }}
+              <label for="id_price">価格</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              {{ form.start_date }}
+              <label for="id_start_date">適用開始日</label>
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <div class="form-floating">
+              {{ form.end_date }}
+              <label for="id_end_date">適用終了日</label>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="form-floating">
+              {{ form.description }}
+              <label for="id_description">説明文</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'product_mst:product_list' %}" class="btn btn-outline-secondary">戻る</a>
+          <div>
+            <button type="submit" class="btn btn-primary px-4">保存</button>
+            {% if object %}
+              <a href="{% url 'product_mst:product_delete' object.id %}"
+                 class="btn btn-danger px-4">削除</a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

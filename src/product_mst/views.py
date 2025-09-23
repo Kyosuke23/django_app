@@ -1,10 +1,11 @@
 from django.views import generic
 from django.urls import reverse_lazy
-from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import Product, ProductCategory
+from .form import ProductForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from django.db.models import Q
+from django.contrib import messages
 
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
@@ -14,12 +15,12 @@ DATA_COLUMNS = ['product_cd', 'product_nm', 'product_category', 'description', '
 # Product CRUD
 # -----------------------------
 
-class ProductListView(LoginRequiredMixin, generic.ListView):
+class ProductListView(generic.ListView):
     '''
     Product 一覧
     '''
     model = Product
-    template_name = 'product/product_list.html'
+    template_name = 'product_mst/product_list.html'
     context_object_name = 'products'
     paginate_by = 20
 
@@ -57,23 +58,28 @@ class ProductListView(LoginRequiredMixin, generic.ListView):
         return context
 
 
-class ProductDetailView(LoginRequiredMixin, generic.DetailView):
+class ProductDetailView(generic.DetailView):
     '''
     Product 詳細
     '''
     model = Product
-    template_name = 'product/product_detail.html'
+    template_name = 'product_mst/product_detail.html'
     context_object_name = 'product'
 
 
-class ProductCreateView(LoginRequiredMixin, generic.CreateView):
+class ProductCreateView(generic.CreateView):
     '''
     Product 作成
     '''
     model = Product
-    fields = ['product_cd', 'product_nm', 'category', 'description', 'price', 'start_date', 'end_date']
-    template_name = 'product/product_form.html'
-    success_url = reverse_lazy('product:product_list')
+    form_class = ProductForm
+    template_name = 'product_mst/product_edit.html'
+    success_url = reverse_lazy('product_mst:product_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_update'] = False
+        return context
 
     def form_valid(self, form):
         form.instance.create_user = self.request.user
@@ -81,28 +87,35 @@ class ProductCreateView(LoginRequiredMixin, generic.CreateView):
         return super().form_valid(form)
 
 
-class ProductUpdateView(LoginRequiredMixin, generic.UpdateView):
+class ProductUpdateView(generic.UpdateView):
     '''
     Product 更新
     '''
     model = Product
-    fields = ['product_cd', 'product_nm', 'category', 'description', 'price', 'start_date', 'end_date', 'is_deleted']
-    template_name = 'product/product_form.html'
-    success_url = reverse_lazy('product:product_list')
+    form_class = ProductForm
+    template_name = 'product_mst/product_edit.html'
+    success_url = reverse_lazy('product_mst:product_list')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_update'] = True
+        return context
 
     def form_valid(self, form):
         form.instance.update_user = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        messages.success(self.request, f'商品「{form.instance.product_nm}」を更新しました。')
+        return response
 
 
-class ProductDeleteView(LoginRequiredMixin, generic.DeleteView):
+class ProductDeleteView(generic.DeleteView):
     '''
     Product 削除
     - 論理削除したい場合は DeleteView を使わずに UpdateView 内で is_deleted フラグを立てる
     '''
     model = Product
-    template_name = 'product/product_confirm_delete.html'
-    success_url = reverse_lazy('product:product_list')
+    template_name = 'product_mst/product_confirm_delete.html'
+    success_url = reverse_lazy('product_mst:product_list')
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -110,6 +123,7 @@ class ProductDeleteView(LoginRequiredMixin, generic.DeleteView):
         self.object.is_deleted = True
         self.object.update_user = self.request.user
         self.object.save()
+        messages.success(self.request, f'商品「{self.object.product_nm}」を削除しました。')
         return super().delete(request, *args, **kwargs)
 
 class ExportExcel(ExcelExportBaseView):
@@ -171,11 +185,11 @@ class ImportCSV(CSVImportBaseView):
         if product_cd in existing:
             return None, f'{idx}行目: product_cd "{product_cd}" は既に存在します'
 
-        category_name = row.get('category')
+        category_name = row.get('product_category')
         try:
             category = ProductCategory.objects.get(category=category_name)
         except ProductCategory.DoesNotExist:
-            return None, f'{idx}行目: category "{category_name}" が存在しません'
+            return None, f'{idx}行目: product_category "{category_name}" が存在しません'
 
         try:
             price = int(price) if price else 0
