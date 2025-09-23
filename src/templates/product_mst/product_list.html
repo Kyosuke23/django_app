@@ -60,7 +60,8 @@
         <thead class="table-dark sticky-top">
             <th>商品コード</th>
             <th>商品名称</th>
-            <th>カテゴリ</th>
+            <th>商品カテゴリ</th>
+            <th>説明文</th>
             <th>価格</th>
             <th>適用開始日</th>
             <th>適用終了日</th>
@@ -71,6 +72,7 @@
                 <td>{{ product.product_cd }}</td>
                 <td>{{ product.product_nm|default_if_none:'' }}</td>
                 <td>{{ product.product_category.product_category_nm|default_if_none:'' }}</td>
+                <td>{{ product.description }}</td>
                 <td>
                     {% if product.price %}¥{% endif %}
                     {{ product.price|default_if_none:''|intcomma }}

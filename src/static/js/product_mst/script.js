@@ -1,5 +1,4 @@
 $(function () {
-
     // 出力ボタンにイベントリスナーを設定
     // 出力ボタンはtype=buttonのためJSでイベントを発火（検索フォームにフォーカス時にEnterキーで検索処理を実行するため）
     document.querySelectorAll('.export-btn').forEach(btn => {
