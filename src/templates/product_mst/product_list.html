@@ -3,88 +3,118 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-{# 検索 & 登録画面リンク #}
-<form id="search_form" method="get" action="{% url 'product_mst:product_list' %}">
-    {% csrf_token %}
-    {# ページタイトル #}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">商品マスタ管理画面</h1>
 
-        <!-- ボタンエリア -->
-        <div class="d-flex gap-2">
-            <input type="file" id="file-input" name="file" accept=".csv" style="display:none;">
-            <input type="button" id="import-btn" class="btn btn-outline-secondary" data-action="{% url 'product_mst:import_csv' %}" value="IMPORT">
-            <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'product_mst:export_csv' %}">CSV</button>
-            <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'product_mst:export_excel' %}">Excel</button>
-        </div>
-    </div>
-    {# 検索フォーム #}
-    <div class="row mb-3">
-        {# 検索キーワード #}
-        <div class="col col-md-3">
-            <input type="text" name="search" class="form-control" value="{{ search }}" placeholder="キーワードを入力してください">
-        </div>
-        <div class="col col-md-1">
-            <select class="form-control" name="search_product_category">
-                <option value="">-- 全カテゴリ --</option>
-                {% for cat in categories %}
-                <option value="{{ cat.id }}" {% if search_product_category == cat.id|stringformat:"s" %}selected{% endif %}>
-                    {{ cat.product_category_nm }}
-                </option>
-                {% endfor %}
-            </select>
-        </div>
-        {# 検索ボタン #}
-        <div class="col">
-            <input type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'product_mst:product_list' %}" value="検索">
-        </div>
-        {# 登録画面リンク #}
-        {% if user.privilege <= PRIVILEGE_EDITOR %}
-        <div class="col d-flex justify-content-end">
-            <a class="btn btn-outline-primary" href="{% url 'product_mst:product_create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
-        </div>
-        {% endif %}
-    </div>
-</form>
-{# プログレスバー #}
-<div class="progress mt-3" style="height: 25px; display: none;">
-  <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;">0%</div>
+{# ページタイトル & 操作用ボタン #}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">商品マスタ管理画面</h1>
+
+  {# インポート/エクスポート用のボタンエリア #}
+  <div class="d-flex gap-2">
+    <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+    <button type="button" id="import-btn" class="btn btn-outline-secondary"
+            data-action="{% url 'product_mst:import_csv' %}">
+      IMPORT
+    </button>
+    <button type="button" class="btn btn-outline-secondary export-btn"
+            data-action="{% url 'product_mst:export_csv' %}">
+      CSV
+    </button>
+    <button type="button" class="btn btn-outline-secondary export-btn"
+            data-action="{% url 'product_mst:export_excel' %}">
+      Excel
+    </button>
+  </div>
 </div>
+
+{# 検索フォーム #}
+<form id="search_form" method="get" action="{% url 'product_mst:product_list' %}">
+  {% csrf_token %}
+  <div class="row mb-3 align-items-center">
+
+    {# 検索キーワード #}
+    <div class="col col-md-3">
+      <label for="search" class="form-label visually-hidden">キーワード</label>
+      <input id="search" type="text" name="search" class="form-control"
+             value="{{ search }}" placeholder="キーワードを入力してください">
+    </div>
+
+    {# カテゴリ選択 #}
+    <div class="col col-md-2">
+      <label for="search_product_category" class="form-label visually-hidden">カテゴリ</label>
+      <select id="search_product_category" class="form-control" name="search_product_category">
+        <option value="">-- 全カテゴリ --</option>
+        {% for cat in categories %}
+        <option value="{{ cat.id }}" {% if search_product_category == cat.id|stringformat:"s" %}selected{% endif %}>
+          {{ cat.product_category_nm }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {# 検索ボタン #}
+    <div class="col">
+      <button type="submit" class="btn btn-primary search_form_btn"
+              data-action="{% url 'product_mst:product_list' %}">
+        検索
+      </button>
+    </div>
+
+    {# 登録画面リンク #}
+    {% if user.privilege <= PRIVILEGE_EDITOR %}
+    <div class="col d-flex justify-content-end">
+      <a class="btn btn-outline-primary"
+         href="{% url 'product_mst:product_create' %}"
+         data-bs-toggle="modal" data-bs-target="#create-Modal">
+        + 新規登録
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{# プログレスバー #}
+{% include 'layout/progress_bar.html' %}
+
 {# 件数表示 #}
 <p class="mt-2">
-    {{ paginator.count }}件中　{{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
+  {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
 </p>
-{# 検索結果表示 #} 
+
+{# 検索結果表示 #}
 <div class="result-table overflow-auto table-responsive">
-    <table class="table table-hover table-striped text-nowrap">
-        <thead class="table-dark sticky-top">
-            <th>商品コード</th>
-            <th>商品名称</th>
-            <th>商品カテゴリ</th>
-            <th>説明文</th>
-            <th>価格</th>
-            <th>適用開始日</th>
-            <th>適用終了日</th>
-        </thead>
-        <tbody>
-            {% for product in products %}
-            <tr class="align-middle">
-                <td>{{ product.product_cd }}</td>
-                <td>{{ product.product_nm|default_if_none:'' }}</td>
-                <td>{{ product.product_category.product_category_nm|default_if_none:'' }}</td>
-                <td>{{ product.description }}</td>
-                <td>
-                    {% if product.price %}¥{% endif %}
-                    {{ product.price|default_if_none:''|intcomma }}
-                </td>
-                <td>{{ product.start_date }}</td>
-                <td>{{ product.end_date }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+  <table class="table table-hover table-striped text-nowrap">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th scope="col">商品コード</th>
+        <th scope="col">商品名称</th>
+        <th scope="col">商品カテゴリ</th>
+        <th scope="col">説明文</th>
+        <th scope="col">価格</th>
+        <th scope="col">適用開始日</th>
+        <th scope="col">適用終了日</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr class="align-middle">
+        <td>{{ product.product_cd }}</td>
+        <td>{{ product.product_nm|default_if_none:'' }}</td>
+        <td>{{ product.product_category.product_category_nm|default_if_none:'' }}</td>
+        <td>{{ product.description }}</td>
+        <td>
+          {% if product.price %}¥{% endif %}
+          {{ product.price|default_if_none:''|intcomma }}
+        </td>
+        <td>{{ product.start_date }}</td>
+        <td>{{ product.end_date }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+
 {# ページネーション #}
 {% include 'layout/pagination.html' %}
+
 <script type="text/javascript" src="{% static 'js/product_mst/script.js' %}"></script>
 {% endblock %}

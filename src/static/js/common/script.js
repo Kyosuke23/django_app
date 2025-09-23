@@ -1,78 +1,85 @@
-$(function() {
+$(function () {
     /**
      * フラッシュメッセージ表示処理
      * @param {*} options 
      * @returns フラッシュメッセージ
      */
-    $.fn.flash_message = function(options) {
-        //デフォルト値
+    $.fn.flash_message = function (options) {
+        // デフォルト値
         options = $.extend({
             text: '完了しました',
             time: 3000,
             how: 'before',
-            class_name: ''
+            class_name: 'info'
         }, options);
 
-        return $(this).each(function() {
-            //指定したセレクタを探して取得
-            if ($(this).find('.flash_messages').get(0)) {
-                $(this).find('.flash_messages').remove();
+        return $(this).each(function () {
+            // 既存のメッセージを削除
+            if ($(this).find('.flash_messages').length) {
+                $(this).find('.flash_messages').fadeOut(200, function () {
+                    $(this).remove();
+                });
             }
 
+            // 新しいメッセージ作成
             var message = $('<span />', {
                 'class': 'flash_messages ' + options.class_name,
                 text: options.text
-            //フェードイン表示
             });
 
             $(this)[options.how](message).addClass('show');
-            //delayさせてからフェードアウト
-            message.delay(options.time).queue(function(){
+
+            // 指定時間後にフェードアウト
+            message.delay(options.time).queue(function () {
                 $(this).parents('#flash_message_area').removeClass('show');
+                $(this).remove();
             });
         });
     };
 
     /**
      * データ登録処理（非同期）
-     * @param {*} form 
+     * @param {*} form jQueryオブジェクト
      */
-    $.fn.post_data = function(form) {
-        // 非同期でPOST通信
+    $.fn.post_data = function (form) {
+        // 既存エラーのクリア
+        form.find('.is-invalid').removeClass('is-invalid');
+        form.find('.errorlist').remove();
+
         $.ajax({
-          url: form.prop('action'),
-          method: form.prop('method'),
-          data: form.serialize(),
-          timeout: 10000,
-          dataType: 'text',
+            url: form.prop('action'),
+            method: form.prop('method'),
+            data: form.serialize(),
+            timeout: 10000,
+            dataType: 'json',
         })
-        // 成功時の処理
-        .done(function(data) {
-            // バリデーションエラーとなったフィールドを取得
-            errors = JSON.parse(data)['errors'];
-            // エラーがなければ検索処理にリダイレクト
-            if (Object.keys(errors).length == 0) {
-                // リダイレクト先設定
-                window.location.href = JSON.parse(data)['success_url'];
-            }
-            // エラーフィールドのループ
-            for (let key in errors) {
-                // エラーフィールドを取得
-                let errorField = $(`input[name='${key}']`);
-                // エラーフィールドに警告色を追加
-                errorField.addClass('is-invalid');
-                // エラーメッセージを出力（エラーが複数ある場合は先頭のエラーのみ表示）
-                errorField.after(
-                    '<ul class="errorlist">'
-                    +   '<li>' + errors[key][0] + '</li>'
-                    + '</ul>'
-                );
-            }
-        })
-        // 失敗時の処理
-        .fail(function() {
-            console.log('ajax error');
-        });
+            // 成功時の処理
+            .done(function (data) {
+                let errors = data.errors || {};
+                if (Object.keys(errors).length === 0) {
+                    // リダイレクト
+                    window.location.href = data.success_url;
+                    return;
+                }
+
+                // エラーフィールドのループ
+                for (let key in errors) {
+                    let errorField = $(`input[name='${key}']`);
+                    errorField.addClass('is-invalid');
+                    errorField.after(
+                        '<ul class="errorlist"><li>' + errors[key][0] + '</li></ul>'
+                    );
+                }
+            })
+            // 失敗時の処理
+            .fail(function () {
+                $('#flash_message_area').flash_message({
+                    text: 'サーバー通信に失敗しました',
+                    class_name: 'error',
+                    how: 'append',
+                    time: 4000
+                });
+            });
     };
 
     // フラッシュメッセージの表示判定 & 実行
@@ -85,17 +92,16 @@ $(function() {
 
     /**
      * データのimport処理（非同期）
-     * @returns 
+     * @param {*} input type=file のDOM
      */
-    $.fn.import_data = function(form) {
-        let file = form.files[0]
+    $.fn.import_data = function (input) {
+        let file = input.files[0];
         if (!file) return;
 
         let formData = new FormData();
         formData.append('file', file);
         formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
 
-        // テンプレートから渡された action-url を取得
         let url = $('#import-btn').data('action');
 
         $.ajax({
@@ -110,34 +116,48 @@ $(function() {
                     xhr.upload.addEventListener('progress', function (e) {
                         if (e.lengthComputable) {
                             var percent = Math.round((e.loaded / e.total) * 100);
-                            $('.progress').show();
-                            $('#progress-bar').css('width', percent + '%').text(percent + '%');
+                            $('.progress').removeClass('d-none');
+                            $('#progress-bar')
+                                .css('width', percent + '%')
+                                .attr('aria-valuenow', percent)
+                                .text(percent + '%');
                         }
                     }, false);
                 }
                 return xhr;
             }
         })
-        .done(function(response) {
-            alert('アップロード完了: ' + response.message);
-            location.reload();
-        })
-        .fail(function(jqXHR, textStatus, errorThrown) {
-            $('.progress-bar')
-                .removeClass('bg-success')
-                .addClass('bg-danger')
-                .text('Import時にエラー発生');
-            alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
-        });
+            .done(function (response) {
+                $('#flash_message_area').flash_message({
+                    text: 'アップロード完了: ' + response.message,
+                    class_name: 'success',
+                    how: 'append',
+                    time: 2000
+                });
+                setTimeout(() => location.reload(), 2000);
+            })
+            .fail(function (jqXHR) {
+                $('.progress-bar')
+                    .removeClass('bg-success')
+                    .addClass('bg-danger')
+                    .text('Import時にエラー発生');
+
+                $('#flash_message_area').flash_message({
+                    text: 'アップロード失敗: ' + (jqXHR.responseJSON?.error || '不明なエラー'),
+                    class_name: 'error',
+                    how: 'append',
+                    time: 5000
+                });
+            });
     };
 
-    // AjaxのPOST通信に必要な処理 /////////////////////////////////
-    $.fn.getCookie = function(name) {
+    // CSRFトークン取得
+    $.fn.getCookie = function (name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
             let cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
-                let cookie = jQuery.trim(cookies[i]);
+                let cookie = $.trim(cookies[i]);
                 if (cookie.substring(0, name.length + 1) === (name + '=')) {
                     cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
@@ -146,8 +166,17 @@ $(function() {
         }
         return cookieValue;
     };
-    $.fn.csrfSafeMethod = function(method) {
+
+    $.fn.csrfSafeMethod = function (method) {
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
-    }
-    ///////////////////////////////////////////////////////////
+    };
+
+    // 全てのAjax通信にCSRFトークンを自動付与
+    $.ajaxSetup({
+        beforeSend: function (xhr, settings) {
+            if (!$.fn.csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", $.fn.getCookie('csrftoken'));
+            }
+        }
+    });
 });

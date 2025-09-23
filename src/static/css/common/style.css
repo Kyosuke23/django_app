@@ -1,40 +1,42 @@
 html {
   height: -webkit-fill-available;
+  height: stretch; /* Firefoxなどモダンブラウザ対応 */
 }
 
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  height: stretch;
 }
 
 .dropdown-toggle {
   outline: 0;
 }
 
-/* エラーメッセージの着色 */
-.errorlist>li {
+/* エラーメッセージ */
+.errorlist > li {
   color: red;
 }
 
 /* 検索結果テーブル */
 .result-table {
-  height: 75vh;
+  max-height: 75vh;
 }
 
-/* フラッシュメッセージ関連 */
+/* フラッシュメッセージ */
 #flash_message_area {
   opacity: 0;
-  position: absolute;
+  position: fixed;
   left: 50%;
   top: 20px;
   transform: translateX(-50%);
   transition: all 200ms ease-out;
   margin-top: 30px;
+  z-index: 1050; /* モーダルより上に出す */
 }
 
 #flash_message_area.show {
   opacity: 1;
-  top: 20px;
 }
 
 #flash_message_area .flash_messages {
@@ -44,12 +46,12 @@ body {
   font-size: 15px;
   padding: 10px 20px;
   color: #fff;
-  background-color: #86a3ff;
+  background-color: var(--bs-primary); /* Bootstrap変数を利用 */
   box-shadow: 1px 1px 2px 1px #ddd;
 }
 
 #flash_message_area .flash_messages.error {
-  background-color: #ff8e86;
+  background-color: var(--bs-danger); /* エラー用カラーを統一 */
 }
 
 /*
@@ -85,7 +87,7 @@ body {
 }
 
 .sidebar {
-  /* サイドバーのheightはヘッダのheightを引いた高さに設定 */
+  /* 固定heightではなくpaddingで調整するのも検討可 */
   height: calc(100vh - 34px);
 }
 
