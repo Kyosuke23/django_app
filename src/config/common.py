@@ -1,7 +1,6 @@
-import csv
-from django.http import HttpResponse
 import re
 from django.core.paginator import Page
+from datetime import datetime
 
 class Common:
     # 共通データカラムリスト
@@ -61,3 +60,11 @@ class Common:
             , update_user
             , updated_at
         ]
+        
+def parse_date(value, field_name, idx):
+    if not value:
+        return None, None
+    try:
+        return datetime.strptime(value, '%Y-%m-%d').date(), None
+    except ValueError:
+        return None, f'{idx}行目: {field_name} "{value}" は YYYY-MM-DD 形式で指定してください'

@@ -8,7 +8,6 @@ from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from datetime import datetime
 
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
@@ -54,14 +53,14 @@ class ProductListView(generic.ListView):
 
         return queryset.order_by('product_cd')
     
-    def get_context_data(self, **kwarg):
+    def get_context_data(self, **kwargs):
         """
         テンプレートに渡す追加コンテキスト
         - 検索条件を保持
         - カテゴリ一覧を提供
         - ページネーション情報を追加
         """
-        context = super().get_context_data(**kwarg)
+        context = super().get_context_data(**kwargs)
         context['search'] = self.request.GET.get('search') or ''
         context['search_product_category'] = self.request.GET.get('search_product_category') or ''
         context['categories'] = ProductCategory.objects.filter(is_deleted=False).order_by('id')
@@ -117,7 +116,7 @@ class ProductUpdateView(generic.UpdateView):
         """更新処理とフラッシュメッセージ"""
         form.instance.update_user = self.request.user
         response = super().form_valid(form)
-        messages.success(self.request, f'商品「{form.instance.product_nm}」を更新しました。')
+        product_message(self.request, '更新', self.object.product_nm)
         return response
 
 
@@ -136,7 +135,7 @@ class ProductDeleteView(generic.DeleteView):
         self.object.is_deleted = True
         self.object.update_user = self.request.user
         self.object.save()
-        messages.success(self.request, f'商品「{self.object.product_nm}」を削除しました。')
+        product_message(self.request, '削除', self.object.product_nm)
         return super().delete(request, *args, **kwargs)
 
 
@@ -172,7 +171,7 @@ class ProductCreateModalView(ProductCreateView):
         self.object.create_user = self.request.user
         self.object.update_user = self.request.user
         self.object.save()
-        messages.success(self.request, f'商品「{self.object.product_nm}」を登録しました。')
+        product_message(self.request, '登録', self.object.product_nm)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -180,9 +179,18 @@ class ProductCreateModalView(ProductCreateView):
     def form_invalid(self, form):
         """バリデーションエラー時（Ajax対応）"""
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            html = render_to_string(self.template_name, {'form': form}, self.request)
+            html = render_to_string(
+                self.template_name,
+                {
+                    'form': form,
+                    'form_action': reverse('product_mst:product_create_modal'),
+                    'modal_title': '商品新規登録',
+                },
+                self.request
+            )
             return JsonResponse({'success': False, 'html': html})
         return super().form_invalid(form)
+
 
 
 class ProductUpdateModalView(ProductUpdateView):
@@ -213,7 +221,7 @@ class ProductUpdateModalView(ProductUpdateView):
         self.object = form.save(commit=False)
         self.object.update_user = self.request.user
         self.object.save()
-        messages.success(self.request, f'商品「{self.object.product_nm}」を更新しました。')
+        product_message(self.request, '更新', self.object.product_nm)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -221,7 +229,21 @@ class ProductUpdateModalView(ProductUpdateView):
     def form_invalid(self, form):
         """バリデーションエラー時（Ajax対応）"""
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            html = render_to_string(self.template_name, {'form': form}, self.request)
+            obj = getattr(self, 'object', None)
+            modal_title = f'商品更新: {obj.product_nm}' if obj else '商品更新'
+
+            html = render_to_string(
+                self.template_name,
+                {
+                    'form': form,
+                    'form_action': reverse(
+                        'product_mst:product_update_modal',
+                        kwargs={'pk': obj.pk} if obj else {}
+                    ),
+                    'modal_title': modal_title,
+                },
+                self.request
+            )
             return JsonResponse({'success': False, 'html': html})
         return super().form_invalid(form)
 
@@ -303,17 +325,16 @@ class ImportCSV(CSVImportBaseView):
             return None, f'{idx}行目: price "{price_val}" は数値である必要があります'
 
         # 適用開始日 / 適用終了日の変換
-        start_date_str = row.get('start_date')
-        end_date_str   = row.get('end_date')
-        try:
-            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
-        except ValueError:
-            return None, f'{idx}行目: start_date "{start_date_str}" は YYYY-MM-DD 形式で指定してください'
-
-        try:
-            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
-        except ValueError:
-            return None, f'{idx}行目: end_date "{end_date_str}" は YYYY-MM-DD 形式で指定してください'
+        start_date, err = Common.parse_date(row.get('start_date'), 'start_date', idx)
+        if err:
+            return None, err
+        end_date, err = Common.parse_date(row.get('end_date'), 'end_date', idx)
+        if err:
+            return None, err
+        
+        # 適用開始日 / 適用終了日の整合性チェック
+        if start_date and end_date and end_date < start_date:
+            return None, f'{idx}行目: 適用終了日が適用開始日より前の日付です'
 
         # Product オブジェクト生成
         obj = Product(
@@ -355,3 +376,7 @@ def search_data(request, query_set):
             Q(product_cd__icontains=keyword) | Q(product_nm__icontains=keyword)
         )
     return query_set
+
+def product_message(request, action, product_nm):
+    """商品操作の統一メッセージ"""
+    messages.success(request, f'商品「{product_nm}」を{action}しました。')

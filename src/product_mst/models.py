@@ -2,7 +2,7 @@ from django.db import models
 from config.base import BaseModel
 from django.urls import reverse
 from django.core.validators import RegexValidator
-from datetime import date
+from django.core.exceptions import ValidationError
 
 
 class Product(BaseModel):
@@ -40,15 +40,21 @@ class Product(BaseModel):
         return f'{self.product_nm}({self.product_cd})'
 
     def get_absolute_url(self):
-        return reverse('product:product_mst_update', kwargs={'pk': self.pk})
+        return reverse('product_mst:product_update', kwargs={'pk': self.pk})
+
+    def clean(self):
+        """
+        バリデーション:
+        ・適用終了日 < 適用開始日ならエラー
+        """
+        super().clean()
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValidationError({'end_date': '適用終了日は適用開始日以降の日付を指定してください。'})
 
     def save(self, *args, **kwargs):
-        if self.start_date is None:
-            self.start_date = self.DEFAULT_START
-        if self.end_date is None:
-            self.end_date = self.DEFAULT_END
+        # save の前に clean を呼んでバリデーション
+        self.full_clean()
         super().save(*args, **kwargs)
-
 
 class ProductCategory(BaseModel):
     class Meta:

@@ -195,7 +195,7 @@ $(function () {
                 if (data.success) {
                     location.reload();
                 } else {
-                    $form.parent().html(data.html);
+                    $modal.find('.modal-body').html(data.html);
                 }
             })
             .fail(function () {
