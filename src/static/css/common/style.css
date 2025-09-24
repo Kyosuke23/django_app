@@ -23,6 +23,11 @@ body {
   max-height: 75vh;
 }
 
+/* 登録・編集フォーム */
+.edit-area {
+  max-width: 800px;
+}
+
 /* フラッシュメッセージ */
 #flash_message_area {
   opacity: 0;

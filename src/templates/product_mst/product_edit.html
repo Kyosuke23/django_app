@@ -9,8 +9,8 @@
   </h1>
 </div>
 
-<div class="container-sm">
-  <div class="card shadow-sm">
+<div class="container-fluid">
+  <div class="card shadow-sm edit-area" style="max-width: 900px;">
     <div class="card-body">
       <form method="post"
             action="{% if is_update %}
@@ -19,60 +19,42 @@
                       {% url 'product_mst:product_create' %}
                     {% endif %}">
         {% csrf_token %}
-        <div class="row g-3">
 
-          <div class="col-md-3">
-            <div class="form-floating">
-              {{ form.product_cd }}
-              <label for="id_product_cd">商品コード</label>
-            </div>
-          </div>
-
-          <div class="col-md-6">
-            <div class="form-floating">
-              {{ form.product_nm }}
-              <label for="id_product_nm">商品名称</label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-floating">
-              {{ form.product_category }}
-              <label for="id_product_category">商品カテゴリ</label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-floating">
-              {{ form.price }}
-              <label for="id_price">価格</label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-floating">
-              {{ form.start_date }}
-              <label for="id_start_date">適用開始日</label>
-            </div>
-          </div>
-
-          <div class="col-md-3">
-            <div class="form-floating">
-              {{ form.end_date }}
-              <label for="id_end_date">適用終了日</label>
-            </div>
-          </div>
-
-          <div class="col-12">
-            <div class="form-floating">
-              {{ form.description }}
-              <label for="id_description">説明文</label>
-            </div>
-          </div>
-        </div>
+        <table class="table table-bordered align-middle">
+          <tbody>
+            <tr>
+              <th class="table-light col-3">商品コード</th>
+              <td>{{ form.product_cd }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">商品名称</th>
+              <td>{{ form.product_nm }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">商品カテゴリ</th>
+              <td>{{ form.product_category }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">価格</th>
+              <td>{{ form.price }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">適用開始日</th>
+              <td>{{ form.start_date }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">適用終了日</th>
+              <td>{{ form.end_date }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">説明文</th>
+              <td>{{ form.description }}</td>
+            </tr>
+          </tbody>
+        </table>
 
         <div class="d-flex justify-content-between mt-4">
-          <a href="{% url 'product_mst:product_list' %}" class="btn btn-outline-secondary">戻る</a>
+          <a href="{% url 'product_mst:product_list' %}" class="btn btn-outline-secondary">一覧へ戻る</a>
           <div>
             <button type="submit" class="btn btn-primary px-4">保存</button>
             {% if object %}

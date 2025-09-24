@@ -15,16 +15,8 @@
     <link rel="stylesheet" href="{% static 'css/common/style.css' %}">
 </head>
 <body>
-    <!-- 全画面オーバーレイ スピナー -->
-    <div id="loading-spinner"
-        class="d-none position-fixed top-0 start-0 w-100 h-100 
-                bg-dark bg-opacity-50 d-flex flex-column justify-content-center align-items-center"
-        style="z-index: 2000;">
-        <div class="spinner-border text-light mb-3" role="status" style="width: 4rem; height: 4rem;">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <button id="cancel-btn" class="btn btn-outline-light">キャンセル</button>
-    </div>
+    {# 全画面オーバーレイ・スピナー #}
+    {% include 'layout/spiner.html' %}
     {# Bootstrap Icons #}
     {% include 'layout/bi_list.html' %}
     {# フラッシュメッセージ #}
