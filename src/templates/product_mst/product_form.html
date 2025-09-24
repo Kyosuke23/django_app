@@ -1,0 +1,9 @@
+<div class="modal-header">
+  <h4 class="modal-title">{{ modal_title }}</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form method="post" id="productForm" action="{{ form_action }}">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit" class="btn btn-primary">保存</button>
+</form>

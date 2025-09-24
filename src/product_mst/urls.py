@@ -15,4 +15,7 @@ urlpatterns = [
     path("product/import/csv", views.ImportCSV.as_view(), name='import_csv'),
     path('product/export/csv', views.ExportCSV.as_view(), name='export_csv'),
     path('product/export/excel', views.ExportExcel.as_view(), name='export_excel'),
+    
+    path('product/modal/create/', views.ProductCreateModalView.as_view(), name='product_create_modal'),
+    path('product/<int:pk>/modal/update/', views.ProductUpdateModalView.as_view(), name='product_update_modal'),
 ]

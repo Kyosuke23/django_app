@@ -6,6 +6,9 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from django.db.models import Q
 from django.contrib import messages
+from django.http import JsonResponse
+from django.template.loader import render_to_string
+from django.urls import reverse
 
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
@@ -20,7 +23,7 @@ class ProductListView(generic.ListView):
     Product 一覧
     '''
     model = Product
-    template_name = 'product_mst/product_list.html'
+    template_name = 'product_mst/product_list_modal.html'
     context_object_name = 'products'
     paginate_by = 20
 
@@ -74,7 +77,7 @@ class ProductCreateView(generic.CreateView):
     model = Product
     form_class = ProductForm
     template_name = 'product_mst/product_edit.html'
-    success_url = reverse_lazy('product_mst:product_list')
+    success_url = reverse_lazy('product_mst:product_list_modal')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -94,7 +97,7 @@ class ProductUpdateView(generic.UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'product_mst/product_edit.html'
-    success_url = reverse_lazy('product_mst:product_list')
+    success_url = reverse_lazy('product_mst:product_list_modal')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -115,7 +118,7 @@ class ProductDeleteView(generic.DeleteView):
     '''
     model = Product
     template_name = 'product_mst/product_confirm_delete.html'
-    success_url = reverse_lazy('product_mst:product_list')
+    success_url = reverse_lazy('product_mst:product_list_modal')
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -125,6 +128,74 @@ class ProductDeleteView(generic.DeleteView):
         self.object.save()
         messages.success(self.request, f'商品「{self.object.product_nm}」を削除しました。')
         return super().delete(request, *args, **kwargs)
+    
+class ProductCreateModalView(ProductCreateView):
+    template_name = "product_mst/product_form.html"
+
+    def get(self, request, *args, **kwargs):
+        form = self.get_form()
+        html = render_to_string(
+            self.template_name,
+            {
+                "form": form,
+                "form_action": reverse("product_mst:product_create_modal"),
+                "modal_title": "商品新規登録",
+            },
+            request
+        )
+        return JsonResponse({"success": True, "html": html})
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.create_user = self.request.user
+        self.object.update_user = self.request.user
+        self.object.save()
+        messages.success(self.request, f'商品「{self.object.product_nm}」を登録しました。')
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": True})
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            html = render_to_string(self.template_name, {"form": form}, self.request)
+            return JsonResponse({"success": False, "html": html})
+        return super().form_invalid(form)
+
+
+class ProductUpdateModalView(ProductUpdateView):
+    template_name = "product_mst/product_form.html"
+
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        html = render_to_string(
+            self.template_name,
+            {
+                "form": form,
+                "form_action": reverse(
+                    "product_mst:product_update_modal", kwargs={"pk": self.object.pk}
+                ),
+                "modal_title": f"商品更新: {self.object.product_nm}",
+            },
+            request
+        )
+        return JsonResponse({"success": True, "html": html})
+
+    def form_valid(self, form):
+        self.object = form.save(commit=False)
+        self.object.update_user = self.request.user
+        self.object.save()
+        messages.success(self.request, f'商品「{self.object.product_nm}」を更新しました。')
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            return JsonResponse({"success": True})
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
+            html = render_to_string(self.template_name, {"form": form}, self.request)
+            return JsonResponse({"success": False, "html": html})
+        return super().form_invalid(form)
+
 
 class ExportExcel(ExcelExportBaseView):
     '''
@@ -215,6 +286,7 @@ class ImportCSV(CSVImportBaseView):
             price=price_val,
             start_date=start_date,
             end_date=end_date,
+            create_user=request.user,
             update_user=request.user
         )
         return obj, None

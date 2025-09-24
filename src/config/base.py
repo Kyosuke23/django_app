@@ -133,10 +133,6 @@ class CSVImportBaseView(View):
                 continue
             if obj:
                 objects_to_create.append(obj)
-                
-            print(f'-----> {row}')
-            import time
-            time.sleep(1)
 
         if errors:
             return JsonResponse({'error': 'CSVに問題があります', 'details': errors}, status=400)
