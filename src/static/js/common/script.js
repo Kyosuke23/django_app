@@ -96,7 +96,11 @@ $(function () {
 
         let url = $('#import-btn').data('action');
 
-        $.ajax({
+        // スピナー表示
+        let spinner = $('#loading-spinner');
+        spinner.removeClass('d-none');
+
+        let jqXHR = $.ajax({
             url: url,
             type: 'POST',
             data: formData,
@@ -119,17 +123,29 @@ $(function () {
                 return xhr;
             }
         })
-            .done(function (response) {
-                alert('アップロード完了: ' + response.message);
-                setTimeout(() => location.reload(), 2000);
-            })
-            .fail(function (jqXHR) {
-                $('.progress-bar')
-                    .removeClass('bg-success')
-                    .addClass('bg-danger')
-                    .text('Import時にエラー発生');
-                    alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
-            });
+        .done(function (response) {
+            alert('アップロード完了: ' + response.message);
+            spinner.addClass('d-none');
+            setTimeout(() => location.reload(), 2000);
+        })
+        .fail(function (jqXHR, textStatus) {
+            //  キャンセルボタンによる中断の時は何もしない
+            if (textStatus != 'abort') {
+                alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
+                spinner.addClass('d-none');
+            }
+        })
+        .always(function () {
+            spinner.addClass('d-none');  // 念のため always で非表示
+        });
+
+        // キャンセルボタン処理
+        $('#cancel-btn').off('click').on('click', function () {
+            if (jqXHR) {
+                jqXHR.abort();  // 通信を中断
+            }
+            spinner.addClass('d-none');
+        });
     };
 
     // フラッシュメッセージの表示判定 & 実行
@@ -164,7 +180,7 @@ $(function () {
     $.ajaxSetup({
         beforeSend: function (xhr, settings) {
             if (!$.fn.csrfSafeMethod(settings.type) && !this.crossDomain) {
-                xhr.setRequestHeader("X-CSRFToken", $.fn.getCookie('csrftoken'));
+                xhr.setRequestHeader('X-CSRFToken', $.fn.getCookie('csrftoken'));
             }
         }
     });

@@ -3,7 +3,6 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-
 {# ページタイトル & 操作用ボタン #}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
   <h1 class="h2">商品マスタ管理画面</h1>
@@ -72,9 +71,6 @@
     {% endif %}
   </div>
 </form>
-
-{# プログレスバー #}
-{% include 'layout/progress_bar.html' %}
 
 {# 件数表示 #}
 <p class="mt-2">

@@ -11,6 +11,7 @@ $(function () {
 
     // IMPORTボタンにイベントリスナーを設定
     $('#import-btn').click(function (e) {
+        e.preventDefault();
         $('#file-input').click();
     });
 
