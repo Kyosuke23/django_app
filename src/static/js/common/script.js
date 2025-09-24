@@ -82,14 +82,6 @@ $(function () {
             });
     };
 
-    // フラッシュメッセージの表示判定 & 実行
-    if ($('.flash_messages').length) {
-        $('#flash_message_area').flash_message({
-            text: $('.flash_messages').val(),
-            how: 'append'
-        });
-    }
-
     /**
      * データのimport処理（非同期）
      * @param {*} input type=file のDOM
@@ -128,12 +120,7 @@ $(function () {
             }
         })
             .done(function (response) {
-                $('#flash_message_area').flash_message({
-                    text: 'アップロード完了: ' + response.message,
-                    class_name: 'success',
-                    how: 'append',
-                    time: 2000
-                });
+                alert('アップロード完了: ' + response.message);
                 setTimeout(() => location.reload(), 2000);
             })
             .fail(function (jqXHR) {
@@ -144,6 +131,14 @@ $(function () {
                     alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
             });
     };
+
+    // フラッシュメッセージの表示判定 & 実行
+    if ($('.flash_messages').length) {
+        $('#flash_message_area').flash_message({
+            text: $('.flash_messages').val(),
+            how: 'append'
+        });
+    }
 
     // CSRFトークン取得
     $.fn.getCookie = function (name) {

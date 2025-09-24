@@ -41,12 +41,11 @@ body {
 
 #flash_message_area .flash_messages {
   display: inline-block;
-  width: 200px;
   text-align: center;
   font-size: 15px;
   padding: 10px 20px;
-  color: #fff;
-  background-color: var(--bs-primary); /* Bootstrap変数を利用 */
+  border-radius: 10px;
+  background-color: var(--bs-success-bg-subtle); /* Bootstrap変数を利用 */
   box-shadow: 1px 1px 2px 1px #ddd;
 }
 

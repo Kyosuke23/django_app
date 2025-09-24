@@ -1,10 +1,6 @@
 {% if messages %}
-  <div class="container mt-3">
+    <div id="flash_message_area" class="d-flex justify-content-center"></div>
     {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-        {{ message }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-      </div>
+    <input type="hidden" class="flash_messages {{ message.tags }}" value="{{ message }}">
     {% endfor %}
-  </div>
 {% endif %}
