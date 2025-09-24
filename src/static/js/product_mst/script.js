@@ -1,7 +1,7 @@
 $(function () {
     // エクスポートボタン
-    $(".export-btn").on("click", function () {
-      const url = $(this).data("action");
+    $('.export-btn').on('click', function () {
+      const url = $(this).data('action');
       if (url) {
         window.location.href = url;
       }

@@ -67,7 +67,7 @@ class CSVExportBaseView(View):
         data = self.get_queryset(request)
 
         # --- レスポンス準備 ---
-        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
+        response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f"attachment; filename*=UTF-8''{file_name}"
 
         writer = csv.writer(response)

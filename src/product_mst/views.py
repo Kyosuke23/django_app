@@ -8,6 +8,7 @@ from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse
 from django.template.loader import render_to_string
+from django.http import HttpResponseRedirect
 
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
@@ -68,13 +69,6 @@ class ProductListView(generic.ListView):
         return context
 
 
-class ProductDetailView(generic.DetailView):
-    """商品詳細画面"""
-    model = Product
-    template_name = 'product_mst/product_detail.html'
-    context_object_name = 'product'
-
-
 class ProductCreateView(generic.CreateView):
     """
     商品登録画面（通常遷移版）
@@ -94,6 +88,7 @@ class ProductCreateView(generic.CreateView):
         """作成者・更新者を設定して保存"""
         form.instance.create_user = self.request.user
         form.instance.update_user = self.request.user
+        product_message(self.request, '登録', form.instance.product_nm)
         return super().form_valid(form)
 
 
@@ -120,7 +115,7 @@ class ProductUpdateView(generic.UpdateView):
         return response
 
 
-class ProductDeleteView(generic.DeleteView):
+class ProductDeleteView(generic.View):
     """
     商品削除画面
     - 論理削除として is_deleted フラグを立てる
@@ -129,14 +124,13 @@ class ProductDeleteView(generic.DeleteView):
     template_name = 'product_mst/product_confirm_delete.html'
     success_url = reverse_lazy('product_mst:product_list')
 
-    def delete(self, request, *args, **kwargs):
-        """削除時に is_deleted フラグを立てる"""
-        self.object = self.get_object()
-        self.object.is_deleted = True
-        self.object.update_user = self.request.user
-        self.object.save()
-        product_message(self.request, '削除', self.object.product_nm)
-        return super().delete(request, *args, **kwargs)
+    def post(self, request, *args, **kwargs):
+        obj = Product.objects.get(pk=kwargs['pk'])
+        obj.is_deleted = True
+        obj.update_user = request.user
+        obj.save()
+        product_message(request, '削除', obj.product_nm)
+        return HttpResponseRedirect(reverse_lazy('product_mst:product_list'))
 
 
 # -----------------------------
@@ -325,10 +319,10 @@ class ImportCSV(CSVImportBaseView):
             return None, f'{idx}行目: price "{price_val}" は数値である必要があります'
 
         # 適用開始日 / 適用終了日の変換
-        start_date, err = Common.parse_date(row.get('start_date'), 'start_date', idx)
+        start_date, err = Common.parse_date(value=row.get('start_date'), field_name='start_date', idx=idx)
         if err:
             return None, err
-        end_date, err = Common.parse_date(row.get('end_date'), 'end_date', idx)
+        end_date, err = Common.parse_date(value=row.get('end_date'), field_name='end_date', idx=idx)
         if err:
             return None, err
         

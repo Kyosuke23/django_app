@@ -91,7 +91,7 @@ class ProductModelTest(TestCase):
             )
 
     def test_end_date_before_start_date_invalid(self):
-        """終了日が開始日より前なら ValidationError"""
+        '''終了日が開始日より前なら ValidationError'''
         product = Product(
             product_cd='ERR001',
             product_nm='不正商品',
