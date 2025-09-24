@@ -9,7 +9,7 @@ from django.contrib import messages
 
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
-DATA_COLUMNS = ['product_cd', 'product_nm', 'product_category', 'description', 'price'] + Common.COMMON_DATA_COLUMNS
+DATA_COLUMNS = ['product_cd', 'product_nm', 'start_date', 'end_date', 'product_category', 'price', 'description'] + Common.COMMON_DATA_COLUMNS
 
 # -----------------------------
 # Product CRUD
@@ -162,50 +162,63 @@ class ExportCSV(CSVExportBaseView):
         return get_row(rec=rec)
 
 
+from datetime import datetime
+
 class ImportCSV(CSVImportBaseView):
     '''
     商品マスタの CSV インポート
-    - ヘッダ検証と行ごとのバリデーションを実施
-    - 正常データを一括登録する
     '''
     expected_headers = DATA_COLUMNS
     model_class = Product
     unique_field = 'product_cd'
 
     def validate_row(self, row, idx, existing, request):
-        '''
-        CSVの1行をバリデーションし、問題なければ product オブジェクトを返す
-        - product_cd の必須/重複チェック
-        - category の外部参照チェック
-        - price を数値に変換
-        '''
         product_cd = row.get('product_cd')
         if not product_cd:
             return None, f'{idx}行目: product_cd が空です'
         if product_cd in existing:
             return None, f'{idx}行目: product_cd "{product_cd}" は既に存在します'
 
+        # カテゴリの変換
         category_name = row.get('product_category')
         try:
-            category = ProductCategory.objects.get(category=category_name)
+            category = ProductCategory.objects.get(product_category_nm=category_name)
         except ProductCategory.DoesNotExist:
             return None, f'{idx}行目: product_category "{category_name}" が存在しません'
 
+        # 価格の変換
+        price_val = row.get('price')
         try:
-            price = int(price) if price else 0
+            price_val = int(price_val) if price_val else 0
         except ValueError:
-            return None, f'{idx}行目: price "{price}" は数値である必要があります'
+            return None, f'{idx}行目: price "{price_val}" は数値である必要があります'
 
+        # 適用開始日 / 適用終了日の変換
+        start_date_str = row.get('start_date')
+        end_date_str   = row.get('end_date')
+        try:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
+        except ValueError:
+            return None, f'{idx}行目: start_date "{start_date_str}" は YYYY-MM-DD 形式で指定してください'
+
+        try:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+        except ValueError:
+            return None, f'{idx}行目: end_date "{end_date_str}" は YYYY-MM-DD 形式で指定してください'
+
+        # Product オブジェクト生成
         obj = Product(
             product_cd=product_cd,
             product_nm=row.get('product_nm'),
-            category=category,
+            product_category=category,
             description=row.get('description') or '',
-            price=int(price) if price else 0,
+            price=price_val,
+            start_date=start_date,
+            end_date=end_date,
             update_user=request.user
         )
         return obj, None
-    
+
 
 def get_row(rec):
     '''
@@ -215,15 +228,17 @@ def get_row(rec):
     return [
         rec.product_cd,
         rec.product_nm,
+        rec.start_date,
+        rec.end_date,
         rec.product_category.product_category_nm if rec.product_category else '',
+        rec.price,
         rec.description,
-        rec.price
     ] + Common.get_common_columns(rec=rec)
     
 def search_data(request, query_set):
     '''
     共通検索処理
-    - 検索キーワードを item_cd / item_nm に部分一致で適用
+    - 検索キーワードを product_cd / product_nm に部分一致で適用
     '''
     keyword = request.GET.get('search') or ''
     if keyword:

@@ -88,11 +88,11 @@
       <tr>
         <th scope="col">商品コード</th>
         <th scope="col">商品名称</th>
-        <th scope="col">商品カテゴリ</th>
-        <th scope="col">説明文</th>
-        <th scope="col">価格</th>
         <th scope="col">適用開始日</th>
         <th scope="col">適用終了日</th>
+        <th scope="col">商品カテゴリ</th>
+        <th scope="col">価格</th>
+        <th scope="col">説明文</th>
         <th scope="col">操作</th>
       </tr>
     </thead>
@@ -101,14 +101,14 @@
       <tr class="align-middle">
         <td>{{ product.product_cd }}</td>
         <td>{{ product.product_nm|default_if_none:'' }}</td>
+        <td>{{ product.start_date }}</td>
+        <td>{{ product.end_date }}</td>
         <td>{{ product.product_category.product_category_nm|default_if_none:'' }}</td>
-        <td>{{ product.description }}</td>
         <td>
           {% if product.price %}¥{% endif %}
           {{ product.price|default_if_none:''|intcomma }}
         </td>
-        <td>{{ product.start_date }}</td>
-        <td>{{ product.end_date }}</td>
+        <td>{{ product.description }}</td>
         <td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <a href="{% url 'product_mst:product_update' product.id %}" class="btn btn-sm btn-outline-secondary">

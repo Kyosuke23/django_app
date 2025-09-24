@@ -141,13 +141,7 @@ $(function () {
                     .removeClass('bg-success')
                     .addClass('bg-danger')
                     .text('Import時にエラー発生');
-
-                $('#flash_message_area').flash_message({
-                    text: 'アップロード失敗: ' + (jqXHR.responseJSON?.error || '不明なエラー'),
-                    class_name: 'error',
-                    how: 'append',
-                    time: 5000
-                });
+                    alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
             });
     };
 

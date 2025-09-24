@@ -24,6 +24,8 @@ class Product(BaseModel):
         verbose_name='商品コード'
     )
     product_nm = models.CharField(max_length=255, verbose_name='商品名称')
+    start_date = models.DateField(verbose_name='適用開始日')
+    end_date = models.DateField(verbose_name='適用終了日')
     product_category = models.ForeignKey(
         'ProductCategory',
         on_delete=models.SET_NULL,
@@ -31,9 +33,7 @@ class Product(BaseModel):
         null=True,
         verbose_name='商品カテゴリ'
     )
-    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True, verbose_name="価格")
-    start_date = models.DateField(verbose_name='適用開始日')
-    end_date = models.DateField(verbose_name='適用終了日')
+    price = models.IntegerField(blank=True, null=True, verbose_name='価格')
     description = models.TextField(blank=True, null=True, verbose_name='商品説明')
 
     def __str__(self):
@@ -54,7 +54,7 @@ class ProductCategory(BaseModel):
     class Meta:
         ordering = ['product_category_nm']
 
-    product_category_nm = models.CharField(max_length=255, verbose_name='商品カテゴリ')
+    product_category_nm = models.CharField(max_length=255, unique=True, verbose_name='商品カテゴリ')
 
     def __str__(self):
         return self.product_category_nm
