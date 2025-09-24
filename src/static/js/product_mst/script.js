@@ -1,7 +1,10 @@
 $(function () {
     // エクスポートボタン
-    $('.export-btn').on('click', function () {
-        $searchForm.attr('action', $(this).data('action')).submit();
+    $(".export-btn").on("click", function () {
+      const url = $(this).data("action");
+      if (url) {
+        window.location.href = url;
+      }
     });
 
     // IMPORTボタン
