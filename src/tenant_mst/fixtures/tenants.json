@@ -1,0 +1,20 @@
+[
+  {
+    "model": "tenant_mst.tenant",
+    "pk": 1,
+    "fields": {
+      "tenant_name": "サンプル株式会社",
+      "representative_name": "池田匡佑",
+      "contact_email": "info@example.com",
+      "tel_number": "0312345678",
+      "postal_cd": "1000001",
+      "state": "東京都",
+      "city": "千代田区",
+      "address": "丸の内1-1-1",
+      "address2": "ビル3F",
+      "is_deleted": false,
+      "created_at": "1900-01-01T00:00:00.000Z",
+      "updated_at": "1900-01-01T00:00:00.000Z"
+    }
+  }
+]

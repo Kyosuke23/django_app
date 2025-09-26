@@ -33,6 +33,8 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     def get_queryset(self, **kwarg):
         # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg)
+        # 必須取得条件
+        query_set = query_set.filter(tenant=self.request.user.tenant)
         # 検索を実行
         return search_data(request=self.request, query_set=query_set)
 
@@ -109,9 +111,10 @@ class RegisterUserCreate(generic.edit.CreateView):
         # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
             post = form.save(commit=False)
-            # 作成者と更新者をログインユーザーで設定
+            # 作成者と更新者とテナントをログインユーザーで設定
             post.create_user = self.request.user
             post.update_user = self.request.user
+            post.tenant = self.request.user
             # 登録処理の実行
             post.save()
             # 処理成功のフラッシュメッセージを設定
@@ -149,8 +152,9 @@ class RegisterUserUpdate(generic.edit.UpdateView):
         print(user.gender)
         # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
-            # 更新ユーザーをログインユーザーで設定
+            # 更新ユーザーとテナントをログインユーザーで設定
             form.update_user = self.request.user
+            form.tenant = self.request.user
             # 保存処理の実行
             form.save()
             # 処理成功のフラッシュメッセージを設定

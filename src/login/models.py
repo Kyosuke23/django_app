@@ -1,8 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in, user_logged_out
 from django.dispatch import receiver
+from config.base import BaseModel
 from config.common import Common
 import re
 
@@ -17,58 +17,51 @@ def validate_ip(value):
             params={'value', value}
         )
 
-class AccessLog(models.Model):
-    '''
+class AccessLog(BaseModel):
+    """
     アクセス履歴
-    '''
+    - BaseModel 継承により tenant / 作成者 / 更新者 / 作成日時 / 更新日時 を統一
+    """
     class Meta:
         app_label = 'login'
         ordering = ['access_at', 'username']
 
-    # データの設定
     username = models.CharField(max_length=50, verbose_name='ユーザーコード')
     ip=models.CharField(max_length=255, validators=[validate_ip], verbose_name='IPアドレス')
     access_type = models.CharField(max_length=50, verbose_name='アクセス種別')
-    access_at=models.DateTimeField(auto_now=True, verbose_name='アクセス日時')
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
-    create_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='access_log_creator', verbose_name='作成者')
-    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
-    update_user = models.ForeignKey(get_user_model(), to_field='id', on_delete=models.SET_NULL, null=True, related_name='access_log_updater', verbose_name='更新者')
+    access_at = models.DateTimeField(auto_now=True, verbose_name='アクセス日時')
 
-    def __str__(self) -> str:
-        return 'ip : %s / access at : %s' % (self.ip,self.access_at)
+    def __str__(self):
+        return f'ip : {self.ip} / access at : {self.access_at}'
+
 
 @receiver(user_logged_in)
 def user_logged_in_callback(sender, request, user, **kwargs):
-    '''
+    """
     ログイン時の履歴登録
-    '''
-    # ユーザー情報を取得
+    """
     ip = Common.get_ip_address(request) or '0.0.0.0'
-
-    # DBへ登録
     AccessLog.objects.create(
-        username=user.get_username()
-        , ip=ip
-        , access_type = 'login'
-        , create_user = user
-        , update_user =  user
+        tenant=user.tenant,
+        username=user.get_username(),
+        ip=ip,
+        access_type='login',
+        create_user=user,
+        update_user=user,
     )
+
 
 @receiver(user_logged_out)
 def user_logged_out_callback(sender, request, user, **kwargs):
-    '''
+    """
     ログアウト時の履歴登録
-    '''
-    # ユーザー情報を取得
-    username = user.username
-    ip = Common.get_ip_address(request)
-
-    # DBへ登録
+    """
+    ip = Common.get_ip_address(request) or '0.0.0.0'
     AccessLog.objects.create(
-        username=username
-        , ip=ip
-        , access_type = 'logout'
-        , create_user = user
-        , update_user =  user
+        tenant=user.tenant,
+        username=user.username,
+        ip=ip,
+        access_type='logout',
+        create_user=user,
+        update_user=user,
     )

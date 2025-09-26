@@ -35,6 +35,12 @@ class CustomUser(AbstractUser):
     address2 = models.CharField(max_length=255, blank=True, null=True, verbose_name='住所2')
     birthday = models.DateField(null=True, blank=True, verbose_name='誕生日')
     privilege = models.CharField(max_length=1, choices=PRIVILEGE_CHOICES, default='3', verbose_name='権限')
+    tenant = models.ForeignKey(
+        'tenant_mst.Tenant',
+        on_delete=models.CASCADE,
+        verbose_name='所属テナント',
+        null=False, blank=False
+    )
 
     def __str__(self):
         return self.username

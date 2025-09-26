@@ -1,4 +1,5 @@
 import csv
+from django.conf import settings
 from django.http import JsonResponse
 from django.views import View
 from django.db import transaction, IntegrityError
@@ -164,18 +165,19 @@ class BaseModel(models.Model):
     - 作成者 / 更新者
     """
 
+    tenant = models.ForeignKey('tenant_mst.Tenant', on_delete=models.CASCADE, related_name="%(class)ss", null=False, blank=False, verbose_name='所属テナント')
     is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
     create_user = models.ForeignKey(
-        get_user_model(),
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         related_name="%(class)s_creator",
         verbose_name='作成者'
     )
     update_user = models.ForeignKey(
-        get_user_model(),
+        settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
         null=True,
         related_name="%(class)s_updater",

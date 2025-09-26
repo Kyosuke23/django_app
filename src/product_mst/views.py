@@ -35,7 +35,7 @@ class ProductListView(generic.ListView):
 
     def get_queryset(self):
         """検索条件を反映したクエリセットを返す"""
-        queryset = Product.objects.filter(is_deleted=False)
+        queryset = Product.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
 
         search = self.request.GET.get('search')
         category = self.request.GET.get('search_product_category')
@@ -64,7 +64,7 @@ class ProductListView(generic.ListView):
         context = super().get_context_data(**kwargs)
         context['search'] = self.request.GET.get('search') or ''
         context['search_product_category'] = self.request.GET.get('search_product_category') or ''
-        context['categories'] = ProductCategory.objects.filter(is_deleted=False).order_by('id')
+        context['categories'] = ProductCategory.objects.filter(is_deleted=False, tenant=self.request.user.tenant).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -88,6 +88,7 @@ class ProductCreateView(generic.CreateView):
         """作成者・更新者を設定して保存"""
         form.instance.create_user = self.request.user
         form.instance.update_user = self.request.user
+        form.instance.tenant = self.request.user
         product_message(self.request, '登録', form.instance.product_nm)
         return super().form_valid(form)
 
@@ -110,6 +111,7 @@ class ProductUpdateView(generic.UpdateView):
     def form_valid(self, form):
         """更新処理とフラッシュメッセージ"""
         form.instance.update_user = self.request.user
+        form.instance.tenant = self.request.user
         response = super().form_valid(form)
         product_message(self.request, '更新', self.object.product_nm)
         return response
@@ -164,6 +166,7 @@ class ProductCreateModalView(ProductCreateView):
         self.object = form.save(commit=False)
         self.object.create_user = self.request.user
         self.object.update_user = self.request.user
+        self.object.tenant = self.request.user
         self.object.save()
         product_message(self.request, '登録', self.object.product_nm)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -214,6 +217,7 @@ class ProductUpdateModalView(ProductUpdateView):
         """更新処理（Ajax対応）"""
         self.object = form.save(commit=False)
         self.object.update_user = self.request.user
+        self.object.tenant = self.request.user.tenant
         self.object.save()
         product_message(self.request, '更新', self.object.product_nm)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
