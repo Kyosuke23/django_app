@@ -8,10 +8,10 @@ class SalesOrderForm(forms.ModelForm):
     """
     class Meta:
         model = SalesOrder
-        fields = ['order_no', 'order_date', 'partner', 'remarks']
+        fields = ['sales_order_no', 'sales_order_date', 'partner', 'remarks']
         widgets = {
-            'order_no': forms.TextInput(attrs={'class': 'form-control'}),
-            'order_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'sales_order_no': forms.TextInput(attrs={'class': 'form-control'}),
+            'sales_order_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'partner': forms.Select(attrs={'class': 'form-select'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }

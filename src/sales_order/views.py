@@ -12,7 +12,7 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 
 DATA_COLUMNS = [
-    'order_no', 'partner', 'order_date', 'delivery_date', 'remarks',
+    'sales_order_no', 'partner', 'sales_order_date', 'delivery_date', 'remarks',
     'line_no', 'product', 'quantity', 'unit', 'unit_price',
     'tax_exempt', 'tax_rate', 'rounding_mode'
 ] + Common.COMMON_DATA_COLUMNS
@@ -30,7 +30,7 @@ class SalesOrderListView(generic.ListView):
     """
     model = SalesOrder
     template_name = "sales_order/list.html"
-    context_object_name = "orders"
+    context_object_name = "sales_orders"
     paginate_by = 20
 
     def get_queryset(self):
@@ -39,7 +39,7 @@ class SalesOrderListView(generic.ListView):
         ).select_related("partner")
 
         search = self.request.GET.get("search")
-        order_date = self.request.GET.get("order_date")
+        order_date = self.request.GET.get("sales_order_date")
 
         if search:
             queryset = queryset.filter(
@@ -50,12 +50,12 @@ class SalesOrderListView(generic.ListView):
         if order_date:
             queryset = queryset.filter(order_date=order_date)
 
-        return queryset.order_by("-order_date", "order_no")
+        return queryset.order_by("sales_order_date", "sales_order_no")
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["search"] = self.request.GET.get("search") or ""
-        context["order_date"] = self.request.GET.get("order_date") or ""
+        context["sales_order_date"] = self.request.GET.get("sales_order_date") or ""
         context['partners'] = Partner.objects.filter(is_deleted=False, tenant=self.request.user.tenant).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
@@ -258,11 +258,11 @@ class ImportCSV(CSVImportBaseView):
     """
     expected_headers = DATA_COLUMNS
     model_class = SalesOrder
-    unique_field = 'order_no'
+    unique_field = 'sales_order_no'
 
     def validate_row(self, row, idx, existing, request):
         """1行ごとのバリデーション処理"""
-        order_no = row.get('order_no')
+        order_no = row.get('sales_order_no')
         if not order_no:
             return None, f'{idx}行目: order_no が空です'
 
@@ -276,7 +276,7 @@ class ImportCSV(CSVImportBaseView):
                 return None, f'{idx}行目: partner "{partner_name}" が存在しません'
 
         # 日付
-        order_date, err = Common.parse_date(row.get('order_date'), 'order_date', idx)
+        order_date, err = Common.parse_date(row.get('sales_order_date'), 'sales_order_date', idx)
         if err: return None, err
         delivery_date, err = Common.parse_date(row.get('delivery_date'), 'delivery_date', idx)
         if err: return None, err
@@ -303,7 +303,7 @@ class ImportCSV(CSVImportBaseView):
             tenant=request.user.tenant,
             defaults={
                 'partner': partner,
-                'order_date': order_date,
+                'sales_order_date': order_date,
                 'delivery_date': delivery_date,
                 'remarks': row.get('remarks') or '',
                 'create_user': request.user,

@@ -62,7 +62,7 @@
       <a class="btn btn-outline-primary"
         href="#"
         data-bs-toggle="modal"
-        data-bs-target="#orderModal"
+        data-bs-target="#salesOrderModal"
         data-url="{% url 'sales_order:create' %}">
         + 新規受注登録
       </a>
@@ -89,19 +89,19 @@
       </tr>
     </thead>
     <tbody>
-      {% for order in orders %}
+      {% for sales_order in sales_orders %}
       <tr class="align-middle">
-        <td>{{ order.order_no }}</td>
-        <td>{{ order.order_date }}</td>
-        <td>{{ order.partner.partner_name|default_if_none:'' }}</td>
-        <td>{{ order.remarks|truncatechars:20 }}</td>
+        <td>{{ sales_order.sales_order_no }}</td>
+        <td>{{ sales_order.sales_order_date }}</td>
+        <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
+        <td>{{ sales_order.remarks|truncatechars:20 }}</td>
         <td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <a href="#"
             class="btn btn-sm btn-outline-secondary"
             data-bs-toggle="modal"
-            data-bs-target="#orderModal"
-            data-url="{% url 'sales_order:update' order.id %}">
+            data-bs-target="#salesOrderModal"
+            data-url="{% url 'sales_order:update' sales_order.id %}">
             編集
           </a>
           {% endif %}
@@ -112,7 +112,7 @@
   </table>
 
   <!-- モーダル -->
-  <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade" id="salesOrderModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg">
       <div class="modal-content">
         <div class="modal-body">

@@ -1,19 +1,37 @@
 from django.db import models
 from config.base import BaseModel
 from django.utils import timezone
+from django.db.models import Max
 
+
+from django.utils import timezone
+from django.db.models import Max
+
+def generate_sales_order_no(tenant):
+    year = timezone.now().strftime("%Y")
+    prefix = f"SO-{year}-"
+
+    # 同一テナント＆同じ年の最大番号を取得
+    last_order = (
+        SalesOrder.objects
+        .filter(tenant=tenant, sales_order_no__startswith=prefix)
+        .aggregate(max_no=Max("sales_order_no"))
+    )
+
+    if last_order["max_no"]:
+        # 既存の最大番号を取り出して +1
+        last_seq = int(last_order["max_no"].replace(prefix, ""))
+        new_seq = last_seq + 1
+    else:
+        new_seq = 1
+
+    # 桁数は柔軟に、ゼロパディングは任意（例では6桁）
+    return f"{prefix}{new_seq:06d}"
 
 class SalesOrder(BaseModel):
-    """
-    受注ヘッダ（1つの受注伝票）
-    """
-    order_no = models.CharField(max_length=20, unique=True, verbose_name="受注番号")
-    order_date = models.DateField(default=timezone.now, verbose_name="受注日")
-    partner = models.ForeignKey(
-        "partner_mst.Partner",
-        on_delete=models.PROTECT,
-        verbose_name="取引先"
-    )
+    sales_order_no = models.CharField(max_length=20, verbose_name="受注番号")
+    sales_order_date = models.DateField(default=timezone.now, verbose_name="受注日")
+    partner = models.ForeignKey("partner_mst.Partner", on_delete=models.PROTECT, verbose_name="取引先")
     remarks = models.TextField(blank=True, null=True, verbose_name="備考")
     total_amount = models.IntegerField(default=0, verbose_name="受注合計金額")
 
@@ -21,9 +39,24 @@ class SalesOrder(BaseModel):
         db_table = "sales_order"
         verbose_name = "受注ヘッダ"
         verbose_name_plural = "受注ヘッダ"
+        constraints = [
+            models.UniqueConstraint(fields=["tenant", "sales_order_no"], name="unique_sales_order_per_tenant")
+        ]
 
-    def __str__(self):
-        return f"{self.order_no} ({self.partner.partner_name})"
+    def save(self, *args, **kwargs):
+        # sales_order_no が未設定なら自動採番
+        if not self.sales_order_no:
+            year = timezone.now().year
+            prefix = f"SO-{year}"
+            last = SalesOrder.objects.filter(sales_order_no__startswith=prefix).order_by("-sales_order_no").first()
+            if last:
+                last_seq = int(last.sales_order_no.split("-")[-1])
+                new_seq = last_seq + 1
+            else:
+                new_seq = 1
+            self.sales_order_no = f"{prefix}-{new_seq:06d}"
+        super().save(*args, **kwargs)
+
 
 class SalesOrderDetail(BaseModel):
     """
