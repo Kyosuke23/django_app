@@ -68,6 +68,7 @@ class AccessLogListView(generic.ListView):
     def get_queryset(self):
         # query setを取得
         query_set = super().get_queryset()
+        query_set = AccessLog.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
         # 検索を実行
         return search_data(request=self.request, query_set=query_set)
 
