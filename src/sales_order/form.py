@@ -1,4 +1,5 @@
 from django import forms
+from django.forms import inlineformset_factory
 from .models import SalesOrder, SalesOrderDetail
 
 
@@ -15,6 +16,15 @@ class SalesOrderForm(forms.ModelForm):
             'partner': forms.Select(attrs={'class': 'form-select'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields["partner"].queryset = (
+                # テナントに紐づく取引先だけに絞る
+                self.fields["partner"].queryset.filter(tenant=user.tenant)
+            )
 
 
 class SalesOrderDetailForm(forms.ModelForm):
@@ -41,3 +51,13 @@ class SalesOrderDetailForm(forms.ModelForm):
             'tax_rate': forms.NumberInput(attrs={'class': 'form-control text-end', 'step': '0.01'}),
             'rounding_method': forms.Select(attrs={'class': 'form-select'}),
         }
+
+
+# 受注明細の inline formset（新規で10行表示）
+SalesOrderDetailFormSet = inlineformset_factory(
+    SalesOrder,
+    SalesOrderDetail,
+    form=SalesOrderDetailForm,
+    extra=10,      # 新規登録時に空行を10行用意
+    can_delete=True
+)

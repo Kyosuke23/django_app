@@ -7,9 +7,10 @@ from django.template.loader import render_to_string
 from .models import SalesOrder, SalesOrderDetail
 from partner_mst.models import Partner
 from product_mst.models import Product
-from .form import SalesOrderForm, SalesOrderDetailForm
+from .form import SalesOrderForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
+from .form import SalesOrderForm, SalesOrderDetailFormSet
 
 DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'delivery_date', 'remarks',
@@ -111,19 +112,29 @@ class SalesOrderDeleteView(generic.View):
 # -----------------------------
 
 class SalesOrderCreateModalView(SalesOrderCreateView):
+    model = SalesOrder
+    form_class = SalesOrderForm
     template_name = "sales_order/form.html"
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.method == "POST":
+            context["formset"] = SalesOrderDetailFormSet(self.request.POST)
+        else:
+            context["formset"] = SalesOrderDetailFormSet()
+        context["form_action"] = reverse("sales_order:create")
+        context["modal_title"] = "受注新規登録"
+        return context
+
     def get(self, request, *args, **kwargs):
-        form = self.get_form()
-        html = render_to_string(
-            self.template_name,
-            {
-                "form": form,
-                "form_action": reverse("sales_order:create"),
-                "modal_title": "受注新規登録",
-            },
-            request,
-        )
+        self.object = None
+        context = self.get_context_data()
+        html = render_to_string(self.template_name, context, request)
         return JsonResponse({"success": True, "html": html})
 
     def form_valid(self, form):
@@ -132,24 +143,23 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
         self.object.update_user = self.request.user
         self.object.tenant = self.request.user.tenant
         self.object.save()
-        sales_order_message(self.request, "登録", self.object.order_no)
+
+        # 明細の保存
+        formset = SalesOrderDetailFormSet(self.request.POST, instance=self.object)
+        if formset.is_valid():
+            formset.save()
+
+        sales_order_message(self.request, "登録", self.object.sales_order_no)
+
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"success": True})
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-            html = render_to_string(
-                self.template_name,
-                {
-                    "form": form,
-                    "form_action": reverse("sales_order:create"),
-                    "modal_title": "受注新規登録",
-                },
-                self.request,
-            )
-            return JsonResponse({"success": False, "html": html})
-        return super().form_invalid(form)
+        formset = SalesOrderDetailFormSet(self.request.POST)
+        context = self.get_context_data(form=form, formset=formset)
+        html = render_to_string(self.template_name, context, self.request)
+        return JsonResponse({"success": False, "html": html})
 
 
 class SalesOrderUpdateModalView(SalesOrderUpdateView):
@@ -165,7 +175,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
                 "form_action": reverse(
                     "sales_order:update", kwargs={"pk": self.object.pk}
                 ),
-                "modal_title": f"受注更新: {self.object.order_no}",
+                "modal_title": f"受注更新: {self.object.sales_order_no}",
             },
             request,
         )

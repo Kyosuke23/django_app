@@ -1,5 +1,6 @@
 {% load django_bootstrap5 %}
 
+
 <div class="modal-header mb-3">
   <h4 class="modal-title">{{ modal_title }}</h4>
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -8,11 +9,9 @@
 <form method="post" id="salesOrderForm" action="{{ form_action }}">
   {% csrf_token %}
 
-  {# --- 受注ヘッダ --- #}
   <h5 class="mb-3">受注情報</h5>
   {% bootstrap_form form %}
 
-  {# --- 受注明細 --- #}
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
   <table class="table table-bordered table-sm align-middle">
