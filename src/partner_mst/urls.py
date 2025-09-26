@@ -5,7 +5,7 @@ app_name = 'partner_mst'
 
 urlpatterns = [
     # -----------------
-    # 商品マスタ
+    # 取引先マスタ
     # -----------------
     path('partner/', views.PartnerListView.as_view(), name='partner_list'),
     path('partner/create/', views.PartnerCreateView.as_view(), name='partner_create'),
