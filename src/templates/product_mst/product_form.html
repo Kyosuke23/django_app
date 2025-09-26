@@ -1,0 +1,11 @@
+{% load django_bootstrap5 %}
+
+<div class="modal-header mb-3">
+  <h4 class="modal-title">{{ modal_title }}</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+<form method="post" id="productForm" action="{{ form_action }}">
+  {% csrf_token %}
+  {% bootstrap_form form %}
+  <button type="submit" class="btn btn-primary">保存</button>
+</form>

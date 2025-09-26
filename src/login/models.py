@@ -13,7 +13,7 @@ matcher = re.compile(pattern)
 def validate_ip(value):
     if not matcher.match(value):
         raise ValidationError(
-            _('%{value} is not valid ip!'),
+            ('%{value} is not valid ip!'),
             params={'value', value}
         )
 
@@ -44,12 +44,11 @@ def user_logged_in_callback(sender, request, user, **kwargs):
     ログイン時の履歴登録
     '''
     # ユーザー情報を取得
-    username = request.POST.get('username')
-    ip = Common.get_ip_address(request)
+    ip = Common.get_ip_address(request) or '0.0.0.0'
 
     # DBへ登録
     AccessLog.objects.create(
-        username=username
+        username=user.get_username()
         , ip=ip
         , access_type = 'login'
         , create_user = user

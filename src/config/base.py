@@ -4,6 +4,8 @@ from django.views import View
 from django.db import transaction, IntegrityError
 from datetime import datetime
 from django.http import HttpResponse
+from django.db import models
+from django.contrib.auth import get_user_model
 import openpyxl
 
 
@@ -65,7 +67,7 @@ class CSVExportBaseView(View):
         data = self.get_queryset(request)
 
         # --- レスポンス準備 ---
-        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
+        response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f"attachment; filename*=UTF-8''{file_name}"
 
         writer = csv.writer(response)
@@ -153,3 +155,32 @@ class CSVImportBaseView(View):
         戻り値: (modelインスタンス or None, エラーメッセージ or None)
         '''
         raise NotImplementedError
+
+class BaseModel(models.Model):
+    """
+    共通基底クラス
+    - 論理削除
+    - 作成日時 / 更新日時
+    - 作成者 / 更新者
+    """
+
+    is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+    create_user = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="%(class)s_creator",
+        verbose_name='作成者'
+    )
+    update_user = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="%(class)s_updater",
+        verbose_name='更新者'
+    )
+
+    class Meta:
+        abstract = True

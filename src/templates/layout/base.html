@@ -15,12 +15,14 @@
     <link rel="stylesheet" href="{% static 'css/common/style.css' %}">
 </head>
 <body>
+    {# 全画面オーバーレイ・スピナー #}
+    {% include 'layout/spiner.html' %}
     {# Bootstrap Icons #}
     {% include 'layout/bi_list.html' %}
+    {# フラッシュメッセージ #}
+    {% include 'layout/message.html' %}
     {# ヘッダー #}
     {% include 'layout/header.html' %}
-    {# メッセージ #}
-    {% include 'layout/message.html' %}
     <div class="d-flex">
         {# 左サイドバー #}
         {% include 'layout/nav_left.html' %}
