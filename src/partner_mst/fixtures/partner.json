@@ -4,7 +4,6 @@
     "pk": 1,
     "fields": {
       "tenant": 1,
-      "partner_cd": "C0001",
       "partner_name": "株式会社アルファ",
       "partner_name_kana": "アルファ",
       "partner_type": "customer",
@@ -26,7 +25,6 @@
     "pk": 2,
     "fields": {
       "tenant": 1,
-      "partner_cd": "C0002",
       "partner_name": "有限会社ベータ商事",
       "partner_name_kana": "ベータショウジ",
       "partner_type": "customer",
@@ -48,7 +46,6 @@
     "pk": 3,
     "fields": {
       "tenant": 1,
-      "partner_cd": "S0001",
       "partner_name": "サプライ株式会社",
       "partner_name_kana": "サプライ",
       "partner_type": "supplier",
@@ -70,7 +67,6 @@
     "pk": 4,
     "fields": {
       "tenant": 1,
-      "partner_cd": "B0001",
       "partner_name": "ビー・カンパニー",
       "partner_name_kana": "ビー",
       "partner_type": "both",
@@ -92,7 +88,6 @@
     "pk": 5,
     "fields": {
       "tenant": 1,
-      "partner_cd": "C0003",
       "partner_name": "クライアントサービス株式会社",
       "partner_name_kana": "クライアントサービス",
       "partner_type": "customer",
@@ -114,7 +109,6 @@
     "pk": 6,
     "fields": {
       "tenant": 1,
-      "partner_cd": "S0002",
       "partner_name": "大阪商会",
       "partner_name_kana": "オオサカショウカイ",
       "partner_type": "supplier",
@@ -136,7 +130,6 @@
     "pk": 7,
     "fields": {
       "tenant": 1,
-      "partner_cd": "C0004",
       "partner_name": "九州産業株式会社",
       "partner_name_kana": "キュウシュウサンギョウ",
       "partner_type": "customer",
@@ -158,7 +151,6 @@
     "pk": 8,
     "fields": {
       "tenant": 1,
-      "partner_cd": "S0003",
       "partner_name": "北海道フーズ",
       "partner_name_kana": "ホッカイドウフーズ",
       "partner_type": "supplier",
@@ -180,7 +172,6 @@
     "pk": 9,
     "fields": {
       "tenant": 1,
-      "partner_cd": "C0005",
       "partner_name": "中部電機株式会社",
       "partner_name_kana": "チュウブデンキ",
       "partner_type": "customer",
@@ -202,7 +193,6 @@
     "pk": 10,
     "fields": {
       "tenant": 1,
-      "partner_cd": "B0002",
       "partner_name": "グローバル貿易株式会社",
       "partner_name_kana": "グローバルボウエキ",
       "partner_type": "both",

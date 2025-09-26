@@ -12,11 +12,6 @@ class Partner(BaseModel):
     取引先マスタ
     顧客・仕入先などを管理
     """
-    partner_cd = models.CharField(
-        max_length=50,
-        unique=True,
-        verbose_name='取引先コード'
-    )
     partner_name = models.CharField(
         max_length=255,
         verbose_name='取引先名'
@@ -46,8 +41,8 @@ class Partner(BaseModel):
     is_active = models.BooleanField(default=True, verbose_name='有効フラグ')
 
     class Meta:
-        ordering = ['partner_cd']
-        unique_together = ('tenant', 'partner_cd')
+        ordering = ['partner_name']
+        unique_together = ('tenant', 'partner_name')
 
     def __str__(self):
-        return f'{self.partner_name} ({self.partner_cd})'
+        return f'{self.partner_name}'
