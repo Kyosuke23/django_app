@@ -9,7 +9,7 @@ class Product(BaseModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['product_cd', 'start_date', 'end_date'],
+                fields=['product_cd', 'start_date', 'end_date', 'tenant'],
                 name='uq_product_cd_period'
             )
         ]
@@ -59,6 +59,7 @@ class Product(BaseModel):
 class ProductCategory(BaseModel):
     class Meta:
         ordering = ['product_category_nm']
+        unique_together = ('tenant', 'product_category_nm')
 
     product_category_nm = models.CharField(max_length=255, unique=True, verbose_name='商品カテゴリ')
 
