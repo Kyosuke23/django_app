@@ -40,7 +40,7 @@ class SalesOrderListView(generic.ListView):
         ).select_related("partner")
 
         search = self.request.GET.get("search")
-        order_date = self.request.GET.get("sales_order_date")
+        sales_order_date = self.request.GET.get("sales_order_date")
 
         if search:
             queryset = queryset.filter(
@@ -48,8 +48,8 @@ class SalesOrderListView(generic.ListView):
                 Q(partner__partner_name__icontains=search)
             )
 
-        if order_date:
-            queryset = queryset.filter(order_date=order_date)
+        if sales_order_date:
+            queryset = queryset.filter(sales_order_date=sales_order_date)
 
         return queryset.order_by("sales_order_date", "sales_order_no")
 
@@ -124,9 +124,17 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         if self.request.method == "POST":
-            context["formset"] = SalesOrderDetailFormSet(self.request.POST)
+            formset = SalesOrderDetailFormSet(self.request.POST)
         else:
-            context["formset"] = SalesOrderDetailFormSet()
+            formset = SalesOrderDetailFormSet()
+
+        # 明細が10件未満なら補充
+        current_forms = len(formset.forms)
+        if current_forms < 10:
+            for i in range(10 - current_forms):
+                formset.forms.append(formset.empty_form)
+
+        context["formset"] = formset
         context["form_action"] = reverse("sales_order:create")
         context["modal_title"] = "受注新規登録"
         return context
@@ -144,7 +152,6 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
         self.object.tenant = self.request.user.tenant
         self.object.save()
 
-        # 明細の保存
         formset = SalesOrderDetailFormSet(self.request.POST, instance=self.object)
         if formset.is_valid():
             formset.save()
@@ -157,6 +164,10 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
 
     def form_invalid(self, form):
         formset = SalesOrderDetailFormSet(self.request.POST)
+        # form_invalid時も補充
+        if len(formset.forms) < 10:
+            for i in range(10 - len(formset.forms)):
+                formset.forms.append(formset.empty_form)
         context = self.get_context_data(form=form, formset=formset)
         html = render_to_string(self.template_name, context, self.request)
         return JsonResponse({"success": False, "html": html})
@@ -168,10 +179,18 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
+        formset = SalesOrderDetailFormSet(instance=self.object)
+
+        # 明細が10件未満なら補充
+        if len(formset.forms) < 10:
+            for i in range(10 - len(formset.forms)):
+                formset.forms.append(formset.empty_form)
+
         html = render_to_string(
             self.template_name,
             {
                 "form": form,
+                "formset": formset,
                 "form_action": reverse(
                     "sales_order:update", kwargs={"pk": self.object.pk}
                 ),
@@ -186,29 +205,40 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         self.object.update_user = self.request.user
         self.object.tenant = self.request.user.tenant
         self.object.save()
+
+        formset = SalesOrderDetailFormSet(self.request.POST, instance=self.object)
+        if formset.is_valid():
+            formset.save()
+
         sales_order_message(self.request, "更新", self.object.order_no)
+
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"success": True})
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
-            obj = getattr(self, "object", None)
-            modal_title = f"受注更新: {obj.order_no}" if obj else "受注更新"
-            html = render_to_string(
-                self.template_name,
-                {
-                    "form": form,
-                    "form_action": reverse(
-                        "sales_order:update",
-                        kwargs={"pk": obj.pk} if obj else {},
-                    ),
-                    "modal_title": modal_title,
-                },
-                self.request,
-            )
-            return JsonResponse({"success": False, "html": html})
-        return super().form_invalid(form)
+        formset = SalesOrderDetailFormSet(self.request.POST, instance=getattr(self, "object", None))
+        if len(formset.forms) < 10:
+            for i in range(10 - len(formset.forms)):
+                formset.forms.append(formset.empty_form)
+
+        obj = getattr(self, "object", None)
+        modal_title = f"受注更新: {obj.order_no}" if obj else "受注更新"
+        html = render_to_string(
+            self.template_name,
+            {
+                "form": form,
+                "formset": formset,
+                "form_action": reverse(
+                    "sales_order:update",
+                    kwargs={"pk": obj.pk} if obj else {},
+                ),
+                "modal_title": modal_title,
+            },
+            self.request,
+        )
+        return JsonResponse({"success": False, "html": html})
+
 
 
 class ExportExcel(ExcelExportBaseView):
@@ -272,9 +302,9 @@ class ImportCSV(CSVImportBaseView):
 
     def validate_row(self, row, idx, existing, request):
         """1行ごとのバリデーション処理"""
-        order_no = row.get('sales_order_no')
-        if not order_no:
-            return None, f'{idx}行目: order_no が空です'
+        sales_order_no = row.get('sales_order_no')
+        if not sales_order_no:
+            return None, f'{idx}行目: sales_order_no が空です'
 
         # partner
         partner_name = row.get('partner')
@@ -286,7 +316,7 @@ class ImportCSV(CSVImportBaseView):
                 return None, f'{idx}行目: partner "{partner_name}" が存在しません'
 
         # 日付
-        order_date, err = Common.parse_date(row.get('sales_order_date'), 'sales_order_date', idx)
+        sales_order_date, err = Common.parse_date(row.get('sales_order_date'), 'sales_order_date', idx)
         if err: return None, err
         delivery_date, err = Common.parse_date(row.get('delivery_date'), 'delivery_date', idx)
         if err: return None, err
@@ -308,12 +338,12 @@ class ImportCSV(CSVImportBaseView):
             return None, f'{idx}行目: 数値変換エラー(quantity/unit_price)'
 
         # SalesOrder オブジェクト
-        order, _ = SalesOrder.objects.get_or_create(
-            order_no=order_no,
+        sales_order, _ = SalesOrder.objects.get_or_create(
+            sales_order_no=sales_order_no,
             tenant=request.user.tenant,
             defaults={
                 'partner': partner,
-                'sales_order_date': order_date,
+                'sales_order_date': sales_order_date,
                 'delivery_date': delivery_date,
                 'remarks': row.get('remarks') or '',
                 'create_user': request.user,
@@ -323,7 +353,7 @@ class ImportCSV(CSVImportBaseView):
 
         # SalesOrderDetail オブジェクト
         detail = SalesOrderDetail(
-            order=order,
+            sales_order=sales_order,
             line_no=row.get('line_no') or 1,
             product=product,
             quantity=quantity,
@@ -344,14 +374,14 @@ class ImportCSV(CSVImportBaseView):
 # 共通関数
 # -----------------------------
 
-def get_order_detail_row(order, detail):
+def get_order_detail_row(sales_order, detail):
     """受注ヘッダ + 明細を1行化"""
     return [
-        order.order_no,
-        order.partner.partner_name if order.partner else '',
-        order.order_date,
-        order.delivery_date,
-        order.remarks,
+        sales_order.sales_order_no,
+        sales_order.partner.partner_name if sales_order.partner else '',
+        sales_order.order_date,
+        sales_order.delivery_date,
+        sales_order.remarks,
         detail.line_no if detail else '',
         detail.product.product_nm if detail and detail.product else '',
         detail.quantity if detail else '',
@@ -360,7 +390,7 @@ def get_order_detail_row(order, detail):
         '1' if (detail and detail.tax_exempt) else '0',
         detail.tax_rate if detail else '',
         detail.rounding_mode if detail else '',
-    ] + Common.get_common_columns(rec=order)
+    ] + Common.get_common_columns(rec=sales_order)
 
 
 def search_order_data(request, query_set):
@@ -377,5 +407,5 @@ def search_order_data(request, query_set):
 # 共通メッセージ関数
 # -----------------------------
 
-def sales_order_message(request, action, order_no):
-    messages.success(request, f"受注「{order_no}」を{action}しました。")
+def sales_order_message(request, action, sales_order_no):
+    messages.success(request, f"受注「{sales_order_no}」を{action}しました。")
