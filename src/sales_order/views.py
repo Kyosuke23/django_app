@@ -71,12 +71,31 @@ class SalesOrderCreateView(generic.CreateView):
     form_class = SalesOrderForm
     template_name = "sales_order/edit.html"
     success_url = reverse_lazy("sales_order:list")
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_update"] = False
+        if self.request.method == "POST":
+            formset = SalesOrderDetailFormSet(self.request.POST)
+        else:
+            formset = SalesOrderDetailFormSet()
+
+        # 明細が10件未満なら補充
+        current_forms = len(formset.forms)
+        if current_forms < 10:
+            for i in range(10 - current_forms):
+                formset.forms.append(formset.empty_form)
+
+        context["formset"] = formset
+        context["form_action"] = reverse("sales_order:create")
+        context["modal_title"] = "受注新規登録"
+        return context
 
     def form_valid(self, form):
         form.instance.create_user = self.request.user
         form.instance.update_user = self.request.user
         form.instance.tenant = self.request.user.tenant
-        sales_order_message(self.request, "登録", form.instance.order_no)
+        sales_order_message(self.request, "登録", form.instance.sales_order_no)
         return super().form_valid(form)
 
 
@@ -85,12 +104,17 @@ class SalesOrderUpdateView(generic.UpdateView):
     form_class = SalesOrderForm
     template_name = "sales_order/edit.html"
     success_url = reverse_lazy("sales_order:list")
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["is_update"] = True
+        return context
 
     def form_valid(self, form):
         form.instance.update_user = self.request.user
         form.instance.tenant = self.request.user.tenant
         response = super().form_valid(form)
-        sales_order_message(self.request, "更新", self.object.order_no)
+        sales_order_message(self.request, "更新", self.object.sales_order_no)
         return response
 
 
@@ -103,7 +127,7 @@ class SalesOrderDeleteView(generic.View):
         obj.is_deleted = True
         obj.update_user = request.user
         obj.save()
-        sales_order_message(request, "削除", obj.order_no)
+        sales_order_message(request, "削除", obj.sales_order_no)
         return HttpResponseRedirect(reverse_lazy("sales_order:list"))
 
 
@@ -120,24 +144,6 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
         kwargs = super().get_form_kwargs()
         kwargs["user"] = self.request.user
         return kwargs
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        if self.request.method == "POST":
-            formset = SalesOrderDetailFormSet(self.request.POST)
-        else:
-            formset = SalesOrderDetailFormSet()
-
-        # 明細が10件未満なら補充
-        current_forms = len(formset.forms)
-        if current_forms < 10:
-            for i in range(10 - current_forms):
-                formset.forms.append(formset.empty_form)
-
-        context["formset"] = formset
-        context["form_action"] = reverse("sales_order:create")
-        context["modal_title"] = "受注新規登録"
-        return context
 
     def get(self, request, *args, **kwargs):
         self.object = None
@@ -170,7 +176,7 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
                 formset.forms.append(formset.empty_form)
         context = self.get_context_data(form=form, formset=formset)
         html = render_to_string(self.template_name, context, self.request)
-        return JsonResponse({"success": False, "html": html})
+        return JsonResponse({"success": False, "html": html, "is_update": False})
 
 
 class SalesOrderUpdateModalView(SalesOrderUpdateView):
@@ -195,6 +201,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
                     "sales_order:update", kwargs={"pk": self.object.pk}
                 ),
                 "modal_title": f"受注更新: {self.object.sales_order_no}",
+                "is_update": True,
             },
             request,
         )
@@ -206,14 +213,51 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         self.object.tenant = self.request.user.tenant
         self.object.save()
 
-        formset = SalesOrderDetailFormSet(self.request.POST, instance=self.object)
-        if formset.is_valid():
-            formset.save()
+        total_forms = int(self.request.POST.get("details-TOTAL_FORMS", 0))
 
-        sales_order_message(self.request, "更新", self.object.order_no)
+        for i in range(total_forms):
+            pk = self.request.POST.get(f"details-{i}-id")  # 既存行なら pk が入る
+            product = self.request.POST.get(f"details-{i}-product")
+            delete_flag = self.request.POST.get(f"details-{i}-DELETE")
 
+            if delete_flag and pk:  # チェックあり & 既存行 → 物理削除
+                SalesOrderDetail.objects.filter(pk=pk, sales_order=self.object).delete()
+                continue
+
+            if not product:  # 商品が空 → スキップ
+                continue
+
+            if pk:  # 既存行の更新
+                detail = SalesOrderDetail.objects.get(pk=pk, sales_order=self.object)
+                detail.product_id = product
+                detail.quantity = self.request.POST.get(f"details-{i}-quantity") or 0
+                detail.unit = self.request.POST.get(f"details-{i}-unit") or ""
+                detail.unit_price = self.request.POST.get(f"details-{i}-unit_price") or 0
+                detail.tax_rate = self.request.POST.get(f"details-{i}-tax_rate") or 10
+                detail.is_tax_exempt = bool(self.request.POST.get(f"details-{i}-is_tax_exempt"))
+                detail.rounding_method = self.request.POST.get(f"details-{i}-rounding_method") or "ROUND_DOWN"
+                detail.update_user = self.request.user
+                detail.save()
+            else:  # 新規行の追加
+                SalesOrderDetail.objects.create(
+                    sales_order=self.object,
+                    line_no=i,
+                    product_id=product,
+                    quantity=self.request.POST.get(f"details-{i}-quantity") or 0,
+                    unit=self.request.POST.get(f"details-{i}-unit") or "",
+                    unit_price=self.request.POST.get(f"details-{i}-unit_price") or 0,
+                    tax_rate=self.request.POST.get(f"details-{i}-tax_rate") or 10,
+                    is_tax_exempt=bool(self.request.POST.get(f"details-{i}-is_tax_exempt")),
+                    rounding_method=self.request.POST.get(f"details-{i}-rounding_method") or "ROUND_DOWN",
+                    tenant=self.request.user.tenant,
+                    create_user=self.request.user,
+                    update_user=self.request.user,
+                )
+
+        sales_order_message(self.request, "更新", self.object.sales_order_no)
         if self.request.headers.get("x-requested-with") == "XMLHttpRequest":
             return JsonResponse({"success": True})
+
         return super().form_valid(form)
 
     def form_invalid(self, form):
@@ -223,7 +267,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
                 formset.forms.append(formset.empty_form)
 
         obj = getattr(self, "object", None)
-        modal_title = f"受注更新: {obj.order_no}" if obj else "受注更新"
+        modal_title = f"受注更新: {obj.sales_order_no}" if obj else "受注更新"
         html = render_to_string(
             self.template_name,
             {
@@ -238,7 +282,6 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
             self.request,
         )
         return JsonResponse({"success": False, "html": html})
-
 
 
 class ExportExcel(ExcelExportBaseView):
@@ -379,7 +422,7 @@ def get_order_detail_row(sales_order, detail):
     return [
         sales_order.sales_order_no,
         sales_order.partner.partner_name if sales_order.partner else '',
-        sales_order.order_date,
+        sales_order.sales_order_date,
         sales_order.delivery_date,
         sales_order.remarks,
         detail.line_no if detail else '',

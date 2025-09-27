@@ -2,8 +2,7 @@ from django.db import models
 from config.base import BaseModel
 from django.utils import timezone
 from django.db.models import Max
-
-
+from .constants import SalesOrderStatus
 from django.utils import timezone
 from django.db.models import Max
 
@@ -30,6 +29,11 @@ def generate_sales_order_no(tenant):
 
 class SalesOrder(BaseModel):
     sales_order_no = models.CharField(max_length=20, verbose_name="受注番号")
+    status_cd = models.CharField(
+        max_length=20,
+        choices=SalesOrderStatus.choices,
+        default=SalesOrderStatus.DRAFT
+    )
     sales_order_date = models.DateField(default=timezone.now, verbose_name="受注日")
     partner = models.ForeignKey("partner_mst.Partner", on_delete=models.PROTECT, verbose_name="取引先")
     remarks = models.TextField(blank=True, null=True, verbose_name="備考")
