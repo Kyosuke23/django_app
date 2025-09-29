@@ -9,7 +9,7 @@ class TenantEditForm(forms.ModelForm):
         model = Tenant
         fields = [
             'tenant_name',
-            'postal_cd',
+            'postal_code',
             'state',
             'city',
             'address',
@@ -17,7 +17,7 @@ class TenantEditForm(forms.ModelForm):
         ]
         widgets = {
             'tenant_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'postal_cd': forms.TextInput(attrs={'class': 'form-control'}),
+            'postal_code': forms.TextInput(attrs={'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control'}),
             'city': forms.TextInput(attrs={'class': 'form-control'}),
             'address': forms.TextInput(attrs={'class': 'form-control'}),
@@ -25,7 +25,7 @@ class TenantEditForm(forms.ModelForm):
         }
         labels = {
             'tenant_name': 'テナント名',
-            'postal_cd': '郵便番号',
+            'postal_code': '郵便番号',
             'state': '都道府県',
             'city': '市区町村',
             'address': '住所',

@@ -1,0 +1,41 @@
+[
+  {
+    "model": "product_mst.productcategory",
+    "pk": 1,
+    "fields": {
+      "tenant": 1,
+      "product_category_name": "食品",
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.productcategory",
+    "pk": 2,
+    "fields": {
+      "tenant": 1,
+      "product_category_name": "文房具",
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.productcategory",
+    "pk": 3,
+    "fields": {
+      "tenant": 1,
+      "product_category_name": "家電",
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  }
+]

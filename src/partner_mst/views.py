@@ -8,11 +8,14 @@ from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
+from django.shortcuts import redirect
+from sales_order.models import SalesOrder
+from django.db.models.deletion import ProtectedError
 
 # CSV/Excel の共通出力カラム定義
 DATA_COLUMNS = [
     'partner_name', 'contact_name',
-    'email', 'tel_number', 'postal_cd', 'state',
+    'email', 'tel_number', 'postal_code', 'state',
     'city', 'address', 'address2'
 ] + Common.COMMON_DATA_COLUMNS
 
@@ -42,7 +45,7 @@ class PartnerListView(generic.ListView):
 
 class PartnerCreateView(generic.CreateView):
     '''
-    取引先登録モーダル版
+    取引先登録
     - GET: 部分テンプレートを返す（Ajax）
     - POST: Ajaxで登録処理
     '''
@@ -87,7 +90,7 @@ class PartnerCreateView(generic.CreateView):
 
 class PartnerUpdateView(generic.UpdateView):
     '''
-    取引先更新モーダル版
+    取引先更新
     - GET: 部分テンプレートを返す（Ajax）
     - POST: Ajaxで更新処理
     '''
@@ -150,6 +153,32 @@ class PartnerDeleteView(generic.View):
         return HttpResponseRedirect(reverse_lazy('partner_mst:list'))
 
 
+class PartnerBulkDeleteView(generic.View):
+    ''' 一括削除処理 '''
+    def post(self, request, *args, **kwargs):
+        ids = request.POST.getlist('ids')
+        if ids:
+            try:
+                Partner.objects.filter(id__in=ids).delete()
+                return JsonResponse({'message': f'{len(ids)}件削除しました'})
+            except ProtectedError as e:
+                # 削除できなかった取引先を抽出（SalesOrderDetail → Partnerを辿る）
+                protected_partners = set()
+                for obj in e.protected_objects:
+                    if isinstance(obj, SalesOrder):
+                        protected_partners.add(obj.partner)
+
+                details = ', '.join(
+                    f"{p.partner_name}" for p in protected_partners
+                )
+                return JsonResponse({
+                    'error': '使用中の取引先は削除できません',
+                    'details': details or str
+                }, status=400)
+        else:
+            messages.warning(request, '削除対象が選択されていません')
+        return redirect('partner_mst:list')
+
 # -----------------------------
 # Export / Import
 # -----------------------------
@@ -197,7 +226,7 @@ class ImportCSV(CSVImportBaseView):
             contact_name=row.get('contact_name'),
             email=row.get('email'),
             tel_number=row.get('tel_number'),
-            postal_cd=row.get('postal_cd'),
+            postal_code=row.get('postal_code'),
             state=row.get('state'),
             city=row.get('city'),
             address=row.get('address'),
@@ -219,7 +248,7 @@ def get_row(rec):
         rec.contact_name,
         rec.email,
         rec.tel_number,
-        rec.postal_cd,
+        rec.postal_code,
         rec.state,
         rec.city,
         rec.address,

@@ -14,4 +14,5 @@ urlpatterns = [
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     path('create/', views.ProductCreateView.as_view(), name='create'),
     path('<int:pk>/update/', views.ProductUpdateView.as_view(), name='update'),
+    path('bulk_delete/', views.ProductBulkDeleteView.as_view(), name='bulk_delete'),
 ]

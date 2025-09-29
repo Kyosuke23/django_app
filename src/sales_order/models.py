@@ -29,7 +29,7 @@ def generate_sales_order_no(tenant):
 
 class SalesOrder(BaseModel):
     sales_order_no = models.CharField(max_length=20, verbose_name="受注番号")
-    status_cd = models.CharField(
+    status_code = models.CharField(
         max_length=20,
         choices=SalesOrderStatus.choices,
         default=SalesOrderStatus.DRAFT
@@ -106,4 +106,4 @@ class SalesOrderDetail(BaseModel):
         unique_together = ("sales_order", "line_no")
 
     def __str__(self):
-        return f"{self.sales_order.order_no} - {self.line_no}: {self.product.product_nm}"
+        return f"{self.sales_order.sales_order_no} - {self.line_no}: {self.product.product_name}"

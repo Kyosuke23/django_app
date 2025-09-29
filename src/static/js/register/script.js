@@ -35,13 +35,13 @@ $(function() {
         // クリックされた検索ボタンの属性を取得
         const type = this.dataset.type;
         // 入力された郵便番号を取得
-        const postal_cd = $(`input[name="postal_cd"][class~="${type}"]`).val();
+        const postal_code = $(`input[name="postal_code"][class~="${type}"]`).val();
         // Ajax処理
-        if (postal_cd) {
+        if (postal_code) {
             $.ajax({
                 url: 'get_postal_code/',
                 type: 'POST',
-                data: {'postal_cd': postal_cd},
+                data: {'postal_code': postal_code},
                 dataType: 'text',
                 // formのcsrfトークンが使えないので自力で行う
                 beforeSend: function(xhr, settings) {

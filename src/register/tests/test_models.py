@@ -280,25 +280,25 @@ class TestModelsClass(TestCase):
 
     def test_04_01_01_01_field_pattern(self):
         '''
-        postal_cd: パターン
+        postal_code: パターン
         正常系
         '''
         test_user = CustomUser(
             username='test'
-            , postal_cd='1234567'
+            , postal_code='1234567'
             , password='test@pass'
         )
         test_user.full_clean()
-        self.assertEqual(test_user.postal_cd, '1234567')
+        self.assertEqual(test_user.postal_code, '1234567')
 
     def test_04_01_02_01_field_pattern(self):
         '''
-        postal_cd: パターン
+        postal_code: パターン
         異常系
         '''
         test_user = CustomUser(
             username='test'
-            , postal_cd='test'
+            , postal_code='test'
             , password='test@pass'
         )
         with self.assertRaises(ValidationError):
@@ -306,12 +306,12 @@ class TestModelsClass(TestCase):
 
     def test_04_01_02_02_field_pattern(self):
         '''
-        postal_cd: パターン
+        postal_code: パターン
         異常系
         '''
         test_user = CustomUser(
             username='test'
-            , postal_cd='テスト'
+            , postal_code='テスト'
             , password='test@pass'
         )
         with self.assertRaises(ValidationError):
@@ -319,12 +319,12 @@ class TestModelsClass(TestCase):
 
     def test_04_01_02_03_field_pattern(self):
         '''
-        postal_cd: パターン
+        postal_code: パターン
         異常系
         '''
         test_user = CustomUser(
             username='test'
-            , postal_cd='123-4567'
+            , postal_code='123-4567'
             , password='test@pass'
         )
         with self.assertRaises(ValidationError):
@@ -332,7 +332,7 @@ class TestModelsClass(TestCase):
 
     def test_04_02_01_01_field_null(self):
         '''
-        postal_cd: Null
+        postal_code: Null
         正常系
         '''
         test_user = CustomUser(
@@ -340,20 +340,20 @@ class TestModelsClass(TestCase):
             , password='test@pass'
         )
         test_user.full_clean()
-        self.assertEqual(test_user.postal_cd, None)
+        self.assertEqual(test_user.postal_code, None)
 
     def test_04_02_01_02_field_blank(self):
         '''
-        postal_cd: Blank
+        postal_code: Blank
         正常系
         '''
         test_user = CustomUser(
             username='test'
-            , postal_cd=''
+            , postal_code=''
             , password='test@pass'
         )
         test_user.full_clean()
-        self.assertEqual(test_user.postal_cd, '')
+        self.assertEqual(test_user.postal_code, '')
 
     def test_05_01_01_01_field_max_length(self):
         '''

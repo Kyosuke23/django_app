@@ -10,7 +10,7 @@
   {% csrf_token %}
   <div class="mb-3">
     <label class="form-label">ステータス</label>
-    <p class="form-control-plaintext">{{ form.instance.get_status_cd_display }}</p>
+    <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
   </div>
   {% bootstrap_form form %}
 
