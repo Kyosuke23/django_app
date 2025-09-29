@@ -14,7 +14,7 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from django.contrib.auth.views import PasswordChangeView
 from django.http import HttpResponseForbidden
-from .constants import PRIVILEGE_REFERENCE
+from .constants import PRIVILEGE_REFERENCE, PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
 
 
 # CSV/Excel の共通出力カラム
@@ -53,6 +53,10 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_keyword'] = self.request.GET.get('search_keyword') or ''
+        context['search_privilege'] = self.request.GET.get('search_privilege') or ''
+        context['search_employment_status'] = self.request.GET.get('search_employment_status') or ''
+        context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
+        context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -304,11 +308,15 @@ def get_row(rec):
 
 def filter_data(request, query_set):
     keyword = request.GET.get('search_keyword') or ''
+    privilege = request.GET.get('search_privilege') or ''
+    employment_status = request.GET.get('search_employment_status') or ''
+
     if keyword:
-        query_set = query_set.filter(
-            Q(username__icontains=keyword) |
-            Q(email__icontains=keyword)
-        )
+        query_set = query_set.filter(Q(username__icontains=keyword) | Q(email__icontains=keyword))
+    if privilege:
+        query_set = query_set.filter(privilege=privilege)
+    if employment_status:
+        query_set = query_set.filter(employment_status=employment_status)
     return query_set
 
 

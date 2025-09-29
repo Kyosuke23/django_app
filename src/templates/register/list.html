@@ -33,6 +33,29 @@
       <input id="search_keyword" type="text" name="search_keyword" class="form-control"
              value="{{ search_keyword }}" placeholder="ユーザー名 / メールアドレスを入力してください">
     </div>
+
+    <div class="col col-md-1">
+      <select id="search_privilege" class="form-control" name="search_privilege">
+        <option value="">-- 権限 --</option>
+        {% for val,label in PRIVILEGE_CHOICES %}
+        <option value="{{ val }}" {% if search_privilege == val|stringformat:"s" %}selected{% endif %}>
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col col-md-1">
+      <select id="search_employment_status" class="form-control" name="search_employment_status">
+        <option value="">-- 雇用状態 --</option>
+        {% for val,label in EMPLOYMENT_STATUS_CHOICES %}
+        <option value="{{ val }}" {% if search_employment_status == val|stringformat:"s" %}selected{% endif %}>
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
     <div class="col">
       <button type="submit" class="btn btn-primary search_form_btn"
               data-action="{% url 'register:list' %}">
