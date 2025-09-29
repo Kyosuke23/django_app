@@ -2,7 +2,7 @@
 <div class="modal fade" id="delete-Modal-{{ user.pk }}" tabindex="-1" aria-labelledby="user_delete_modal" aria-hidden="false">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="delete_form_{{ user.pk }}" method='post' action="{% url 'register:register_user_delete' user.pk %}">
+            <form id="delete_form_{{ user.pk }}" method='post' action="{% url 'register:delete' user.pk %}">
                 {% csrf_token %}
                 {# ヘッダー #}
                 <div class="modal-header">

@@ -1,5 +1,5 @@
 from django.conf import settings
-from register import const as register_const
+from register import constants as register_const
 
 
 def const_str(request):

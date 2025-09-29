@@ -1,7 +1,7 @@
 <div class="modal fade" id="create-Modal" tabindex="-1" aria-labelledby="user_create_modal" aria-hidden="false">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="create_form" method='post' action="{% url 'register:register_user_create' %}">
+            <form id="create_form" method='post' action="{% url 'register:create' %}">
                 {% csrf_token %}
                 {# ヘッダー #}
                 <div class="modal-header">
@@ -54,35 +54,6 @@
                     <div class="col-md-12 mb-2">
                         <label for="tel_number" class="form-label">{{ form.tel_number.label }}</label>
                         {{ form.tel_number }}
-                    </div>
-                    {# 郵便番号 #}
-                    <div class="col-md-7 mb-2">
-                        <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
-                        <input type="text" class="form-control create" name="postal_cd" value="{{ data.postal_cd }}">
-                    </div>
-                    <div class="col d-flex align-items-end mb-2">
-                        <input type="button" class="btn btn-secondary btn-search-postal-code" value="住所検索" data-type="create">
-                    </div>
-                    {# 都道府県 #}
-                    <div class="col-md-3 mb-2">
-                        <label for="state" class="form-label">{{ form.state.label }}</label>
-                        <input type="text" class="form-control create" name="state" value="{{ data.state|default_if_none:'' }}">
-                    </div>
-                    {# 市区町村 #}
-                    <div class="col-md-6 mb-2">
-                        <label for="city" class="form-label">{{ form.city.label }}</label>
-                        <input type="text" class="form-control create" name="city" value="{{ data.city|default_if_none:'' }}">
-                    </div>
-                    <div class="col-md-3"></div>
-                    {# 住所 #}
-                    <div class="col-md-12 mb-2">
-                        <label for="address" class="form-label">{{ form.address.label }}</label>
-                        <input type="text" class="form-control create" name="address" value="{{ data.address|default_if_none:'' }}">
-                    </div>
-                    {# 住所2 #}
-                    <div class="col-md-12 mb-2">
-                        <label for="address2" class="form-label">{{ form.address2.label }}</label>
-                        {{ form.address2 }}
                     </div>
                     {# 権限 #}
                     <div class="col-md-3 mb-2">

@@ -24,4 +24,11 @@ PRIVILEGE_CHOICES = (
     , (PRIVILEGE_GUEST, 'ゲスト')
 )
 
+# 就業ステータス
+EMPLOYMENT_STATUS_CHOICES = [
+    ('1', '在職中'),
+    ('2', '休職中'),
+    ('3', '退職済み'),
+]
+
 POSTAL_API_URL = 'https://zipcloud.ibsnet.co.jp/api/search'
