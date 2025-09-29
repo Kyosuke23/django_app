@@ -1,7 +1,7 @@
 <div class="modal fade" id="create-Modal" tabindex="-1" aria-labelledby="user_create_modal" aria-hidden="false">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="create_form" method='post' action="{% url 'register:register_user_create' %}">
+            <form id="create_form" method='post' action="{% url 'register:create' %}">
                 {% csrf_token %}
                 {# ヘッダー #}
                 <div class="modal-header">

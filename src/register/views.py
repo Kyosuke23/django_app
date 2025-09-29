@@ -17,7 +17,7 @@ import json
 import requests
 
 # 出力データカラム
-OUTPUT_DATA_COLUMNS = ['usernmae', 'first_name', 'last_name', 'email', 'gender', 'birthday', 'tel_number', 'postal_cd', 'state', 'city', 'address', 'address2', 'privilege']
+OUTPUT_DATA_COLUMNS = ['usernmae', 'first_name', 'last_name', 'email', 'gender', 'birthday', 'tel_number', 'postal_cd', 'state', 'city', 'address', 'address2', 'privilege'] + Common.COMMON_DATA_COLUMNS
 
 
 class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
@@ -27,34 +27,22 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     model = CustomUser
     form_class = SignUpForm
     context_object_name = 'users'
-    template_name = 'register/index.html'
+    template_name = 'register/list.html'
     paginate_by = 50
 
     def get_queryset(self, **kwarg):
-        # query_setをクレンジングして取得
         query_set = super().get_queryset(**kwarg)
-        # 必須取得条件
         query_set = query_set.filter(tenant=self.request.user.tenant)
-        # 検索を実行
-        return search_data(request=self.request, query_set=query_set)
+        return filter_data(request=self.request, query_set=query_set)
 
     def get_context_data(self, **kwarg):
-        # コンテキストデータの取得
         context = super().get_context_data(**kwarg)
-        # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-        search_key = self.request.GET.get('search_key') or ''
-        search_gender = self.request.GET.get('search_gender')
-        search_privilege = self.request.GET.get('search_privilege')
-        # 検索フォームにキーワードを残す
-        context['search_key'] = search_key
-        context['search_gender'] = search_gender
-        context['search_privilege'] = search_privilege
-        # 各種リストのデータをフォームに適用
+        context['search_key'] = self.request.GET.get('search_key') or ''
+        context['search_gender'] = self.request.GET.get('search_gender')
+        context['search_privilege'] = self.request.GET.get('search_privilege')
         context['gender_list'] = GENDER_CHOICES
         context['privilege_list'] = PRIVILEGE_CHOICES
-        # ページネーション設定
         context = Common.set_pagination(context, self.request.GET.urlencode())
-        # フォームの値を設定
         context['form'] = self.get_form
         return context
 
@@ -71,7 +59,7 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
         else:
             return self.form_invalid(form)
         
-def search_data(request, query_set):
+def filter_data(request, query_set):
     '''
     クエリセットに検索条件を適用
     '''
@@ -95,39 +83,26 @@ class RegisterUserCreate(generic.edit.CreateView):
     """
     ユーザー情報の登録処理
     """
-    class Meta:
-        model = CustomUser
+    model = CustomUser
     template_name = 'register/create.html'
     context_object_name = 'user'
     form_class = SignUpForm
     
     def get_success_url(self):
-        # 処理後は検索一覧画面に遷移
-        return reverse('register:register_user_index')
+        return reverse('register:list')
     
     def post(self, request, *args, **kwargs):
-        # フォームの入力データを取得
         form = self.get_form()
-        # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
-            post = form.save(commit=False)
-            # 作成者と更新者とテナントをログインユーザーで設定
-            post.create_user = self.request.user
-            post.update_user = self.request.user
-            post.tenant = self.request.user
-            # 登録処理の実行
-            post.save()
-            # 処理成功のフラッシュメッセージを設定
+            Common.save_data(selv=self, form=form, is_update=False)
             messages.success(request, '登録が完了しました')
-        # 処理結果を格納
         result = JsonResponse(
             {
-                'errors': form.errors  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                'errors': form.errors
+                , 'success_url': self.get_success_url()
             },
-            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+            json_dumps_params={'ensure_ascii': False}
         )
-        # 処理結果を返却
         return result
     
 class RegisterUserUpdate(generic.edit.UpdateView):
@@ -142,32 +117,22 @@ class RegisterUserUpdate(generic.edit.UpdateView):
     
     def get_success_url(self):
         # 処理後は検索一覧画面に遷移
-        return reverse('register:register_user_index')
+        return reverse('register:list')
     
     def post(self, request, *args, **kwargs):
-        # フォームのデータからモデルインスタンスを取得
         user = get_object_or_404(CustomUser, pk=request.POST['pk'])
-        # モデルを基にしたフォームを作成
         form = EditForm(request.POST, instance=user)
         print(user.gender)
-        # バリデーションを通過した場合のみフォームの情報を保存
         if form.is_valid():
-            # 更新ユーザーとテナントをログインユーザーで設定
-            form.update_user = self.request.user
-            form.tenant = self.request.user
-            # 保存処理の実行
-            form.save()
-            # 処理成功のフラッシュメッセージを設定
+            Common.save_data(selv=self, form=form, is_update=True)
             messages.success(request, '更新が完了しました')
-        # 処理結果を格納
         result = JsonResponse(
             {
-                'errors': form.errors  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                'errors': form.errors
+                , 'success_url': self.get_success_url()
             },
-            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+            json_dumps_params={'ensure_ascii': False}
         )
-        # 処理結果を返却
         return result
     
 class RegisterUserDelete(generic.edit.DeleteView):
@@ -178,23 +143,18 @@ class RegisterUserDelete(generic.edit.DeleteView):
     template_name = 'register/delete.html'
 
     def get_success_url(self):
-        # 処理後は検索一覧画面に遷移
-        return reverse('register:register_user_index')
+        return reverse('register:list')
 
     def post(self, request, *args, **kwargs):
-        # 削除処理の実行
         CustomUser.objects.filter(pk=request.POST['pk']).delete()
-        # 処理成功のフラッシュメッセージを設定
         messages.success(request, '削除が完了しました')
-        # 処理結果を格納
         result = JsonResponse(
             {
-                'errors': {}  # エラーフィールド
-                , 'success_url': self.get_success_url()  # 成功時の遷移先URL
+                'errors': {}
+                , 'success_url': self.get_success_url()
             },
-            json_dumps_params={'ensure_ascii': False}  # 文字化け対策
+            json_dumps_params={'ensure_ascii': False}
         )
-        # 処理結果を返却
         return result
     
 class RegisterUserChangePassword(PasswordChangeView):
@@ -205,27 +165,8 @@ class RegisterUserChangePassword(PasswordChangeView):
     template_name = 'register/password_change.html'
 
     def get_success_url(self):
-        # 処理成功のフラッシュメッセージを設定
         messages.success(self.request, 'パスワードが変更されました')
-        # 処理後は検索一覧画面に遷移
         return reverse('dashboard:top')
-
-class GetPostalCode(generic.TemplateView):
-    """
-    郵便番号による住所検索処理（Ajax）
-    """
-    def post(self, request, *args, **kwargs):
-        # 入力された郵便番号を取得
-        postal_cd = request.POST.get('postal_cd')
-        # APIで住所検索
-        res = requests.get(
-            POSTAL_API_URL
-            , params=({'zipcode': postal_cd})
-        )
-        # 取得結果を返却
-        return HttpResponse(json.dumps({
-            'address_info': res.json()
-        }))
     
 class ExportExcel(generic.TemplateView):
     def get(self, request, *args, **kwargs):
@@ -237,7 +178,7 @@ class ExportExcel(generic.TemplateView):
         # queryセットを取得
         data = CustomUser.objects.all()
         # 検索条件を適用
-        data = search_data(request=request, query_set=data)
+        data = filter_data(request=request, query_set=data)
         # Excel出力用のレスポンスを取得
         response = HttpResponse(content_type='application/vnd.ms-excel')
         response['Content-Disposition'] = f'attachment; filename="{file_name}"'
@@ -279,7 +220,7 @@ class ExportCSV(generic.TemplateView):
         # queryセットを取得
         data = CustomUser.objects.all()
         # 検索条件を適用
-        data = search_data(request=request, query_set=data)
+        data = filter_data(request=request, query_set=data)
         # CSV出力用のレスポンスを取得
         response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
         response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)

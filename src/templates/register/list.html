@@ -4,16 +4,16 @@
 {% load humanize %}
 {% block content %}
 {# 検索 & 登録画面リンク #}
-<form id="search_form" method="get" action="{% url 'register:register_user_index' %}">
+<form id="search_form" method="get" action="{% url 'register:list' %}">
     {# ページタイトル #}
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">ユーザー管理画面</h1>
         {# 出力ボタンエリア #}
         <div class="col d-flex justify-content-end">
             {# CSV出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:register_user_export_csv' %}" value="CSV">
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:export_csv' %}" value="CSV">
             {# Excel出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:register_user_export_excel' %}" value="Excel">
+            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:export_excel' %}" value="Excel">
         </div>
     </div>
     {# 検索フォーム #}
@@ -54,7 +54,7 @@
         {# 登録画面リンク #}
         {% if user.privilege <= PRIVILEGE_EDITOR %}
         <div class="col d-flex align-items-end justify-content-end">
-            <a class="btn btn-outline-primary" href="{% url 'register:register_user_create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
+            <a class="btn btn-outline-primary" href="{% url 'register:create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
         </div>
         {% endif %}
     </div>
@@ -101,7 +101,7 @@
                 <td>{{ data.get_privilege_display }}</td>
                 {% if user.privilege == PRIVILEGE_EDITOR and user.username == data.username or user.privilege == PRIVILEGE_ADMIN %}
                 <td>
-                    <a class="btn btn-outline-primary btn-sm" href="{% url 'register:register_user_update' data.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ data.pk }}">編集</a>
+                    <a class="btn btn-outline-primary btn-sm" href="{% url 'register:update' data.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ data.pk }}">編集</a>
                 </td>
                 <td>
                     <a class="btn btn-outline-danger btn-sm" href="" data-bs-toggle="modal" data-bs-target="#delete-Modal-{{ data.pk }}">削除</a>

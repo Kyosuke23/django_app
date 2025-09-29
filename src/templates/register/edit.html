@@ -1,7 +1,7 @@
 <div class="modal fade" id="update-Modal-{{ data.pk }}" tabindex="-1" aria-labelledby="user_update_modal" aria-hidden="false">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form id="update_form_{{ data.pk }}" method='post' action="{% url 'register:register_user_update' data.pk %}">
+            <form id="update_form_{{ data.pk }}" method='post' action="{% url 'register:update' data.pk %}">
                 {% csrf_token %}
                 {# ヘッダー #}
                 <div class="modal-header">

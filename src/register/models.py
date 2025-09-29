@@ -46,4 +46,4 @@ class CustomUser(AbstractUser):
         return self.username
 
     def get_absolute_url(self):
-        return reverse('register:register_user_index', kwargs={'pk': self.pk})
+        return reverse('register:list', kwargs={'pk': self.pk})
