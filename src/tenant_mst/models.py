@@ -8,9 +8,9 @@ class Tenant(BaseModel):
     企業・組織情報を管理するモデル
     """
     class Meta:
-        ordering = ['tenant_cd']
+        ordering = ['tenant_code']
 
-    tenant_cd = models.UUIDField(
+    tenant_code = models.UUIDField(
         default=uuid.uuid4,
         unique=True,
         editable=False,
@@ -35,7 +35,7 @@ class Tenant(BaseModel):
         null=True,
         verbose_name='代表電話番号'
     )
-    postal_cd = models.CharField(
+    postal_code = models.CharField(
         max_length=7,
         blank=True,
         null=True,
@@ -67,7 +67,7 @@ class Tenant(BaseModel):
     )
 
     def __str__(self):
-        return f'{self.tenant_name} ({self.tenant_cd})'
+        return f'{self.tenant_name} ({self.tenant_code})'
 
     def get_absolute_url(self):
         return reverse('tenant_mst:edit', kwargs={'pk': self.pk})

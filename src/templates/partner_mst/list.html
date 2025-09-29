@@ -7,7 +7,7 @@
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
   <h1 class="h2">取引先マスタ管理画面</h1>
 
-  {# インポート/エクスポート用のボタンエリア #}
+  {# インポート/エクスポート/一括削除用のボタンエリア #}
   <div class="d-flex gap-2">
     <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
     <button type="button" id="import-btn" class="btn btn-outline-secondary"
@@ -70,43 +70,56 @@
 
 {# 検索結果表示 #}
 <div class="result-table overflow-auto table-responsive">
-  <table class="table table-hover table-striped text-nowrap">
-    <thead class="table-dark sticky-top">
-      <tr>
-        <th scope="col">取引先名称</th>
-        <th scope="col">担当者名</th>
-        <th scope="col">メールアドレス</th>
-        <th scope="col">電話番号</th>
-        <th scope="col">住所</th>
-        <th scope="col">操作</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for partner in partners %}
-      <tr class="align-middle">
-        <td>{{ partner.partner_name|default_if_none:'' }}</td>
-        <td>{{ partner.contact_name|default_if_none:'' }}</td>
-        <td>{{ partner.email|default_if_none:'' }}</td>
-        <td>{{ partner.tel_number|default_if_none:'' }}</td>
-        <td>
-          〒{{ partner.postal_cd }}<br>
-          {{ partner.state }} {{ partner.city }} {{ partner.address }} {{ partner.address2 }}
-        </td>
-        <td>
+  <form id="bulk-delete-form" method="post" action="{% url 'partner_mst:bulk_delete' %}">
+    {% csrf_token %}
+    <table class="table table-hover table-striped text-nowrap">
+      <thead class="table-dark sticky-top">
+        <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-          <a href="#"
-            class="btn btn-sm btn-outline-secondary"
-            data-bs-toggle="modal"
-            data-bs-target="#partnerModal"
-            data-url="{% url 'partner_mst:update' partner.id %}">
-            編集
-          </a>
+          <th class="text-center" scope="col">
+            <input type="checkbox" id="check-all">
+          </th>
           {% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+          <th scope="col">取引先名称</th>
+          <th scope="col">担当者名</th>
+          <th scope="col">メールアドレス</th>
+          <th scope="col">電話番号</th>
+          <th scope="col">住所</th>
+          <th scope="col">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for partner in partners %}
+        <tr class="align-middle">
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
+          <td class="text-center">
+            <input type="checkbox" name="ids" value="{{ partner.id }}" class="check-item">
+          </td>
+          {% endif %}
+          <td>{{ partner.partner_name|default_if_none:'' }}</td>
+          <td>{{ partner.contact_name|default_if_none:'' }}</td>
+          <td>{{ partner.email|default_if_none:'' }}</td>
+          <td>{{ partner.tel_number|default_if_none:'' }}</td>
+          <td>
+            〒{{ partner.postal_code }}<br>
+            {{ partner.state }} {{ partner.city }} {{ partner.address }} {{ partner.address2 }}
+          </td>
+          <td>
+            {% if user.privilege <= PRIVILEGE_EDITOR %}
+            <a href="#"
+              class="btn btn-sm btn-outline-secondary"
+              data-bs-toggle="modal"
+              data-bs-target="#partnerModal"
+              data-url="{% url 'partner_mst:update' partner.id %}">
+              編集
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
 
   <!-- モーダル -->
   <div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
@@ -120,8 +133,19 @@
   </div>
 </div>
 
-{# ページネーション #}
-{% include 'layout/pagination.html' %}
+{# ページネーション + 一括削除ボタン #}
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <div>
+    {% include 'layout/pagination.html' %}
+  </div>
+  {% if user.privilege <= PRIVILEGE_EDITOR %}
+  <div class="text-end">
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'product_mst:bulk_delete' %}">
+      一括削除
+    </button>
+  </div>
+  {% endif %}
+</div>
 
 <script type="text/javascript" src="{% static 'js/partner_mst/script.js' %}"></script>
 {% endblock %}

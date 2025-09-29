@@ -33,7 +33,7 @@ class Partner(BaseModel):
     contact_name = models.CharField(max_length=255, blank=True, null=True, verbose_name='担当者名')
     tel_number = models.CharField(max_length=15, blank=True, null=True, verbose_name='電話番号')
     email = models.EmailField(blank=True, null=True, verbose_name='メールアドレス')
-    postal_cd = models.CharField(max_length=7, blank=True, null=True, verbose_name='郵便番号')
+    postal_code = models.CharField(max_length=7, blank=True, null=True, verbose_name='郵便番号')
     state = models.CharField(max_length=5, blank=True, null=True, verbose_name='都道府県')
     city = models.CharField(max_length=255, blank=True, null=True, verbose_name='市区町村')
     address = models.CharField(max_length=255, blank=True, null=True, verbose_name='住所')

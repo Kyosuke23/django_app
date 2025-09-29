@@ -180,9 +180,9 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         self.object.tenant = self.request.user.tenant
         # ステータス制御
         if self.request.POST.get("action_type") == "submit":
-            self.object.status_cd = "SUBMITTED"
+            self.object.status_code = "SUBMITTED"
         else:
-            self.object.status_cd = "DRAFT"
+            self.object.status_code = "DRAFT"
         self.object.save()
 
         save_order_details(self.request, self.object)
@@ -245,8 +245,7 @@ class ImportCSV(CSVImportBaseView):
     unique_field = 'sales_order_no'
 
     def validate_row(self, row, idx, existing, request):
-        # … (ここは元の実装をほぼ維持)
-        ...
+        pass
         
 
 # -----------------------------
@@ -260,7 +259,7 @@ def get_order_detail_row(sales_order, detail):
         sales_order.sales_order_date,
         sales_order.remarks,
         detail.line_no if detail else '',
-        detail.product.product_nm if detail and detail.product else '',
+        detail.product.product_name if detail and detail.product else '',
         detail.quantity if detail else '',
         detail.unit if detail else '',
         detail.unit_price if detail else '',

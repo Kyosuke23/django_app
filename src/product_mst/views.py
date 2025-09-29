@@ -1,6 +1,7 @@
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from .models import Product, ProductCategory
+from sales_order.models import SalesOrderDetail
 from .form import ProductForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
@@ -9,11 +10,14 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.http import HttpResponseRedirect
+from django.shortcuts import redirect
+from django.db.models.deletion import ProtectedError
+
 
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
 DATA_COLUMNS = [
-    'product_cd', 'product_nm', 'start_date', 'end_date',
+    'product_name', 'start_date', 'end_date',
     'product_category', 'price', 'description'
 ] + Common.COMMON_DATA_COLUMNS
 
@@ -39,7 +43,7 @@ class ProductListView(generic.ListView):
         '''検索条件を反映したクエリセットを返す'''
         query_set = Product.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
         query_set = filter_data(request=self.request, query_set=query_set)
-        return query_set.order_by('product_cd')
+        return query_set.order_by('product_name')
     
     def get_context_data(self, **kwargs):
         '''
@@ -58,7 +62,7 @@ class ProductListView(generic.ListView):
 
 class ProductCreateView(generic.CreateView):
     '''
-    商品登録モーダル版
+    商品登録
     - GET: 部分テンプレートを返す（Ajax）
     - POST: Ajaxで登録処理
     '''
@@ -81,7 +85,7 @@ class ProductCreateView(generic.CreateView):
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=False)
-        product_message(self.request, '登録', self.object.product_nm)
+        product_message(self.request, '登録', self.object.product_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -103,7 +107,7 @@ class ProductCreateView(generic.CreateView):
 
 class ProductUpdateView(generic.UpdateView):
     '''
-    商品更新モーダル版
+    商品更新
     - GET: 部分テンプレートを返す（Ajax）
     - POST: Ajaxで更新処理
     '''
@@ -119,7 +123,7 @@ class ProductUpdateView(generic.UpdateView):
             {
                 'form': form,
                 'form_action': reverse('product_mst:update', kwargs={'pk': self.object.pk}),
-                'modal_title': f'商品更新: {self.object.product_nm}',
+                'modal_title': f'商品更新: {self.object.product_name}',
             },
             request
         )
@@ -127,7 +131,7 @@ class ProductUpdateView(generic.UpdateView):
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=True)
-        product_message(self.request, '更新', self.object.product_nm)
+        product_message(self.request, '更新', self.object.product_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -135,7 +139,7 @@ class ProductUpdateView(generic.UpdateView):
     def form_invalid(self, form):
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             obj = getattr(self, 'object', None)
-            modal_title = f'商品更新: {obj.product_nm}' if obj else '商品更新'
+            modal_title = f'商品更新: {obj.product_name}' if obj else '商品更新'
             html = render_to_string(
                 self.template_name,
                 {
@@ -168,8 +172,34 @@ class ProductDeleteView(generic.View):
         # obj.is_deleted = True
         # obj.update_user = request.user
         # obj.save()
-        product_message(request, '削除', obj.product_nm)
+        product_message(request, '削除', obj.product_name)
         return HttpResponseRedirect(reverse_lazy('product_mst:list'))
+    
+class ProductBulkDeleteView(generic.View):
+    ''' 一括削除処理 '''
+    def post(self, request, *args, **kwargs):
+        ids = request.POST.getlist('ids')
+        if ids:
+            try:
+                Product.objects.filter(id__in=ids).delete()
+                return JsonResponse({'message': f'{len(ids)}件削除しました'})
+            except ProtectedError as e:
+                # 削除できなかった商品を抽出（SalesOrderDetail → product を辿る）
+                protected_products = set()
+                for obj in e.protected_objects:
+                    if isinstance(obj, SalesOrderDetail):
+                        protected_products.add(obj.product)
+
+                details = ', '.join(
+                    f"{p.product_name}" for p in protected_products
+                )
+                return JsonResponse({
+                    'error': '使用中の商品は削除できません',
+                    'details': details or str
+                }, status=400)
+        else:
+            messages.warning(request, '削除対象が選択されていません')
+        return redirect('product_mst:list')
 
 
 # -----------------------------
@@ -224,20 +254,20 @@ class ImportCSV(CSVImportBaseView):
     '''
     expected_headers = DATA_COLUMNS
     model_class = Product
-    unique_field = 'product_cd'
+    unique_field = 'product_name'
 
     def validate_row(self, row, idx, existing, request):
         '''1行ごとのバリデーション処理'''
-        product_cd = row.get('product_cd')
-        if not product_cd:
-            return None, f'{idx}行目: product_cd が空です'
-        if product_cd in existing:
-            return None, f'{idx}行目: product_cd "" は既に存在します'
+        product_name = row.get('product_name')
+        if not product_name:
+            return None, f'{idx}行目: product_name が空です'
+        if product_name in existing:
+            return None, f'{idx}行目: product_name "" は既に存在します'
 
         # カテゴリの変換
         category_name = row.get('product_category')
         try:
-            category = ProductCategory.objects.get(product_category_nm=category_name)
+            category = ProductCategory.objects.get(product_category_name=category_name)
         except ProductCategory.DoesNotExist:
             return None, f'{idx}行目: product_category "{category_name}" が存在しません'
 
@@ -262,8 +292,7 @@ class ImportCSV(CSVImportBaseView):
 
         # Product オブジェクト生成
         obj = Product(
-            product_cd=product_cd,
-            product_nm=row.get('product_nm'),
+            product_name=row.get('product_name'),
             product_category=category,
             description=row.get('description') or '',
             price=price_val,
@@ -282,11 +311,10 @@ class ImportCSV(CSVImportBaseView):
 def get_row(rec):
     '''CSV/Excel出力用: 1行分のリストを返す'''
     return [
-        rec.product_cd,
-        rec.product_nm,
+        rec.product_name,
         rec.start_date,
         rec.end_date,
-        rec.product_category.product_category_nm if rec.product_category else '',
+        rec.product_category.product_category_name if rec.product_category else '',
         rec.price,
         rec.description,
     ] + Common.get_common_columns(rec=rec)
@@ -298,13 +326,12 @@ def filter_data(request, query_set):
     category = request.GET.get('search_product_category') or ''
     if keyword:
         query_set = query_set.filter(
-            Q(product_cd__icontains=keyword) |
-            Q(product_nm__icontains=keyword)
+            Q(product_name__icontains=keyword)
         )
     if category:
         query_set = query_set.filter(product_category_id=category)
     return query_set
 
-def product_message(request, action, product_nm):
+def product_message(request, action, product_name):
     '''商品操作の統一メッセージ'''
-    messages.success(request, f'商品「{product_nm}」を{action}しました。')
+    messages.success(request, f'商品「{product_name}」を{action}しました。')

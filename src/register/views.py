@@ -14,7 +14,7 @@ from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseVie
 # CSV/Excel 共通カラム
 DATA_COLUMNS = [
     'username', 'last_name', 'first_name', 'gender', 'email',
-    'birthday', 'tel_number', 'postal_cd', 'state', 'city',
+    'birthday', 'tel_number', 'postal_code', 'state', 'city',
     'address', 'address2', 'privilege', 'employment_status', 'employment_end_date'
 ] + Common.COMMON_DATA_COLUMNS
 
@@ -249,7 +249,7 @@ class ImportCSV(CSVImportBaseView):
             email=row.get('email'),
             birthday=row.get('birthday') or None,
             tel_number=row.get('tel_number'),
-            postal_cd=row.get('postal_cd'),
+            postal_code=row.get('postal_code'),
             state=row.get('state'),
             city=row.get('city'),
             address=row.get('address'),
@@ -278,7 +278,7 @@ def get_row(rec):
         rec.email,
         rec.birthday,
         rec.tel_number,
-        rec.postal_cd,
+        rec.postal_code,
         rec.state,
         rec.city,
         rec.address,

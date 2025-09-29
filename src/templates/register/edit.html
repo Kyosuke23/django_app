@@ -58,8 +58,8 @@
                     </div>
                     {# 郵便番号 #}
                     <div class="col-md-7 mb-2">
-                        <label for="postal_cd" class="form-label">{{ form.postal_cd.label }}</label>
-                        <input type="text" class="form-control edit" name="postal_cd" value="{{ data.postal_cd|default_if_none:'' }}">
+                        <label for="postal_code" class="form-label">{{ form.postal_code.label }}</label>
+                        <input type="text" class="form-control edit" name="postal_code" value="{{ data.postal_code|default_if_none:'' }}">
                     </div>
                     <div class="col d-flex align-items-end mb-2">
                         <input type="button" class="btn btn-secondary btn-search-postal-code" value="住所検索" data-type="edit">

@@ -19,10 +19,10 @@ class ProductViewTests(TestCase):
         )
         self.client.login(username='tester', password='password123')
 
-        self.category = ProductCategory.objects.create(product_category_nm='文房具')
+        self.category = ProductCategory.objects.create(product_category_name='文房具')
         self.product = Product.objects.create(
-            product_cd='PRD001',
-            product_nm='テスト商品',
+            product_code='PRD001',
+            product_name='テスト商品',
             price=100,
             description='テスト説明文',
             start_date=date(2025, 1, 1),
@@ -65,8 +65,8 @@ class ProductViewTests(TestCase):
         response = self.client.post(
             url,
             {
-                'product_cd': 'PRD002',
-                'product_nm': '新商品',
+                'product_code': 'PRD002',
+                'product_name': '新商品',
                 'start_date': '2025-01-01',
                 'end_date': '2025-12-31',
                 'product_category': self.category.id,
@@ -80,10 +80,10 @@ class ProductViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # 登録された商品を取得
-        product = Product.objects.get(product_cd='PRD002')
+        product = Product.objects.get(product_code='PRD002')
 
         # 各フィールドの内容を確認
-        self.assertEqual(product.product_nm, '新商品')
+        self.assertEqual(product.product_name, '新商品')
         self.assertEqual(product.start_date.strftime('%Y-%m-%d'), '2025-01-01')
         self.assertEqual(product.end_date.strftime('%Y-%m-%d'), '2025-12-31')
         self.assertEqual(product.product_category, self.category)
@@ -104,8 +104,8 @@ class ProductViewTests(TestCase):
         response = self.client.post(
             url,
             {
-                'product_cd': 'PRD001',
-                'product_nm': '商品updated',
+                'product_code': 'PRD001',
+                'product_name': '商品updated',
                 'start_date': '2025-02-01',
                 'end_date': '2026-01-01',
                 'product_category': self.category.id,
@@ -120,8 +120,8 @@ class ProductViewTests(TestCase):
         self.product.refresh_from_db()
 
         # 各フィールドの内容を確認
-        self.assertEqual(self.product.product_cd, 'PRD001')
-        self.assertEqual(self.product.product_nm, '商品updated')
+        self.assertEqual(self.product.product_code, 'PRD001')
+        self.assertEqual(self.product.product_name, '商品updated')
         self.assertEqual(self.product.start_date.strftime('%Y-%m-%d'), '2025-02-01')
         self.assertEqual(self.product.end_date.strftime('%Y-%m-%d'), '2026-01-01')
         self.assertEqual(self.product.product_category, self.category)
@@ -157,8 +157,8 @@ class ProductViewTests(TestCase):
         response = self.client.post(
             url,
             {
-                'product_cd': 'NEW100',
-                'product_nm': 'モーダル新商品',
+                'product_code': 'NEW100',
+                'product_name': 'モーダル新商品',
                 'start_date': '2025-01-01',
                 'end_date': '2025-12-31',
                 'product_category': self.category.id,
@@ -174,11 +174,11 @@ class ProductViewTests(TestCase):
         self.assertTrue(response.json()['success'])
 
         # 登録された商品を取得
-        product = Product.objects.get(product_cd='NEW100')
+        product = Product.objects.get(product_code='NEW100')
 
         # 各フィールドの内容を確認
-        self.assertEqual(product.product_cd, 'NEW100')
-        self.assertEqual(product.product_nm, 'モーダル新商品')
+        self.assertEqual(product.product_code, 'NEW100')
+        self.assertEqual(product.product_name, 'モーダル新商品')
         self.assertEqual(product.start_date.strftime('%Y-%m-%d'), '2025-01-01')
         self.assertEqual(product.end_date.strftime('%Y-%m-%d'), '2025-12-31')
         self.assertEqual(product.product_category, self.category)
@@ -194,13 +194,13 @@ class ProductViewTests(TestCase):
 
 
     def test_product_create_modal_post_invalid_required(self):
-        '''モーダル登録 異常系（必須エラー: product_cd 空）'''
+        '''モーダル登録 異常系（必須エラー: product_code 空）'''
         url = reverse('product_mst:product_create_modal')
         response = self.client.post(
             url,
             {
-                'product_cd': '',
-                'product_nm': '不正商品',
+                'product_code': '',
+                'product_name': '不正商品',
                 'start_date': '2025-01-01',
                 'end_date': '2025-12-31',
                 'product_category': self.category.id,
@@ -209,7 +209,7 @@ class ProductViewTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()['success'])
-        self.assertFalse(Product.objects.filter(product_nm='不正商品').exists())
+        self.assertFalse(Product.objects.filter(product_name='不正商品').exists())
 
     def test_product_update_modal_post_success_with_flash(self):
         '''モーダル更新成功 + フラッシュメッセージ + 更新内容確認'''
@@ -217,8 +217,8 @@ class ProductViewTests(TestCase):
         response = self.client.post(
             url,
             {
-                'product_cd': 'PRD001',
-                'product_nm': 'モーダル更新',
+                'product_code': 'PRD001',
+                'product_name': 'モーダル更新',
                 'start_date': '2025-02-01',
                 'end_date': '2026-01-01',
                 'product_category': self.category.id,
@@ -235,8 +235,8 @@ class ProductViewTests(TestCase):
 
         # DB再読み込みしてフィールドを確認
         self.product.refresh_from_db()
-        self.assertEqual(self.product.product_cd, 'PRD001')
-        self.assertEqual(self.product.product_nm, 'モーダル更新')
+        self.assertEqual(self.product.product_code, 'PRD001')
+        self.assertEqual(self.product.product_name, 'モーダル更新')
         self.assertEqual(self.product.start_date.strftime('%Y-%m-%d'), '2025-02-01')
         self.assertEqual(self.product.end_date.strftime('%Y-%m-%d'), '2026-01-01')
         self.assertEqual(self.product.product_category, self.category)
@@ -257,8 +257,8 @@ class ProductViewTests(TestCase):
         response = self.client.post(
             url,
             {
-                'product_cd': 'PRD001',
-                'product_nm': '不正更新',
+                'product_code': 'PRD001',
+                'product_name': '不正更新',
                 'start_date': '2025-01-10',
                 'end_date': '2025-01-05',
                 'product_category': self.category.id,
@@ -268,7 +268,7 @@ class ProductViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.json()['success'])
         self.product.refresh_from_db()
-        self.assertEqual(self.product.product_nm, 'テスト商品')
+        self.assertEqual(self.product.product_name, 'テスト商品')
 
     # -------------------
     # Export
@@ -286,7 +286,7 @@ class ProductViewTests(TestCase):
         rows = list(reader)
 
         expected_header = [
-            'product_cd', 'product_nm', 'start_date', 'end_date',
+            'product_code', 'product_name', 'start_date', 'end_date',
             'product_category', 'price', 'description',
         ] + [col for col in rows[0][7:]]
         self.assertEqual(rows[0], expected_header)
@@ -314,7 +314,7 @@ class ProductViewTests(TestCase):
 
         # 1行目（ヘッダ）の確認
         expected_header = [
-            'product_cd', 'product_nm', 'start_date', 'end_date',
+            'product_code', 'product_name', 'start_date', 'end_date',
             'product_category', 'price', 'description',
             'create_user', 'created_at', 'update_user', 'updated_at'
         ]
@@ -343,7 +343,7 @@ class ProductViewTests(TestCase):
         csv_content = io.StringIO()
         writer = csv.writer(csv_content)
         writer.writerow([
-            'product_cd', 'product_nm', 'start_date', 'end_date',
+            'product_code', 'product_name', 'start_date', 'end_date',
             'product_category', 'price', 'description',
             'create_user', 'created_at', 'update_user', 'updated_at'
         ])
@@ -368,11 +368,11 @@ class ProductViewTests(TestCase):
         self.assertEqual(Product.objects.count(), 2)
 
         # 登録内容を確認
-        product = Product.objects.get(product_cd='NEW001')
-        self.assertEqual(product.product_nm, '新規商品')
+        product = Product.objects.get(product_code='NEW001')
+        self.assertEqual(product.product_name, '新規商品')
         self.assertEqual(product.start_date.strftime('%Y-%m-%d'), '2025-01-01')
         self.assertEqual(product.end_date.strftime('%Y-%m-%d'), '2025-12-31')
-        self.assertEqual(product.product_category.product_category_nm, '文房具')
+        self.assertEqual(product.product_category.product_category_name, '文房具')
         self.assertEqual(product.price, 1000)
         self.assertEqual(product.description, '説明')
         self.assertEqual(product.create_user.username, 'tester')
@@ -386,7 +386,7 @@ class ProductViewTests(TestCase):
 
         # ヘッダを expected_headers と完全一致させる
         writer.writerow([
-            'product_cd', 'product_nm', 'start_date', 'end_date',
+            'product_code', 'product_name', 'start_date', 'end_date',
             'product_category', 'price', 'description',
             'create_user', 'created_at', 'update_user', 'updated_at'
         ])
@@ -408,40 +408,40 @@ class ProductViewTests(TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(Product.objects.count(), 1)  # 件数変わらない
-        self.assertFalse(Product.objects.filter(product_cd='ERR001').exists())
+        self.assertFalse(Product.objects.filter(product_code='ERR001').exists())
 
     def test_import_csv_invalid_category(self):
         '''CSVインポート 異常系（存在しないカテゴリ）'''
         url = reverse('product_mst:import_csv')
         csv_content = io.StringIO()
         writer = csv.writer(csv_content)
-        writer.writerow(['product_cd', 'product_nm', 'start_date', 'end_date', 'product_category', 'price', 'description'])
+        writer.writerow(['product_code', 'product_name', 'start_date', 'end_date', 'product_category', 'price', 'description'])
         writer.writerow(['NEW200', '商品X', '2025-01-01', '2025-12-31', '存在しないカテゴリ', '100', '説明'])
 
         response = self.client.post(url, {'file': io.BytesIO(csv_content.getvalue().encode('utf-8'))})
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(Product.objects.filter(product_cd='NEW200').exists())
+        self.assertFalse(Product.objects.filter(product_code='NEW200').exists())
 
     def test_import_csv_invalid_price(self):
         '''CSVインポート 異常系（price が数値でない）'''
         url = reverse('product_mst:import_csv')
         csv_content = io.StringIO()
         writer = csv.writer(csv_content)
-        writer.writerow(['product_cd', 'product_nm', 'start_date', 'end_date', 'product_category', 'price', 'description'])
+        writer.writerow(['product_code', 'product_name', 'start_date', 'end_date', 'product_category', 'price', 'description'])
         writer.writerow(['NEW201', '商品Y', '2025-01-01', '2025-12-31', '文房具', 'abc', '説明'])
 
         response = self.client.post(url, {'file': io.BytesIO(csv_content.getvalue().encode('utf-8'))})
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(Product.objects.filter(product_cd='NEW201').exists())
+        self.assertFalse(Product.objects.filter(product_code='NEW201').exists())
 
     def test_import_csv_invalid_date_format(self):
         '''CSVインポート 異常系（日付フォーマット不正）'''
         url = reverse('product_mst:import_csv')
         csv_content = io.StringIO()
         writer = csv.writer(csv_content)
-        writer.writerow(['product_cd', 'product_nm', 'start_date', 'end_date', 'product_category', 'price', 'description'])
+        writer.writerow(['product_code', 'product_name', 'start_date', 'end_date', 'product_category', 'price', 'description'])
         writer.writerow(['NEW202', '商品Z', '2025/01/01', '2025-12-31', '文房具', '100', '説明'])
 
         response = self.client.post(url, {'file': io.BytesIO(csv_content.getvalue().encode('utf-8'))})
         self.assertEqual(response.status_code, 400)
-        self.assertFalse(Product.objects.filter(product_cd='NEW202').exists())
+        self.assertFalse(Product.objects.filter(product_code='NEW202').exists())

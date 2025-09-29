@@ -9,21 +9,13 @@ class Product(BaseModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['product_cd', 'start_date', 'end_date', 'tenant'],
-                name='uq_product_cd_period'
+                fields=['product_name', 'start_date', 'end_date', 'tenant'],
+                name='uq_product_name_period'
             )
         ]
-        ordering = ['product_cd', 'start_date']
+        ordering = ['product_name', 'start_date']
 
-    product_cd = models.CharField(
-        max_length=255,
-        validators=[RegexValidator(
-            r'^[0-9A-Za-z_-]+$',
-            '半角英数字・ハイフン・アンダースコアのみ使用できます。'
-        )],
-        verbose_name='商品コード'
-    )
-    product_nm = models.CharField(max_length=255, verbose_name='商品名称')
+    product_name = models.CharField(max_length=255, verbose_name='商品名称')
     start_date = models.DateField(verbose_name='適用開始日')
     end_date = models.DateField(verbose_name='適用終了日')
     product_category = models.ForeignKey(
@@ -37,7 +29,7 @@ class Product(BaseModel):
     description = models.TextField(blank=True, null=True, verbose_name='商品説明')
 
     def __str__(self):
-        return f'{self.product_nm}({self.product_cd})'
+        return f'{self.product_name}'
 
     def get_absolute_url(self):
         return reverse('product_mst:product_update', kwargs={'pk': self.pk})
@@ -58,10 +50,10 @@ class Product(BaseModel):
 
 class ProductCategory(BaseModel):
     class Meta:
-        ordering = ['product_category_nm']
-        unique_together = ('tenant', 'product_category_nm')
+        ordering = ['product_category_name']
+        unique_together = ('tenant', 'product_category_name')
 
-    product_category_nm = models.CharField(max_length=255, unique=True, verbose_name='商品カテゴリ')
+    product_category_name = models.CharField(max_length=255, unique=True, verbose_name='商品カテゴリ')
 
     def __str__(self):
-        return self.product_category_nm
+        return self.product_category_name

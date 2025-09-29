@@ -14,7 +14,7 @@ class CustomUser(AbstractUser, BaseModel):
     USERNAME_FIELD = 'email'  # ← 認証に使うフィールドを email に変更
     REQUIRED_FIELDS = ['username']  # ← createsuperuser のとき追加で入力させるフィールド
     TEL_NUM_VALID = RegexValidator(regex=r'^[0-9]+$', message=('半角数字のみで入力してください'))
-    POSTAL_CD_VALID = RegexValidator(regex=r'^\d{7}$', message=('半角数字7桁で入力してください'))
+    postal_code_VALID = RegexValidator(regex=r'^\d{7}$', message=('半角数字7桁で入力してください'))
     
     username = models.CharField(
         max_length=50
@@ -30,7 +30,7 @@ class CustomUser(AbstractUser, BaseModel):
     )
     gender = models.CharField(null=True, blank=True, max_length=1, choices=GENDER_CHOICES, verbose_name='性別')
     tel_number = models.CharField(validators=[TEL_NUM_VALID], max_length=15, blank=True, null=True, verbose_name='電話番号')
-    postal_cd = models.CharField(validators=[POSTAL_CD_VALID], max_length=7, blank=True, null=True, verbose_name='郵便番号')
+    postal_code = models.CharField(validators=[postal_code_VALID], max_length=7, blank=True, null=True, verbose_name='郵便番号')
     state = models.CharField(max_length=5, blank=True, null=True, verbose_name='都道府県')
     city = models.CharField(max_length=255, blank=True, null=True, verbose_name='市区町村')
     address = models.CharField(max_length=255, blank=True, null=True, verbose_name='住所')

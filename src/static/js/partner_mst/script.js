@@ -20,4 +20,10 @@ $(function () {
 
     // モーダルフォーム共通処理を有効化
     $(document).modal_form("#partnerModal");
+
+    // 一括削除処理
+    $('#check-all').checkAll('.check-item');
+    $(document).on('click', '#bulk-delete-btn', function() {
+        $('#bulk-delete-btn').call_bulk_delete('/partner_mst/bulk_delete/', '取引先');
+    });
 });

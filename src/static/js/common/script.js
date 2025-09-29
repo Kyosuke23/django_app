@@ -248,4 +248,56 @@ $(function () {
             }
         }
     });
+
+    // チェックボックスの選択制御
+    $.fn.checkAll = function(itemSelector) {
+        const master = this;
+        const items = $(itemSelector);
+
+        // 全選択
+        master.on('change', function () {
+            items.prop('checked', master.prop('checked'));
+        });
+
+        // 個別チェック時に全選択更新
+        items.on('change', function () {
+            const allChecked = items.length === items.filter(':checked').length;
+            master.prop('checked', allChecked);
+        });
+
+        return this;
+    };
+
+    $.fn.call_bulk_delete = function(url, target_nm) {
+        // 選択されたIDを配列にまとめる
+        let ids = $('.check-item:checked').map(function () {
+            return $(this).val();
+        }).get();
+
+        if (ids.length === 0) {
+            alert(`削除する${target_nm}を選択してください`);
+            return;
+        }
+
+        if (!confirm(`選択した${target_nm}を一括削除しますか？`)) {
+            return;
+        }
+
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: {
+                ids: ids,
+                csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
+            },
+            traditional: true,
+            success: function (jqXHR) {
+                alert(jqXHR.message);
+                location.reload();
+            },
+            error: function (jqXHR) {
+                alert([jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
+            }
+        });
+    };
 });
