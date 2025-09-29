@@ -8,10 +8,10 @@
 
 <form method="post" id="salesOrderForm" action="{{ form_action }}">
   {% csrf_token %}
-
-  <h5 class="mb-3">
-    {% if is_update %}受注情報編集{% else %}受注情報登録{% endif %}
-  </h5>
+  <div class="mb-3">
+    <label class="form-label">ステータス</label>
+    <p class="form-control-plaintext">{{ form.instance.get_status_cd_display }}</p>
+  </div>
   {% bootstrap_form form %}
 
   <h5 class="mt-4 mb-2">受注明細</h5>
