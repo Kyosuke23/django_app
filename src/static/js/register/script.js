@@ -1,77 +1,65 @@
-$(function() {
-    // 登録ボタンにイベントリスナーを設定
-    $('#create_form').submit(function(e) {
-        // ページのリロードを止める
-        e.preventDefault();
-        // 登録処理（非同期）
-        $().post_data($(this));
+$(function () {
+    // エクスポートボタン
+    $('.export-btn').on('click', function () {
+      const url = $(this).data('action');
+      if (url) {
+        window.location.href = url;
+      }
     });
 
-    // 更新ボタンにイベントリスナーを設定
-    $('form[id^="update_form_"]').submit(function(e) {
-        // ページのリロードを止める
+    // IMPORTボタン
+    $('#import-btn').on('click', function (e) {
         e.preventDefault();
-        // 更新処理（非同期）
-        $().post_data($(this));
+        $('#file-input').click();
     });
 
-    // 削除ボタンにイベントリスナーを設定
-    $('form[id^="delete_form_"]').submit(function(e) {
-        // ページのリロードを止める
-        e.preventDefault();
-        // 削除処理（非同期）
-        $().post_data($(this));
+    // ファイル選択時
+    $('#file-input').on('change', function () {
+        $().import_data(this);
     });
 
-    // Exportボタンにイベントリスナーを設定
-    $('.search_form_btn').click(function(e) {
-        $(this).parents('form').attr('action', $(this).data('action'));
+    // モーダルフォーム共通処理を有効化
+    $(document).modal_form("#userModal");
+
+    // 一括削除処理
+    $('#check-all').checkAll('.check-item');
+    $(document).on('click', '#bulk-delete-btn', function() {
+        $('#bulk-delete-btn').call_bulk_delete('/register/bulk_delete/', 'ユーザー');
     });
 
-    // 住所検索ボタンにイベントリスナーを設定
-    $('.btn-search-postal-code').on('click', function(e) {
-        // ページのリロードを止める
-        e.preventDefault();
-        // クリックされた検索ボタンの属性を取得
-        const type = this.dataset.type;
-        // 入力された郵便番号を取得
-        const postal_code = $(`input[name="postal_code"][class~="${type}"]`).val();
-        // Ajax処理
-        if (postal_code) {
+    // 保存／削除ボタンの動的アクション切り替え
+    $(document).on("click", "#editForm button[type=submit]", function (e) {
+        const form = $("#editForm");
+        const action = $(this).data("action");
+        const saveUrl = form.data("save-url");
+        const deleteUrl = form.data("delete-url");
+        const csrf = form.find("input[name=csrfmiddlewaretoken]").val();
+
+        if (action === "delete") {
+            e.preventDefault(); // 通常のsubmitは止める
+            if (!confirm("本当に削除しますか？")) {
+                return;
+            }
+
+            // Ajaxで削除リクエスト
             $.ajax({
-                url: 'get_postal_code/',
-                type: 'POST',
-                data: {'postal_code': postal_code},
-                dataType: 'text',
-                // formのcsrfトークンが使えないので自力で行う
-                beforeSend: function(xhr, settings) {
-                    if (!$().csrfSafeMethod(settings.type) && !this.crossDomain) {
-                        xhr.setRequestHeader("X-CSRFToken", $().getCookie('csrftoken'));
+                url: deleteUrl,
+                type: "POST",
+                data: { csrfmiddlewaretoken: csrf },
+                success: function () {
+                    location.reload(); // 削除成功時はリロード
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        alert(xhr.responseJSON.error);
+                    } else {
+                        alert("削除に失敗しました");
                     }
                 }
-            })
-            .done(function(data) {
-                // JSON形式の取得結果をオブジェクトに変換
-                const data_json = JSON.parse(data);
-                // 住所情報を取得
-                const results = data_json.address_info.results;
-                // 住所情報をフォームに反映
-                if (results != null) {
-                    $(`input[name="state"][class~="${type}"]`).val(results[0].address1);
-                    $(`input[name="city"][class~="${type}"]`).val(results[0].address2);
-                    $(`input[name="address"][class~="${type}"]`).val(results[0].address3);
-                }
-            })
-            .fail(function() {
-                console.log('ajax error');
             });
+        } else {
+            // 保存時は通常のsubmitを利用
+            form.attr("action", saveUrl);
         }
-    });
-
-    // モーダル画面を閉じた時の処理
-    $('.modal').on('hide.bs.modal', function (e) {
-        // 前回のエラー表示をクリア
-        $('.errorlist').remove();
-        $('.is-invalid').removeClass('is-invalid');
     });
 });

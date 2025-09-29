@@ -2,7 +2,6 @@ from django.db import models
 from django.urls import reverse
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
-from django.contrib.auth.validators import ASCIIUsernameValidator
 from .constants import GENDER_CHOICES, PRIVILEGE_CHOICES
 from config.base import BaseModel
 import register.constants as Constant
@@ -18,6 +17,7 @@ class CustomUser(AbstractUser, BaseModel):
     
     username = models.CharField(
         max_length=50
+        , unique=False
         , null=False
         , blank=False
         , verbose_name='ユーザー名'
@@ -50,7 +50,7 @@ class CustomUser(AbstractUser, BaseModel):
 
     def get_absolute_url(self):
         return reverse('register:list', kwargs={'pk': self.pk})
-    
+      
     @property
     def is_employed(self):
         return self.employment_status == '1' and (self.employment_end_date is None)

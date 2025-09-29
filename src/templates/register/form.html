@@ -1,0 +1,27 @@
+{% load django_bootstrap5 %}
+
+<div class="modal-header mb-3">
+  <h4 class="modal-title">{{ modal_title }}</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form method="post" id="editForm"
+      action="{{ form_action }}"
+      data-save-url="{{ form_action }}"
+      data-delete-url="{% if form.instance.pk %}{% url 'register:delete' form.instance.pk %}{% endif %}">
+  {% csrf_token %}
+  {% bootstrap_form form %}
+
+  {% if not form.instance.pk %}
+    <div class="alert alert-info mt-3" role="alert">
+      登録後、自動生成された初期パスワードがユーザーにメール通知されます。
+    </div>
+  {% endif %}
+
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <button type="submit" class="btn btn-primary" data-action="save">保存</button>
+    {% if form.instance.pk != request.user.pk %}
+      <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
+    {% endif %}
+  </div>
+</form>

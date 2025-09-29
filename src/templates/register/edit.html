@@ -1,122 +1,28 @@
-<div class="modal fade" id="update-Modal-{{ data.pk }}" tabindex="-1" aria-labelledby="user_update_modal" aria-hidden="false">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="update_form_{{ data.pk }}" method='post' action="{% url 'register:update' data.pk %}">
-                {% csrf_token %}
-                {# ヘッダー #}
-                <div class="modal-header">
-                    <h5 class="modal-title" id="user_update_modal">ユーザー情報の更新</h5>
-                </div>
-                {# コンテンツ #}
-                <div class="modal-body row">
-                    {# ユーザーコード #}
-                    <div class="col-md-12 mb-2">
-                        <label for="username" class="form-label">{{ form.username.label }}</label>
-                        <span class="badge text-bg-danger">必須</span>
-                        <input type="text" class="form-control" name="username" value="{{ data.username }}">
-                    </div>
-                    {# 姓 #}
-                    <div class="col-md-6 mb-2">
-                        <label for="last_name" class="form-label">{{ form.last_name.label }}</label>
-                        <input type="text" class="form-control" name="last_name" value="{{ data.last_name }}">
-                    </div>
-                    {# 名 #}
-                    <div class="col-md-6 mb-2">
-                        <label for="first_name" class="form-label">{{ form.first_name.label }}</label>
-                        <input type="text" class="form-control" name="first_name" value="{{ data.first_name }}">
-                    </div>
-                    {# 性別 #}
-                    <div class="col-md-3 mb-2">
-                        <label for="gender" class="form-label">{{ form.gender.label }}</label>
-                        <select class="form-control" name="gender">
-                            <option value="" label=""></option>
-                            {% for key, val in gender_list %}
-                                {% if key == data.gender %}
-                                <option value="{{ key }}" label="{{ val }}" selected></option>
-                                {% else %}
-                                <option value="{{ key }}" label="{{ val }}"></option>
-                                {% endif %}
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-9"></div>
-                    {# E-Mail #}
-                    <div class="col-md-12 mb-2">
-                        <label for="email" class="form-label">{{ form.email.label }}</label>
-                        <input type="text" class="form-control" name="email" value="{{ data.email }}">
-                    </div>
-                    {# 誕生日 #}
-                    <div class="col-md-12 mb-2">
-                        <label for="birthday" class="form-label">{{ form.birthday.label }}</label>
-                        {# date形式のinputに合わせるためY-m-d形式。表示はY/m/dになる。 #}
-                        <input type="date" class="form-control" name="birthday" value="{{ data.birthday|default_if_none:''|date:'Y-m-d' }}">
-                    </div>
-                    {# 電話番号 #}
-                    <div class="col-md-12 mb-2">
-                        <label for="tel_number" class="form-label">{{ form.tel_number.label }}</label>
-                        <input type="text" class="form-control" name="tel_number" value="{{ data.tel_number }}">
-                    </div>
-                    {# 郵便番号 #}
-                    <div class="col-md-7 mb-2">
-                        <label for="postal_code" class="form-label">{{ form.postal_code.label }}</label>
-                        <input type="text" class="form-control edit" name="postal_code" value="{{ data.postal_code|default_if_none:'' }}">
-                    </div>
-                    <div class="col d-flex align-items-end mb-2">
-                        <input type="button" class="btn btn-secondary btn-search-postal-code" value="住所検索" data-type="edit">
-                    </div>
-                    {# 都道府県 #}
-                    <div class="col-md-3 mb-2">
-                        <label for="state" class="form-label">{{ form.state.label }}</label>
-                        <input type="text" class="form-control edit" name="state" value="{{ data.state|default_if_none:'' }}">
-                    </div>
-                    {# 市区町村 #}
-                    <div class="col-md-6 mb-2">
-                        <label for="city" class="form-label">{{ form.city.label }}</label>
-                        <input type="text" class="form-control edit" name="city" value="{{ data.city|default_if_none:'' }}">
-                    </div>
-                    <div class="col-md-3"></div>
-                    {# 住所 #}
-                    <div class="col-md-12 mb-2">
-                        <label for="address" class="form-label">{{ form.address.label }}</label>
-                        <input type="text" class="form-control edit" name="address" value="{{ data.address|default_if_none:'' }}">
-                    </div>
-                    {# 住所2 #}
-                    <div class="col-md-12 mb-2">
-                        <label for="address2" class="form-label">{{ form.address2.label }}</label>
-                        <input type="text" class="form-control" name="address2" value="{{ data.address2|default_if_none:'' }}">
-                    </div>
-                    {# 権限 #}
-                    <div class="col-md-3 mb-2">
-                        <label for="privilege" class="form-label">{{ form.privilege.label }}</label>
-                        <select class="form-control" name="privilege">
-                            {% if user.privilege == PRIVILEGE_ADMIN %}
-                                {% for key, val in privilege_list %}
-                                    {% if key == data.privilege %}
-                                    <option value="{{ key }}" label="{{ val }}" selected></option>
-                                    {% else %}
-                                    <option value="{{ key }}" label="{{ val }}"></option>
-                                    {% endif %}
-                                {% endfor %}
-                            {% elif user.privilege == PRIVILEGE_EDITOR %}
-                                {% for key, val in privilege_list %}
-                                    {% if key == data.privilege and key != "0" %}
-                                    <option value="{{ key }}" label="{{ val }}" selected></option>
-                                    {% elif key != "0" %}
-                                    <option value="{{ key }}" label="{{ val }}"></option>
-                                    {% endif %}
-                                {% endfor %}
-                            {% endif %}
-                        </select>
-                    </div>
-                    <div class="col-md-9"></div>
-                    <input type="hidden" name ="pk" value="{{ data.pk }}">
-                </div>
-                {# フッター #}
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
-                    <button type="submit" class="btn btn-primary">更新</button>
-                </div>
-            </form>
+<div class="modal fade" id="update-Modal-{{ data.pk }}" tabindex="-1" aria-labelledby="user_update_modal" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form id="update_form_{{ data.pk }}" method="post" action="{% url 'register:update' data.pk %}">
+        {% csrf_token %}
+        {% load django_bootstrap5 %}
+
+        {# ヘッダー #}
+        <div class="modal-header">
+          <h5 class="modal-title" id="user_update_modal">ユーザー情報の更新</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+
+        {# コンテンツ #}
+        <div class="modal-body">
+          {% bootstrap_form form %}
+          <input type="hidden" name="pk" value="{{ data.pk }}">
+        </div>
+
+        {# フッター #}
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary">更新</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>

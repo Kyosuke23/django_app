@@ -5,7 +5,7 @@
     "fields": {
       "username": "admin_user",
       "email": "admin@example.com",
-      "password": "'pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM='",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "0",
       "is_staff": true,
       "is_superuser": true,
@@ -24,7 +24,7 @@
     "fields": {
       "username": "manager_user",
       "email": "manager@example.com",
-      "password": "'pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM='",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "1",
       "is_staff": true,
       "is_superuser": false,
@@ -43,7 +43,7 @@
     "fields": {
       "username": "editor_user",
       "email": "editor@example.com",
-      "password": "'pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM='",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "2",
       "is_staff": false,
       "is_superuser": false,
@@ -62,7 +62,7 @@
     "fields": {
       "username": "viewer_user",
       "email": "viewer@example.com",
-      "password": "'pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM='",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "3",
       "is_staff": false,
       "is_superuser": false,

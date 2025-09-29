@@ -3,105 +3,138 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-{# 検索 & 登録画面リンク #}
-<form id="search_form" method="get" action="{% url 'register:list' %}">
-    {# ページタイトル #}
-    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-        <h1 class="h2">ユーザー管理画面</h1>
-        {# 出力ボタンエリア #}
-        <div class="col d-flex justify-content-end">
-            {# CSV出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:export_csv' %}" value="CSV">
-            {# Excel出力ボタン #}
-            <input type="submit" class="btn btn-outline-secondary search_form_btn" data-action="{% url 'register:export_excel' %}" value="Excel">
-        </div>
-    </div>
-    {# 検索フォーム #}
-    <div class="row mb-3">
-        <div class="col col-md-2">
-            <label for="search_keyword" class="form-label">キーワード</label>
-            <input type="text" name="search_keyword" class="form-control" value="{{ search_keyword }}" placeholder="ユーザーコードまたは氏名">
-        </div>
-        <div class="col col-md-1">
-            <label for="search_gender" class="form-label">性別</label>
-            <select class="form-control" name="search_gender">
-                <option value="" label=""></option>
-                {% for key, val in gender_list %}
-                    {% if key == search_gender %}
-                    <option value="{{ key }}" label="{{ val }}" selected></option>
-                    {% else %}
-                    <option value="{{ key }}" label="{{ val }}"></option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col col-md-1">
-            <label for="search_privilege" class="form-label">権限</label>
-            <select class="form-control" name="search_privilege">
-                <option value="" label=""></option>
-                {% for key, val in privilege_list %}
-                    {% if key == search_privilege %}
-                    <option value="{{ key }}" label="{{ val }}" selected></option>
-                    {% else %}
-                    <option value="{{ key }}" label="{{ val }}"></option>
-                    {% endif %}
-                {% endfor %}
-            </select>
-        </div>
-        <div class="col d-flex align-items-end">
-            <input type="submit" class="btn btn-primary" value="検索">
-        </div>
-        {# 登録画面リンク #}
-        {% if user.privilege <= PRIVILEGE_EDITOR %}
-        <div class="col d-flex align-items-end justify-content-end">
-            <a class="btn btn-outline-primary" href="{% url 'register:create' %}" data-bs-toggle="modal" data-bs-target="#create-Modal">+ 新規登録</a>
-        </div>
-        {% endif %}
-    </div>
-</form>
-{# 登録時のモーダル #}
-{% include 'register/create.html' %}
-{# 件数表示 #}
-<p class="mt-2">
-    {{ paginator.count }}件中　{{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
-</p>
-{# 検索結果表示 #} 
-<div class="result-table overflow-auto table-responsive">
-    <table class="table table-hover table-striped text-nowrap">
-        <thead class="table-dark sticky-top">
-            <th>ユーザー名</th>
-            <th>E-Mail</th>
-            <th>電話番号</th>
-            <th>性別</th>
-            <th>権限</th>
-            <th>在籍状況</th>
-            <th>操作</th>
-        </thead>
-        <tbody>
-            {% for data in users %}
-            <tr class="align-middle">
-                <td>{{ data.username }}</td>
-                <td>{{ data.email|default_if_none:'' }}</td>
-                <td>{{ data.tel_number|default_if_none:'' }}</td>
-                <td>{{ data.get_gender_display|default_if_none:'' }}</td>
-                <td>{{ data.get_privilege_display }}</td>
-                {% if user.privilege == PRIVILEGE_EDITOR and user.username == data.username or user.privilege == PRIVILEGE_ADMIN %}
-                <td>{{ data.get_employment_status_display }}</td>
-                <td>
-                    <a class="btn btn-outline-primary btn-sm" href="{% url 'register:update' data.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ data.pk }}">編集</a>
-                </td>
-                {% else %}
-                    <td></td>
-                    <td></td>
-                {% endif %}
-                {# 更新時のモーダル #}
-                {% include 'register/edit.html' %}
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+{# ページタイトル & 操作用ボタン #}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">ユーザーマスタ管理画面</h1>
+
+  {# インポート/エクスポート/削除用のボタンエリア #}
+  <div class="d-flex gap-2">
+    <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+    <button type="button" class="btn btn-outline-secondary export-btn"
+            data-action="{% url 'register:export_csv' %}">
+      CSV
+    </button>
+    <button type="button" class="btn btn-outline-secondary export-btn"
+            data-action="{% url 'register:export_excel' %}">
+      Excel
+    </button>
+  </div>
 </div>
-{# ページネーション #}
-{% include 'layout/pagination.html' %}
+
+{# メッセージ #}
+{% include 'layout/message.html' %}
+
+{# 検索フォーム #}
+<form id="search_form" method="get" action="{% url 'register:list' %}">
+  {% csrf_token %}
+  <div class="row mb-3 align-items-center">
+    <div class="col col-md-3">
+      <input id="search_keyword" type="text" name="search_keyword" class="form-control"
+             value="{{ search_keyword }}" placeholder="ユーザー名 / メールアドレスを入力してください">
+    </div>
+    <div class="col">
+      <button type="submit" class="btn btn-primary search_form_btn"
+              data-action="{% url 'register:list' %}">
+        検索
+      </button>
+    </div>
+    {% if user.privilege <= PRIVILEGE_EDITOR %}
+    <div class="col d-flex justify-content-end">
+      <a class="btn btn-outline-primary"
+        href="#"
+        data-bs-toggle="modal"
+        data-bs-target="#userModal"
+        data-url="{% url 'register:create' %}">
+        + 新規登録
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+<p class="mt-2">
+  {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
+</p>
+
+{# 一括削除フォーム（チェックボックス用） #}
+<form id="bulk-delete-form" method="post" action="{% url 'register:bulk_delete' %}">
+  {% csrf_token %}
+  <div class="result-table overflow-auto table-responsive">
+    <table class="table table-hover table-striped text-nowrap">
+      <thead class="table-dark sticky-top">
+        <tr>
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
+          <th class="text-center" scope="col">
+            <input type="checkbox" id="check-all">
+          </th>
+          {% endif %}
+          <th scope="col">ユーザー名</th>
+          <th scope="col">メールアドレス</th>
+          <th scope="col">性別</th>
+          <th scope="col">電話番号</th>
+          <th scope="col">雇用状態</th>
+          <th scope="col">退職日</th>
+          <th scope="col">権限</th>
+          <th scope="col">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr class="align-middle">
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
+          <td class="text-center">
+            <input type="checkbox" name="ids" value="{{ u.id }}" class="check-item">
+          </td>
+          {% endif %}
+          <td>{{ u.username|default_if_none:'' }}</td>
+          <td>{{ u.email|default_if_none:'' }}</td>
+          <td>{{ u.get_gender_display|default_if_none:'' }}</td>
+          <td>{{ u.tel_number|default_if_none:'' }}</td>
+          <td>{{ u.get_employment_status_display }}</td>
+          <td>{{ u.employment_end_date|date:"Y-m-d" }}</td>
+          <td>{{ u.get_privilege_display }}</td>
+          <td>
+            {% if user.privilege <= PRIVILEGE_EDITOR %}
+            <a href="#"
+              class="btn btn-sm btn-outline-secondary"
+              data-bs-toggle="modal"
+              data-bs-target="#userModal"
+              data-url="{% url 'register:update' u.id %}">
+              編集
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</form>
+
+
+<!-- モーダル -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-body"><!-- Ajaxでフォームをロード --></div>
+    </div>
+  </div>
+</div>
+
+{# ページネーション + 一括削除ボタン #}
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <div>
+    {% include 'layout/pagination.html' %}
+  </div>
+  {% if user.privilege <= PRIVILEGE_EDITOR %}
+  <div class="text-end">
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'register:bulk_delete' %}">
+      一括削除
+    </button>
+  </div>
+  {% endif %}
+</div>
+
 <script type="text/javascript" src="{% static 'js/register/script.js' %}"></script>
 {% endblock %}
