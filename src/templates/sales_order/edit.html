@@ -1,0 +1,95 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block content %}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3">
+  <h1 class="h2">
+    {% if is_update %}受注編集{% else %}受注登録{% endif %}
+  </h1>
+</div>
+
+<div class="container-fluid">
+  <div class="card shadow-sm edit-area" style="max-width: 1200px;">
+    <div class="card-body">
+      <form method="post"
+            action="{% if is_update %}
+                      {% url 'sales_order:order_update' object.id %}
+                    {% else %}
+                      {% url 'sales_order:order_create' %}
+                    {% endif %}">
+        {% csrf_token %}
+
+        {# --- ヘッダ部 --- #}
+        <h5 class="mb-3">受注ヘッダ</h5>
+        <table class="table table-bordered align-middle">
+          <tbody>
+            <tr>
+              <th class="table-light col-3">受注番号</th>
+              <td>{{ form.sales_order_no }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">受注日</th>
+              <td>{{ form.sales_order_date }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">取引先</th>
+              <td>{{ form.partner }}</td>
+            </tr>
+            <tr>
+              <th class="table-light">備考</th>
+              <td>{{ form.remarks }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        {# --- 明細部 --- #}
+        <h5 class="mt-4 mb-3">受注明細</h5>
+        {{ formset.management_form }}
+        <table class="table table-bordered table-sm align-middle">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 20%">商品</th>
+              <th style="width: 10%">数量</th>
+              <th style="width: 10%">単位</th>
+              <th style="width: 10%">単価</th>
+              <th style="width: 10%">金額</th>
+              <th style="width: 10%">消費税率</th>
+              <th style="width: 10%">税対象外</th>
+              <th style="width: 10%">丸め方法</th>
+              <th style="width: 5%">削除</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for detail_form in formset %}
+              <tr>
+                <td>{{ detail_form.product }}</td>
+                <td>{{ detail_form.quantity }}</td>
+                <td>{{ detail_form.unit }}</td>
+                <td>{{ detail_form.unit_price }}</td>
+                <td>{{ detail_form.amount }}</td>
+                <td>{{ detail_form.tax_rate }}</td>
+                <td>{{ detail_form.is_tax_exempt }}</td>
+                <td>{{ detail_form.rounding_method }}</td>
+                <td>{{ detail_form.DELETE }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+        <div class="d-flex justify-content-between mt-4">
+          <a href="{% url 'sales_order:order_list' %}" class="btn btn-outline-secondary">一覧へ戻る</a>
+          <div>
+            <button type="submit" class="btn btn-primary px-4">保存</button>
+            {% if object %}
+              <a href="{% url 'sales_order:order_delete' object.id %}"
+                 class="btn btn-danger px-4">削除</a>
+            {% endif %}
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

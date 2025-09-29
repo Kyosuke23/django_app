@@ -1,0 +1,136 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+{# ページタイトル & 操作用ボタン #}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">受注管理画面</h1>
+
+  {# インポート/エクスポート用のボタンエリア（必要に応じてコメントアウト可） #}
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-outline-secondary export-btn"
+            data-action="{% url 'sales_order:export_csv' %}">
+      CSV
+    </button>
+    <button type="button" class="btn btn-outline-secondary export-btn"
+            data-action="{% url 'sales_order:export_excel' %}">
+      Excel
+    </button>
+  </div>
+</div>
+
+{# メッセージ #}
+{% include 'layout/message.html' %}
+
+{# 検索フォーム #}
+<form id="search_form" method="get" action="{% url 'sales_order:list' %}">
+  {% csrf_token %}
+  <div class="row mb-3 align-items-center">
+
+    {# キーワード検索（受注番号・備考など） #}
+    <div class="col col-md-3">
+      <label for="search" class="form-label visually-hidden">キーワード</label>
+      <input id="search" type="text" name="search" class="form-control"
+             value="{{ search }}" placeholder="受注番号・備考を入力してください">
+    </div>
+
+    {# 取引先選択 #}
+    <div class="col col-md-3">
+      <label for="search_partner" class="form-label visually-hidden">取引先</label>
+      <select id="search_partner" class="form-control" name="search_partner">
+        <option value="">-- 全取引先 --</option>
+        {% for p in partners %}
+        <option value="{{ p.id }}" {% if search_partner == p.id|stringformat:"s" %}selected{% endif %}>
+          {{ p.partner_name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {# 検索ボタン #}
+    <div class="col">
+      <button type="submit" class="btn btn-primary search_form_btn"
+              data-action="{% url 'sales_order:list' %}">
+        検索
+      </button>
+    </div>
+
+    {# 新規登録ボタン（モーダル表示） #}
+    {% if user.privilege <= PRIVILEGE_EDITOR %}
+    <div class="col d-flex justify-content-end">
+      <a class="btn btn-outline-primary"
+        href="#"
+        data-bs-toggle="modal"
+        data-bs-target="#salesOrderModal"
+        data-url="{% url 'sales_order:create' %}">
+        + 新規受注登録
+      </a>
+    </div>
+    {% endif %}
+  </div>
+</form>
+
+{# 件数表示 #}
+<p class="mt-2">
+  {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
+</p>
+
+{# 検索結果表示 #}
+<div class="result-table overflow-auto table-responsive">
+  <table class="table table-hover table-striped text-nowrap">
+    <thead class="table-dark sticky-top">
+      <tr>
+        <th scope="col">受注番号</th>
+        <th scope="col">ステータス</th>
+        <th scope="col">受注日</th>
+        <th scope="col">取引先</th>
+        <th scope="col">備考</th>
+        <th scope="col">担当者</th>
+        <th scope="col">操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for sales_order in sales_orders %}
+      <tr class="align-middle">
+        <td>{{ sales_order.sales_order_no }}</td>
+        <td>{{ sales_order.get_status_cd_display   }}</td>
+        <td>{{ sales_order.sales_order_date }}</td>
+        <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
+        <td>{{ sales_order.remarks|truncatechars:20 }}</td>
+        <td>
+            {{ request.user.last_name }}&nbsp;{{ request.user.first_name }}
+        </td>
+        <td>
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
+          <a href="#"
+            class="btn btn-sm btn-outline-secondary"
+            data-bs-toggle="modal"
+            data-bs-target="#salesOrderModal"
+            data-url="{% url 'sales_order:update' sales_order.id %}">
+            編集
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <!-- モーダル -->
+  <div class="modal fade" id="salesOrderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-body">
+          <!-- Ajaxでここにフォームをロード -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{# ページネーション #}
+{% include 'layout/pagination.html' %}
+
+<script type="text/javascript" src="{% static 'js/sales_order/script.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% load django_bootstrap5 %}
+
+
+<div class="modal-header mb-3">
+  <h4 class="modal-title">{{ modal_title }}</h4>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+</div>
+
+<form method="post" id="salesOrderForm" action="{{ form_action }}">
+  {% csrf_token %}
+  <div class="mb-3">
+    <label class="form-label">ステータス</label>
+    <p class="form-control-plaintext">{{ form.instance.get_status_cd_display }}</p>
+  </div>
+  {% bootstrap_form form %}
+
+  <h5 class="mt-4 mb-2">受注明細</h5>
+  {{ formset.management_form }}
+  <div class="overflow-auto table-responsive">
+    <table class="table table-bordered table-sm align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>商品</th>
+          <th>数量</th>
+          <th>単位</th>
+          <th>単価</th>
+          <th>金額</th>
+          <th>消費税率</th>
+          <th>税対象外</th>
+          <th>丸め方法</th>
+          <th>削除</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for detail_form in formset %}
+        <tr>
+          {{ detail_form.id }}
+          <td>{{ detail_form.product }}</td>
+          <td>{{ detail_form.quantity }}</td>
+          <td>{{ detail_form.unit }}</td>
+          <td>{{ detail_form.unit_price }}</td>
+          <td>{{ detail_form.amount }}</td>
+          <td>{{ detail_form.tax_rate }}</td>
+          <td>{{ detail_form.is_tax_exempt }}</td>
+          <td>{{ detail_form.rounding_method }}</td>
+          {% if is_update %}<td>{{ detail_form.DELETE }}</td>{% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="d-flex justify-content-end gap-2 mt-3">
+    <input type="hidden" name="action_type" id="actionTypeField" value="">
+    <button type="submit" class="btn btn-primary"
+            onclick="document.getElementById('actionTypeField').value='draft'">
+      下書き保存
+    </button>
+    <button type="submit" class="btn btn-success"
+            onclick="document.getElementById('actionTypeField').value='submit'">
+      提出
+    </button>
+    {% if is_update %}
+      <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
+            onsubmit="return confirm('本当に削除してよろしいですか？');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">削除</button>
+      </form>
+    {% endif %}
+  </div>
+
+</form>

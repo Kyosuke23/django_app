@@ -1,6 +1,7 @@
 import re
+import datetime
 from django.core.paginator import Page
-from datetime import datetime
+from decimal import Decimal
 
 class Common:
     # 共通データカラムリスト
@@ -69,3 +70,15 @@ class Common:
             return datetime.strptime(value, '%Y-%m-%d').date(), None
         except ValueError:
             return None, f'{idx}行目: {field_name} "{value}" は YYYY-MM-DD 形式で指定してください'
+        
+    @classmethod
+    def format_for_csv(cls, value):
+        if isinstance(value, datetime.date):
+            return value.strftime("%Y-%m-%d")
+        if isinstance(value, datetime.datetime):
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+        if isinstance(value, Decimal):
+            return format(value, "0.2f")
+        if value is None:
+            return ""
+        return str(value)
