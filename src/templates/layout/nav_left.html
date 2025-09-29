@@ -14,20 +14,6 @@
               </svg>ダッシュボード
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:register_user_index' %}">
-              <svg class="bi">
-                <use xlink:href="#people" />
-              </svg>ユーザーマスタ
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'demo_app:item_mst_index' %}">
-              <svg class="bi">
-                <use xlink:href="#cart" />
-              </svg>アイテムマスタ
-            </a>
-          </li>
         </ul>
 
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
@@ -66,6 +52,13 @@
           </a>
         </h6>
         <ul class="nav flex-column mb-auto">
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:register_user_index' %}">
+              <svg class="bi">
+                <use xlink:href="#people" />
+              </svg>ユーザーマスタ
+            </a>
+          </li>
           <li class="nav-item">
             <a class="nav-link d-flex align-items-center gap-2" href="{% url 'login:access_log' %}">
               <svg class="bi">

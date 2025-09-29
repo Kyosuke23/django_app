@@ -22,7 +22,6 @@ INSTALLED_APPS = [
     'register.apps.RegisterConfig',
     'login.apps.LoginConfig',
     'dashboard.apps.DashboardConfig',
-    'demo_app.apps.DemoappConfig',
     'product_mst.apps.ProductMstConfig',
     'tenant_mst.apps.TenantMstConfig',
     'partner_mst.apps.PartnerMstConfig',
@@ -37,7 +36,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'demo_app.middleware.auth.AuthMiddleware',
     'register.middleware.auth.AuthMiddleware',
 ]
 
