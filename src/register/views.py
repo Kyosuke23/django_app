@@ -9,12 +9,10 @@ from django.http import HttpResponse
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.views import PasswordChangeView
-from .const import *
+from .constants import *
 from config.common import Common
 from datetime import datetime
 from openpyxl import Workbook
-import json
-import requests
 
 # 出力データカラム
 OUTPUT_DATA_COLUMNS = ['usernmae', 'first_name', 'last_name', 'email', 'gender', 'birthday', 'tel_number', 'postal_cd', 'state', 'city', 'address', 'address2', 'privilege'] + Common.COMMON_DATA_COLUMNS
