@@ -13,6 +13,8 @@ from .forms import SignUpForm, ChangePasswordForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from django.contrib.auth.views import PasswordChangeView
+from django.http import HttpResponseForbidden
+from .constants import PRIVILEGE_REFERENCE
 
 
 # CSV/Excel の共通出力カラム
@@ -23,12 +25,20 @@ DATA_COLUMNS = [
 
 FILENAME_PREFIX = 'user_mst'
 
+class PrivilegeRequiredMixin:
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        # privilege 1=管理者, 2=編集者, 3=一般, それ以降はアクセス不可
+        if int(request.user.privilege) > int(PRIVILEGE_REFERENCE):
+            return HttpResponseForbidden("ユーザーマスタへのアクセス権限がありません")
+        return super().dispatch(request, *args, **kwargs)
 
 # -----------------------------
 # User CRUD
 # -----------------------------
 
-class UserListView(generic.ListView):
+class UserListView(PrivilegeRequiredMixin, generic.ListView):
     """ユーザー一覧画面"""
     model = CustomUser
     template_name = 'register/list.html'
@@ -47,7 +57,7 @@ class UserListView(generic.ListView):
         return context
 
 
-class UserCreateView(generic.CreateView):
+class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
     """ユーザー登録（モーダル対応）"""
     model = CustomUser
     form_class = SignUpForm
@@ -95,7 +105,7 @@ class UserCreateView(generic.CreateView):
         return super().form_invalid(form)
 
 
-class UserUpdateView(generic.UpdateView):
+class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     """ユーザー更新（モーダル対応）"""
     model = CustomUser
     form_class = SignUpForm
@@ -142,6 +152,7 @@ class UserUpdateView(generic.UpdateView):
 class ProfileUpdateView(generic.UpdateView):
     '''
     ログイン中のユーザーが自分の情報を編集する画面
+    - これだけは権限制御なし
     '''
     model = CustomUser
     template_name = 'register/update_profile.html'
@@ -163,7 +174,7 @@ class ProfileUpdateView(generic.UpdateView):
         pass
 
     
-class UserChangePassword(PasswordChangeView):
+class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
     """
     パスワードの変更処理
     """
@@ -175,7 +186,7 @@ class UserChangePassword(PasswordChangeView):
         return reverse('dashboard:top')
 
 
-class UserDeleteView(generic.View):
+class UserDeleteView(PrivilegeRequiredMixin, generic.View):
     """ユーザー削除"""
     success_url = reverse_lazy('register:list')
 
@@ -198,11 +209,15 @@ class UserDeleteView(generic.View):
             }, status=400)
 
 
-class UserBulkDeleteView(generic.View):
+class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
     """ユーザー一括削除"""
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
         if ids:
+            if str(request.user.pk) in ids:
+                return JsonResponse({
+                    'error': '自分自身のユーザーは削除できません'
+                }, status=400)
             try:
                 CustomUser.objects.filter(id__in=ids).delete()
                 return JsonResponse({'message': f'{len(ids)}件削除しました'})
@@ -219,7 +234,7 @@ class UserBulkDeleteView(generic.View):
 # Export / Import
 # -----------------------------
 
-class ExportExcel(ExcelExportBaseView):
+class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
     headers = DATA_COLUMNS
@@ -232,7 +247,7 @@ class ExportExcel(ExcelExportBaseView):
         return get_row(rec)
 
 
-class ExportCSV(CSVExportBaseView):
+class ExportCSV(PrivilegeRequiredMixin, CSVExportBaseView):
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
     headers = DATA_COLUMNS
@@ -245,7 +260,7 @@ class ExportCSV(CSVExportBaseView):
         return get_row(rec)
 
 
-class ImportCSV(CSVImportBaseView):
+class ImportCSV(PrivilegeRequiredMixin, CSVImportBaseView):
     expected_headers = DATA_COLUMNS
     model_class = CustomUser
     unique_field = 'email'
@@ -253,9 +268,9 @@ class ImportCSV(CSVImportBaseView):
     def validate_row(self, row, idx, existing, request):
         email = row.get('email')
         if not email:
-            return None, f'{idx}行目: email が空です'
+            return None, f'{idx}行目: メールアドレス が空です'
         if email in existing:
-            return None, f'{idx}行目: email "{email}" は既に存在します'
+            return None, f'{idx}行目: メールアドレス "{email}" は既に存在します'
 
         obj = CustomUser(
             username=row.get('username'),
