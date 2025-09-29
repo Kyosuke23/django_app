@@ -7,11 +7,11 @@ urlpatterns = [
     # -----------------
     # 取引先マスタ
     # -----------------
-    path('partner/', views.PartnerListView.as_view(), name='list'),
-    path('partner/<int:pk>/delete/', views.PartnerDeleteView.as_view(), name='delete'),
-    path("partner/import/csv", views.ImportCSV.as_view(), name='import_csv'),
-    path('partner/export/csv', views.ExportCSV.as_view(), name='export_csv'),
-    path('partner/export/excel', views.ExportExcel.as_view(), name='export_excel'),
-    path('partner/modal/create/', views.PartnerCreateView.as_view(), name='create'),
-    path('partner/<int:pk>/modal/update/', views.PartnerUpdateView.as_view(), name='update'),
+    path('', views.PartnerListView.as_view(), name='list'),
+    path('<int:pk>/delete/', views.PartnerDeleteView.as_view(), name='delete'),
+    path("import/csv", views.ImportCSV.as_view(), name='import_csv'),
+    path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
+    path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
+    path('create/', views.PartnerCreateView.as_view(), name='create'),
+    path('<int:pk>/update/', views.PartnerUpdateView.as_view(), name='update'),
 ]
