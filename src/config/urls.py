@@ -22,6 +22,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('product_mst/', include('product_mst.urls')),
     path('partner_mst/', include('partner_mst.urls')),
+    path('tenant_mst/', include('tenant_mst.urls')),
     path('sales_order/', include('sales_order.urls')),
     path('login/', include('login.urls')),
     path('logout/', LogoutView.as_view(), name='logout'),

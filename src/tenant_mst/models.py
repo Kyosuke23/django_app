@@ -1,17 +1,17 @@
 import uuid
 from django.db import models
 from config.base import BaseModel
+from django.urls import reverse
 
 class Tenant(BaseModel):
     """
     企業・組織情報を管理するモデル
-    （CustomUser が所属する単位）
     """
     class Meta:
         ordering = ['tenant_cd']
 
     tenant_cd = models.UUIDField(
-        default=uuid.uuid4,   # 新規作成時に自動でUUIDを生成
+        default=uuid.uuid4,
         unique=True,
         editable=False,
         verbose_name='テナントコード'
@@ -68,3 +68,6 @@ class Tenant(BaseModel):
 
     def __str__(self):
         return f'{self.tenant_name} ({self.tenant_cd})'
+
+    def get_absolute_url(self):
+        return reverse('tenant_mst:edit', kwargs={'pk': self.pk})

@@ -1,0 +1,16 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% load humanize %}
+{% block content %}
+<form id="update_form" method="post" action="{% url 'tenant_mst:edit' %}">
+    {# ページタイトル #}
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">テナント情報編集画面</h1>
+    </div>
+    {# 検索フォーム #}
+    {% csrf_token %}
+    {% bootstrap_form form layout="vertical" %}
+    <button type="submit" class="btn btn-primary">更新</button>
+</form>
+{% endblock %}
