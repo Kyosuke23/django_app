@@ -22,10 +22,10 @@ INSTALLED_APPS = [
     'register.apps.RegisterConfig',
     'login.apps.LoginConfig',
     'dashboard.apps.DashboardConfig',
-    'product_mst.apps.ProductMstConfig',
-    'tenant_mst.apps.TenantMstConfig',
     'partner_mst.apps.PartnerMstConfig',
+    'product_mst.apps.ProductMstConfig',
     'sales_order.apps.SalesOrderConfig',
+    'tenant_mst.apps.TenantMstConfig',
 ]
 
 MIDDLEWARE = [
