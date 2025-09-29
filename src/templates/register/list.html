@@ -69,42 +69,26 @@
 <div class="result-table overflow-auto table-responsive">
     <table class="table table-hover table-striped text-nowrap">
         <thead class="table-dark sticky-top">
-            <th>ユーザーコード</th>
-            <th>氏名</th>
+            <th>ユーザー名</th>
             <th>E-Mail</th>
-            <th>性別</th>
-            <th>誕生日</th>
             <th>電話番号</th>
-            <th>郵便番号</th>
-            <th>都道府県</th>
-            <th>市区町村</th>
-            <th>住所</th>
-            <th>住所2</th>
+            <th>性別</th>
             <th>権限</th>
-            <th></th>
-            <th></th>
+            <th>在籍状況</th>
+            <th>操作</th>
         </thead>
         <tbody>
             {% for data in users %}
             <tr class="align-middle">
                 <td>{{ data.username }}</td>
-                <td>{{ data.last_name|default_if_none:'' }}&nbsp;{{ data.first_name|default_if_none:'' }}</td>
                 <td>{{ data.email|default_if_none:'' }}</td>
-                <td>{{ data.get_gender_display|default_if_none:'' }}</td>
-                <td>{{ data.birthday|default_if_none:''|date:'Y/m/d' }}</td>
                 <td>{{ data.tel_number|default_if_none:'' }}</td>
-                <td>{{ data.postal_cd|default_if_none:'' }}</td>
-                <td>{{ data.state|default_if_none:'' }}</td>
-                <td>{{ data.city|default_if_none:'' }}</td>
-                <td>{{ data.address|default_if_none:'' }}</td>
-                <td>{{ data.address2|default_if_none:'' }}</td>
+                <td>{{ data.get_gender_display|default_if_none:'' }}</td>
                 <td>{{ data.get_privilege_display }}</td>
                 {% if user.privilege == PRIVILEGE_EDITOR and user.username == data.username or user.privilege == PRIVILEGE_ADMIN %}
+                <td>{{ data.get_employment_status_display }}</td>
                 <td>
                     <a class="btn btn-outline-primary btn-sm" href="{% url 'register:update' data.id %}" data-bs-toggle="modal" data-bs-target="#update-Modal-{{ data.pk }}">編集</a>
-                </td>
-                <td>
-                    <a class="btn btn-outline-danger btn-sm" href="" data-bs-toggle="modal" data-bs-target="#delete-Modal-{{ data.pk }}">削除</a>
                 </td>
                 {% else %}
                     <td></td>
@@ -112,8 +96,6 @@
                 {% endif %}
                 {# 更新時のモーダル #}
                 {% include 'register/edit.html' %}
-                {# 削除時のモーダル #}
-                {% include 'register/delete.html' %}
             </tr>
             {% endfor %}
         </tbody>
