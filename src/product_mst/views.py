@@ -9,9 +9,10 @@ from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.db.models.deletion import ProtectedError
+from django.shortcuts import get_object_or_404
+from django.urls import reverse_lazy
 
 
 # CSV/Excel の共通出力カラム定義
@@ -85,7 +86,7 @@ class ProductCreateView(generic.CreateView):
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=False)
-        product_message(self.request, '登録', self.object.product_name)
+        set_message(self.request, '登録', self.object.product_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -106,18 +107,13 @@ class ProductCreateView(generic.CreateView):
 
 
 class ProductUpdateView(generic.UpdateView):
-    '''
-    商品更新
-    - GET: 部分テンプレートを返す（Ajax）
-    - POST: Ajaxで更新処理
-    '''
     model = Product
     form_class = ProductForm
     template_name = 'product_mst/form.html'
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = self.get_form()
+        form = self.form_class(instance=self.object)
         html = render_to_string(
             self.template_name,
             {
@@ -129,51 +125,51 @@ class ProductUpdateView(generic.UpdateView):
         )
         return JsonResponse({'success': True, 'html': html})
 
-    def form_valid(self, form):
-        Common.save_data(selv=self, form=form, is_update=True)
-        product_message(self.request, '更新', self.object.product_name)
-        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            self.object = form.save(commit=False)
+            self.object.update_user = self.request.user
+            self.object.save()
+            set_message(self.request, '更新', self.object.product_name)
             return JsonResponse({'success': True})
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            obj = getattr(self, 'object', None)
-            modal_title = f'商品更新: {obj.product_name}' if obj else '商品更新'
+        else:
             html = render_to_string(
                 self.template_name,
                 {
                     'form': form,
-                    'form_action': reverse(
-                        'product_mst:update',
-                        kwargs={'pk': obj.pk} if obj else {}
-                    ),
-                    'modal_title': modal_title,
+                    'form_action': reverse('product_mst:update', kwargs={'pk': self.object.pk}),
+                    'modal_title': f'商品更新: {self.object.product_name}',
                 },
-                self.request
+                request
             )
             return JsonResponse({'success': False, 'html': html})
-        return super().form_invalid(form)
+
 
 
 class ProductDeleteView(generic.View):
-    '''
-    商品削除画面
-    - pk指定で物理削除
-    '''
-    model = Product
+    """
+    商品削除処理
+    - POST: 実際に削除
+    """
     template_name = 'product_mst/confirm_delete.html'
     success_url = reverse_lazy('product_mst:list')
 
     def post(self, request, *args, **kwargs):
-        obj = Product.objects.get(pk=kwargs['pk'])
-        obj.delete()
-        # 論理削除版
-        # obj.is_deleted = True
-        # obj.update_user = request.user
-        # obj.save()
-        product_message(request, '削除', obj.product_name)
-        return HttpResponseRedirect(reverse_lazy('product_mst:list'))
+        obj = get_object_or_404(Product, pk=kwargs['pk'])
+        try:
+            obj.delete()
+            set_message(self.request, '削除', obj.product_name)
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+        except ProtectedError as e:
+            return JsonResponse({
+                'error': '使用中の商品は削除できません',
+                'details': ''
+            }, status=400)
+    
+    
     
 class ProductBulkDeleteView(generic.View):
     ''' 一括削除処理 '''
@@ -332,6 +328,6 @@ def filter_data(request, query_set):
         query_set = query_set.filter(product_category_id=category)
     return query_set
 
-def product_message(request, action, product_name):
-    '''商品操作の統一メッセージ'''
+def set_message(request, action, product_name):
+    '''CRUD後の統一メッセージ'''
     messages.success(request, f'商品「{product_name}」を{action}しました。')

@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from sales_order.models import SalesOrder
 from django.db.models.deletion import ProtectedError
+from django.shortcuts import get_object_or_404
 
 # CSV/Excel の共通出力カラム定義
 DATA_COLUMNS = [
@@ -68,7 +69,7 @@ class PartnerCreateView(generic.CreateView):
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=False)
-        partner_message(self.request, '登録', self.object.partner_name)
+        set_message(self.request, '登録', self.object.partner_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -114,7 +115,7 @@ class PartnerUpdateView(generic.UpdateView):
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=True)
-        partner_message(self.request, '更新', self.object.partner_name)
+        set_message(self.request, '更新', self.object.partner_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
         return super().form_valid(form)
@@ -140,17 +141,25 @@ class PartnerUpdateView(generic.UpdateView):
 
 
 class PartnerDeleteView(generic.View):
-    model = Partner
-    template_name = 'partner_mst/confirm_delete.html'
-    success_url = reverse_lazy('partner_mst:list')
+    """
+    商品削除処理
+    - POST: 実際に削除
+    """
+    template_name = 'product_mst/confirm_delete.html'
+    success_url = reverse_lazy('product_mst:list')
 
     def post(self, request, *args, **kwargs):
-        obj = Partner.objects.get(pk=kwargs['pk'])
-        obj.is_deleted = True
-        obj.update_user = request.user
-        obj.save()
-        partner_message(request, '削除', obj.partner_name)
-        return HttpResponseRedirect(reverse_lazy('partner_mst:list'))
+        obj = get_object_or_404(Partner, pk=kwargs['pk'])
+        try:
+            obj.delete()
+            set_message(self.request, '削除', obj.partner_name)
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'success': True})
+        except ProtectedError as e:
+            return JsonResponse({
+                'error': '使用中の商品は削除できません',
+                'details': ''
+            }, status=400)
 
 
 class PartnerBulkDeleteView(generic.View):
@@ -267,5 +276,6 @@ def filter_data(request, query_set):
     return query_set
 
 
-def partner_message(request, action, partner_name):
+def set_message(request, action, partner_name):
+    '''CRUD後の統一メッセージ'''
     messages.success(request, f'取引先「{partner_name}」を{action}しました。')

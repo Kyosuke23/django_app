@@ -211,7 +211,6 @@ $(function () {
         return this;
     };
 
-
     // フラッシュメッセージの表示判定 & 実行
     if ($('.flash_messages').length) {
         $('#flash_message_area').flash_message({
