@@ -82,3 +82,12 @@ class Common:
         if value is None:
             return ""
         return str(value)
+        
+    @classmethod
+    def save_data(cls, selv, form, is_update=False):
+        selv.object = form.save(commit=False)
+        if not is_update:
+            selv.object.create_user = selv.request.user
+        selv.object.update_user = selv.request.user
+        selv.object.tenant = selv.request.user.tenant
+        selv.object.save()

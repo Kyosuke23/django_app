@@ -29,15 +29,15 @@
 {% include 'layout/message.html' %}
 
 {# 検索フォーム #}
-<form id="search_form" method="get" action="{% url 'product_mst:product_list' %}">
+<form id="search_form" method="get" action="{% url 'product_mst:list' %}">
   {% csrf_token %}
   <div class="row mb-3 align-items-center">
 
     {# 検索キーワード #}
     <div class="col col-md-3">
-      <label for="search" class="form-label visually-hidden">キーワード</label>
-      <input id="search" type="text" name="search" class="form-control"
-             value="{{ search }}" placeholder="キーワードを入力してください">
+      <label for="search_keyword" class="form-label visually-hidden">キーワード</label>
+      <input id="search_keyword" type="text" name="search_keyword" class="form-control"
+             value="{{ search_keyword }}" placeholder="キーワードを入力してください">
     </div>
 
     {# カテゴリ選択 #}
@@ -56,7 +56,7 @@
     {# 検索ボタン #}
     <div class="col">
       <button type="submit" class="btn btn-primary search_form_btn"
-              data-action="{% url 'product_mst:product_list' %}">
+              data-action="{% url 'product_mst:list' %}">
         検索
       </button>
     </div>
@@ -68,7 +68,7 @@
         href="#"
         data-bs-toggle="modal"
         data-bs-target="#productModal"
-        data-url="{% url 'product_mst:product_create_modal' %}">
+        data-url="{% url 'product_mst:create' %}">
         + 新規登録
       </a>
     </div>
@@ -115,7 +115,7 @@
             class="btn btn-sm btn-outline-secondary"
             data-bs-toggle="modal"
             data-bs-target="#productModal"
-            data-url="{% url 'product_mst:product_update_modal' product.id %}">
+            data-url="{% url 'product_mst:update' product.id %}">
             編集
           </a>
           {% endif %}

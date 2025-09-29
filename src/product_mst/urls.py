@@ -7,13 +7,11 @@ urlpatterns = [
     # -----------------
     # 商品マスタ
     # -----------------
-    path('product/', views.ProductListView.as_view(), name='product_list'),
-    path('product/create/', views.ProductCreateView.as_view(), name='product_create'),
-    path('product/<int:pk>/update/', views.ProductUpdateView.as_view(), name='product_update'),
-    path('product/<int:pk>/delete/', views.ProductDeleteView.as_view(), name='product_delete'),
+    path('product/', views.ProductListView.as_view(), name='list'),
+    path('product/<int:pk>/delete/', views.ProductDeleteView.as_view(), name='delete'),
     path("product/import/csv", views.ImportCSV.as_view(), name='import_csv'),
     path('product/export/csv', views.ExportCSV.as_view(), name='export_csv'),
     path('product/export/excel', views.ExportExcel.as_view(), name='export_excel'),
-    path('product/modal/create/', views.ProductCreateModalView.as_view(), name='product_create_modal'),
-    path('product/<int:pk>/modal/update/', views.ProductUpdateModalView.as_view(), name='product_update_modal'),
+    path('product/modal/create/', views.ProductCreateView.as_view(), name='create'),
+    path('product/<int:pk>/modal/update/', views.ProductUpdateView.as_view(), name='update'),
 ]
