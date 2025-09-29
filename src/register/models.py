@@ -10,21 +10,23 @@ import register.constants as Constant
 class CustomUser(AbstractUser, BaseModel):
     """
     独自ユーザーモデル
-    """  
-    USERNAME_VALID = ASCIIUsernameValidator()
+    """
+    USERNAME_FIELD = 'email'  # ← 認証に使うフィールドを email に変更
+    REQUIRED_FIELDS = ['username']  # ← createsuperuser のとき追加で入力させるフィールド
     TEL_NUM_VALID = RegexValidator(regex=r'^[0-9]+$', message=('半角数字のみで入力してください'))
     POSTAL_CD_VALID = RegexValidator(regex=r'^\d{7}$', message=('半角数字7桁で入力してください'))
     
     username = models.CharField(
-        validators = [USERNAME_VALID]
-        , max_length=50
-        , unique=True
+        max_length=50
         , null=False
         , blank=False
-        , error_messages={
-            'unique': 'このユーザーコードは既に使用されています。',
-        }
-        , verbose_name='ユーザーコード'
+        , verbose_name='ユーザー名'
+    )
+    email = models.EmailField(
+        unique=True,
+        null=False,
+        blank=False,
+        verbose_name='メールアドレス'
     )
     gender = models.CharField(null=True, blank=True, max_length=1, choices=GENDER_CHOICES, verbose_name='性別')
     tel_number = models.CharField(validators=[TEL_NUM_VALID], max_length=15, blank=True, null=True, verbose_name='電話番号')

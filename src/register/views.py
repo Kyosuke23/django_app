@@ -1,22 +1,24 @@
-import csv
 from .forms import SignUpForm, EditForm, ChangePasswordForm
 from register.models import CustomUser
 from django.views import generic
 from django.urls import reverse
 from django.contrib import messages
 from django.http import JsonResponse
-from django.http import HttpResponse
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.views import PasswordChangeView
 from .constants import *
 from config.common import Common
-from datetime import datetime
-from openpyxl import Workbook
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 
-# 出力データカラム
-OUTPUT_DATA_COLUMNS = ['usernmae', 'first_name', 'last_name', 'email', 'gender', 'birthday', 'tel_number', 'postal_cd', 'state', 'city', 'address', 'address2', 'privilege'] + Common.COMMON_DATA_COLUMNS
+# CSV/Excel 共通カラム
+DATA_COLUMNS = [
+    'username', 'last_name', 'first_name', 'gender', 'email',
+    'birthday', 'tel_number', 'postal_cd', 'state', 'city',
+    'address', 'address2', 'privilege', 'employment_status', 'employment_end_date'
+] + Common.COMMON_DATA_COLUMNS
 
+FILENAME_PREFIX = 'user_mst'
 
 class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
     """
@@ -35,7 +37,7 @@ class RegisterUserList(generic.ListView, generic.edit.ModelFormMixin):
 
     def get_context_data(self, **kwarg):
         context = super().get_context_data(**kwarg)
-        context['search_key'] = self.request.GET.get('search_key') or ''
+        context['search_keyword'] = self.request.GET.get('search_keyword') or ''
         context['search_gender'] = self.request.GET.get('search_gender')
         context['search_privilege'] = self.request.GET.get('search_privilege')
         context['gender_list'] = GENDER_CHOICES
@@ -62,7 +64,7 @@ def filter_data(request, query_set):
     クエリセットに検索条件を適用
     '''
     # 検索キーワードを取得（空白時に"None"と表示されるのを予防）
-    keyword = request.GET.get('search_key') or ''
+    keyword = request.GET.get('search_keyword') or ''
     gender = request.GET.get('search_gender')
     privilege = request.GET.get('search_privilege')
     # 検索条件を適用
@@ -107,8 +109,7 @@ class RegisterUserUpdate(generic.edit.UpdateView):
     """
     ユーザー情報の更新処理
     """
-    class Meta:
-        model = CustomUser
+    model = CustomUser
     template_name = 'register/edit.html'
     context_object_name = 'user'
     form_class = EditForm
@@ -133,6 +134,29 @@ class RegisterUserUpdate(generic.edit.UpdateView):
         )
         return result
     
+class ProfileUpdate(generic.UpdateView):
+    '''
+    ログイン中のユーザーが自分の情報を編集する画面
+    '''
+    model = CustomUser
+    template_name = 'register/update_profile.html'
+    form_class = EditForm
+    context_object_name = 'user'
+
+    def get_object(self, queryset=None):
+        return self.request.user
+
+    def get_success_url(self):
+        messages.success(self.request, 'プロフィールを更新しました')
+        return reverse('register:update_profile')
+
+    def form_valid(self, form):
+        Common.save_data(selv=self, form=form, is_update=True)
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        pass
+
 class RegisterUserDelete(generic.edit.DeleteView):
     """
     ユーザー情報の削除処理
@@ -166,81 +190,113 @@ class RegisterUserChangePassword(PasswordChangeView):
         messages.success(self.request, 'パスワードが変更されました')
         return reverse('dashboard:top')
     
-class ExportExcel(generic.TemplateView):
-    def get(self, request, *args, **kwargs):
-        """
-        Excelデータの出力処理
-        """
-        # 出力ファイル名を設定
-        file_name = f'user_mst_{datetime.now().replace(microsecond=0)}.xlsx'
-        # queryセットを取得
-        data = CustomUser.objects.all()
-        # 検索条件を適用
-        data = filter_data(request=request, query_set=data)
-        # Excel出力用のレスポンスを取得
-        response = HttpResponse(content_type='application/vnd.ms-excel')
-        response['Content-Disposition'] = f'attachment; filename="{file_name}"'
-        # Excelオブジェクト（ワークブック）を取得
-        wb = Workbook()
-        ws = wb.active
-        # 列名をワークブックに適用
-        ws.append(OUTPUT_DATA_COLUMNS)
-        # ワークブックにデータを追加
-        for rec in data:
-            # ワークブックにデータを追加
-            ws.append([
-                rec.username
-                , rec.first_name
-                , rec.last_name
-                , rec.email
-                , GENDER_CHOICES[int(rec.gender)][1]
-                , rec.birthday
-                , rec.tel_number
-                , rec.postal_cd
-                , rec.state
-                , rec.city
-                , rec.address
-                , rec.address2
-                , PRIVILEGE_CHOICES[int(rec.privilege)][1]
-            ])
-        # 保存したワークブックをレスポンスに格納
-        wb.save(response)
-        # 処理結果を返却
-        return response
+# -----------------------------
+# Export / Import
+# -----------------------------
 
-class ExportCSV(generic.TemplateView):
-    def get(self, request, *args, **kwargs):
-        """
-        CSVデータの出力処理
-        """
-        # 出力ファイル名を設定
-        file_name = f'user_mst_{datetime.now().replace(microsecond=0)}.csv'
-        # queryセットを取得
-        data = CustomUser.objects.all()
-        # 検索条件を適用
-        data = filter_data(request=request, query_set=data)
-        # CSV出力用のレスポンスを取得
-        response = HttpResponse(content_type='text/csv; charset=Shift-JIS')
-        response['Content-Disposition'] = 'attachment; filename*=UTF-8\'\'{}'.format(file_name)
-        # ヘッダの書き込み
-        writer = csv.writer(response)
-        writer.writerow(OUTPUT_DATA_COLUMNS)
-        # データの書き込み
-        for rec in data:
-            writer.writerow([
-                rec.username
-                , rec.first_name
-                , rec.last_name
-                , rec.email
-                , GENDER_CHOICES[int(rec.gender)][1]
-                , rec.birthday
-                , rec.tel_number
-                , rec.postal_cd
-                , rec.state
-                , rec.city
-                , rec.address
-                , rec.address2
-                , PRIVILEGE_CHOICES[int(rec.privilege)][1]
-            ])
-        # 処理結果を返却
-        return response
+class ExportExcel(ExcelExportBaseView):
+    '''
+    ユーザーマスタのExcel出力
+    '''
+    model_class = CustomUser
+    filename_prefix = FILENAME_PREFIX
+    headers = DATA_COLUMNS
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return filter_data(request=request, query_set=qs)
+
+    def row(self, rec):
+        return get_row(rec=rec)
+
+
+class ExportCSV(CSVExportBaseView):
+    '''
+    ユーザーマスタのCSV出力
+    '''
+    model_class = CustomUser
+    filename_prefix = FILENAME_PREFIX
+    headers = DATA_COLUMNS
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return filter_data(request=request, query_set=qs)
+
+    def row(self, rec):
+        return get_row(rec=rec)
+
+
+class ImportCSV(CSVImportBaseView):
+    '''
+    ユーザーマスタのCSVインポート
+    '''
+    expected_headers = DATA_COLUMNS
+    model_class = CustomUser
+    unique_field = 'username'
+
+    def validate_row(self, row, idx, existing, request):
+        username = row.get('username')
+        if not username:
+            return None, f'{idx}行目: username が空です'
+        if username in existing:
+            return None, f'{idx}行目: username "{username}" は既に存在します'
+
+        obj = CustomUser(
+            username=username,
+            last_name=row.get('last_name'),
+            first_name=row.get('first_name'),
+            gender=row.get('gender'),
+            email=row.get('email'),
+            birthday=row.get('birthday') or None,
+            tel_number=row.get('tel_number'),
+            postal_cd=row.get('postal_cd'),
+            state=row.get('state'),
+            city=row.get('city'),
+            address=row.get('address'),
+            address2=row.get('address2'),
+            privilege=row.get('privilege') or '3',
+            employment_status=row.get('employment_status') or '1',
+            employment_end_date=row.get('employment_end_date') or None,
+            create_user=request.user,
+            update_user=request.user,
+            tenant=request.user.tenant
+        )
+        return obj, None
+
+
+# -----------------------------
+# 共通関数
+# -----------------------------
+
+def get_row(rec):
+    '''CSV/Excel出力用: 1行分のリストを返す'''
+    return [
+        rec.username,
+        rec.last_name,
+        rec.first_name,
+        rec.gender,
+        rec.email,
+        rec.birthday,
+        rec.tel_number,
+        rec.postal_cd,
+        rec.state,
+        rec.city,
+        rec.address,
+        rec.address2,
+        rec.privilege,
+        rec.employment_status,
+        rec.employment_end_date,
+    ] + Common.get_common_columns(rec=rec)
+
+
+def filter_data(request, query_set):
+    ''' 検索条件付与 '''
+    keyword = request.GET.get('search_keyword') or ''
+    if keyword:
+        query_set = query_set.filter(
+            Q(username__icontains=keyword) |
+            Q(last_name__icontains=keyword) |
+            Q(first_name__icontains=keyword) |
+            Q(email__icontains=keyword)
+        )
+    return query_set

@@ -1,11 +1,24 @@
 {% load django_bootstrap5 %}
 
-<div class="modal-header mb-3">
-  <h4 class="modal-title">{{ modal_title }}</h4>
-  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<div class="modal fade" id="update-Modal-{{ data.pk }}" tabindex="-1" aria-labelledby="user_update_modal" aria-hidden="false">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header mb-3">
+        <h4 class="modal-title">ユーザー情報の更新</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form method="post" id="update_form_{{ data.pk }}" action="{% url 'register:update' data.pk %}">
+        {% csrf_token %}
+
+        {# Bootstrap5対応フォームの一括レンダリング #}
+        {% bootstrap_form form layout='vertical' %}
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">キャンセル</button>
+          <button type="submit" class="btn btn-primary">更新</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
-<form method="post" id="partnerForm" action="{{ form_action }}">
-  {% csrf_token %}
-  {% bootstrap_form form %}
-  <button type="submit" class="btn btn-primary">保存</button>
-</form>

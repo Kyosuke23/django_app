@@ -16,7 +16,7 @@
 
     <!-- 右側: ユーザー情報 -->
     <div class="text-white me-3">
-      {{ request.user.last_name }}&nbsp;{{ request.user.first_name }}さん / {{ request.user.tenant.tenant_name }}
+      {{ request.user.username }}さん / {{ request.user.tenant.tenant_name }}
     </div>
   </header>
 {% endif %}
