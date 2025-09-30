@@ -14,7 +14,7 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from django.contrib.auth.views import PasswordChangeView
 from django.http import HttpResponseForbidden
-from .constants import PRIVILEGE_REFERENCE, PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
+from .constants import PRIVILEGE_EDITOR, PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
 
 
 # CSV/Excel の共通出力カラム
@@ -30,7 +30,7 @@ class PrivilegeRequiredMixin:
         if not request.user.is_authenticated:
             return self.handle_no_permission()
         # privilege 1=管理者, 2=編集者, 3=一般, それ以降はアクセス不可
-        if int(request.user.privilege) > int(PRIVILEGE_REFERENCE):
+        if int(request.user.privilege) > int(PRIVILEGE_EDITOR):
             return HttpResponseForbidden("ユーザーマスタへのアクセス権限がありません")
         return super().dispatch(request, *args, **kwargs)
 

@@ -14,9 +14,9 @@ def const_str(request):
         'GENDER_CHOICES': register_const.GENDER_CHOICES,
 
         # ユーザー権限
-        'PRIVILEGE_ADMIN': register_const.PRIVILEGE_ADMIN,
+        'PRIVILEGE_SYSTEM': register_const.PRIVILEGE_SYSTEM,
+        'PRIVILEGE_MANAGER': register_const.PRIVILEGE_MANAGER,
         'PRIVILEGE_EDITOR': register_const.PRIVILEGE_EDITOR,
         'PRIVILEGE_REFERENCE': register_const.PRIVILEGE_REFERENCE,
-        'PRIVILEGE_GUEST': register_const.PRIVILEGE_GUEST,
         'PRIVILEGE_CHOICES': register_const.PRIVILEGE_CHOICES,
     }

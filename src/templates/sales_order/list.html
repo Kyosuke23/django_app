@@ -57,7 +57,7 @@
     </div>
 
     {# 新規登録ボタン（モーダル表示） #}
-    {% if user.privilege <= PRIVILEGE_EDITOR %}
+    {% if user.privilege <= PRIVILEGE_MANAGER %}
     <div class="col d-flex justify-content-end">
       <a class="btn btn-outline-primary"
         href="#"
@@ -102,7 +102,7 @@
             {{ request.user.username }}
         </td>
         <td>
-          {% if user.privilege <= PRIVILEGE_EDITOR %}
+          {% if user.privilege <= PRIVILEGE_MANAGER %}
           <a href="#"
             class="btn btn-sm btn-outline-secondary"
             data-bs-toggle="modal"
