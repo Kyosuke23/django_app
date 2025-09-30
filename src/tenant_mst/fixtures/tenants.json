@@ -3,7 +3,7 @@
     "model": "tenant_mst.tenant",
     "pk": 1,
     "fields": {
-      "tenant_code": "f7b2cb04-4341-4fc8-9fed-f3653bd5abeb",
+      "tenant_code": "3d3a3b72-4f4a-4c33-8b1e-7f2a6c5d9e10",
       "tenant_name": "サンプル株式会社",
       "representative_name": "池田匡佑",
       "contact_email": "info@example.com",
@@ -17,6 +17,46 @@
       "created_at": "2025-09-29T12:00:00Z",
       "updated_at": "2025-09-29T12:00:00Z",
       "tenant_id": "1"
+    }
+  },
+  {
+    "model": "tenant_mst.tenant",
+    "pk": 2,
+    "fields": {
+      "tenant_code": "c2f4e9a1-7b61-4d8a-9c3b-b0e5f2a179cd",
+      "tenant_name": "テスト商事株式会社",
+      "representative_name": "佐藤太郎",
+      "contact_email": "contact@testshoji.co.jp",
+      "tel_number": "0459876543",
+      "postal_code": "2200005",
+      "state": "神奈川県",
+      "city": "横浜市西区",
+      "address": "みなとみらい2-2-2",
+      "address2": "ランドマークタワー10F",
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:10:00Z",
+      "updated_at": "2025-09-29T12:10:00Z",
+      "tenant_id": "2"
+    }
+  },
+  {
+    "model": "tenant_mst.tenant",
+    "pk": 3,
+    "fields": {
+      "tenant_code": "f7a1c0de-2a9b-4e12-a5bc-d3f4e7a9c8b1",
+      "tenant_name": "開発ソリューションズ株式会社",
+      "representative_name": "鈴木花子",
+      "contact_email": "info@kaisolu.jp",
+      "tel_number": "0521122334",
+      "postal_code": "4500002",
+      "state": "愛知県",
+      "city": "名古屋市中村区",
+      "address": "名駅3-3-3",
+      "address2": "ソリューションビル5F",
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:20:00Z",
+      "updated_at": "2025-09-29T12:20:00Z",
+      "tenant_id": "3"
     }
   }
 ]

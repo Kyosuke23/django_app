@@ -11,10 +11,9 @@ from django.db.models.deletion import ProtectedError
 from .models import CustomUser
 from .forms import SignUpForm, ChangePasswordForm
 from config.common import Common
-from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
-from django.http import HttpResponseForbidden
-from .constants import PRIVILEGE_EDITOR, PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
+from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
 
 
 # CSV/Excel の共通出力カラム
@@ -24,15 +23,6 @@ DATA_COLUMNS = [
 ] + Common.COMMON_DATA_COLUMNS
 
 FILENAME_PREFIX = 'user_mst'
-
-class PrivilegeRequiredMixin:
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            return self.handle_no_permission()
-        # privilege 1=管理者, 2=編集者, 3=一般, それ以降はアクセス不可
-        if int(request.user.privilege) > int(PRIVILEGE_EDITOR):
-            return HttpResponseForbidden("ユーザーマスタへのアクセス権限がありません")
-        return super().dispatch(request, *args, **kwargs)
 
 # -----------------------------
 # User CRUD

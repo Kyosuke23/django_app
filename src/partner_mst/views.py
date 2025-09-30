@@ -3,7 +3,7 @@ from django.urls import reverse_lazy, reverse
 from .models import Partner
 from .form import PartnerForm
 from config.common import Common
-from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
@@ -44,7 +44,7 @@ class PartnerListView(generic.ListView):
         return context
 
 
-class PartnerCreateView(generic.CreateView):
+class PartnerCreateView(PrivilegeRequiredMixin, generic.CreateView):
     '''
     取引先登録
     - GET: 部分テンプレートを返す（Ajax）
@@ -89,7 +89,7 @@ class PartnerCreateView(generic.CreateView):
         return super().form_invalid(form)
 
 
-class PartnerUpdateView(generic.UpdateView):
+class PartnerUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     '''
     取引先更新
     - GET: 部分テンプレートを返す（Ajax）
@@ -140,7 +140,7 @@ class PartnerUpdateView(generic.UpdateView):
         return super().form_invalid(form)
 
 
-class PartnerDeleteView(generic.View):
+class PartnerDeleteView(PrivilegeRequiredMixin, generic.View):
     """
     商品削除処理
     - POST: 実際に削除
@@ -162,7 +162,7 @@ class PartnerDeleteView(generic.View):
             }, status=400)
 
 
-class PartnerBulkDeleteView(generic.View):
+class PartnerBulkDeleteView(PrivilegeRequiredMixin, generic.View):
     ''' 一括削除処理 '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')

@@ -4,7 +4,7 @@ from .models import Product, ProductCategory
 from sales_order.models import SalesOrderDetail
 from .form import ProductForm
 from config.common import Common
-from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
 from django.contrib import messages
 from django.http import JsonResponse
@@ -61,7 +61,7 @@ class ProductListView(generic.ListView):
         return context
 
 
-class ProductCreateView(generic.CreateView):
+class ProductCreateView(PrivilegeRequiredMixin, generic.CreateView):
     '''
     商品登録
     - GET: 部分テンプレートを返す（Ajax）
@@ -106,7 +106,7 @@ class ProductCreateView(generic.CreateView):
         return super().form_invalid(form)
 
 
-class ProductUpdateView(generic.UpdateView):
+class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     model = Product
     form_class = ProductForm
     template_name = 'product_mst/form.html'
@@ -148,7 +148,7 @@ class ProductUpdateView(generic.UpdateView):
 
 
 
-class ProductDeleteView(generic.View):
+class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
     """
     商品削除処理
     - POST: 実際に削除
@@ -171,7 +171,7 @@ class ProductDeleteView(generic.View):
     
     
     
-class ProductBulkDeleteView(generic.View):
+class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
     ''' 一括削除処理 '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')

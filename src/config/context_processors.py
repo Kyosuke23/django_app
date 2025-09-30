@@ -17,6 +17,6 @@ def const_str(request):
         'PRIVILEGE_SYSTEM': register_const.PRIVILEGE_SYSTEM,
         'PRIVILEGE_MANAGER': register_const.PRIVILEGE_MANAGER,
         'PRIVILEGE_EDITOR': register_const.PRIVILEGE_EDITOR,
-        'PRIVILEGE_REFERENCE': register_const.PRIVILEGE_REFERENCE,
+        'PRIVILEGE_VIEWER': register_const.PRIVILEGE_VIEWER,
         'PRIVILEGE_CHOICES': register_const.PRIVILEGE_CHOICES,
     }

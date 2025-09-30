@@ -6,7 +6,8 @@ from django.db import transaction, IntegrityError
 from datetime import datetime
 from django.http import HttpResponse
 from django.db import models
-from django.contrib.auth import get_user_model
+from django.http import HttpResponseForbidden
+from register.constants import PRIVILEGE_EDITOR
 import openpyxl
 
 
@@ -186,3 +187,14 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
+        
+class PrivilegeRequiredMixin():
+    '''
+    一般権限以下のユーザーのアクセスを制限する
+    '''
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if int(request.user.privilege) > int(PRIVILEGE_EDITOR):
+            return HttpResponseForbidden('アクセス権限がありません')
+        return super().dispatch(request, *args, **kwargs)
