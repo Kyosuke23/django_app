@@ -3,41 +3,58 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-{# ページタイトル & 操作用ボタン #}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-  <h1 class="h2">取引先マスタ管理画面</h1>
-
-  {# インポート/エクスポート/一括削除用のボタンエリア #}
-  <div class="d-flex gap-2">
-    <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
-    <button type="button" id="import-btn" class="btn btn-outline-secondary"
-            data-action="{% url 'partner_mst:import_csv' %}">
-      IMPORT
-    </button>
-    <button type="button" class="btn btn-outline-secondary export-btn"
-            data-action="{% url 'partner_mst:export_csv' %}">
-      CSV
-    </button>
-    <button type="button" class="btn btn-outline-secondary export-btn"
-            data-action="{% url 'partner_mst:export_excel' %}">
-      Excel
-    </button>
-  </div>
-</div>
-
-{# メッセージ #}
-{% include 'layout/message.html' %}
-
 {# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'partner_mst:list' %}">
+  {# ページタイトル & 操作用ボタン #}
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">取引先マスタ管理画面</h1>
+
+    {# インポート/エクスポート/一括削除用のボタンエリア #}
+    <div class="d-flex gap-2">
+      <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+      <button type="button" id="import-btn" class="btn btn-outline-secondary" data-action="{% url 'partner_mst:import_csv' %}">
+        IMPORT
+      </button>
+      <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_csv' %}">
+        CSV
+      </button>
+      <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_excel' %}">
+        Excel
+      </button>
+    </div>
+  </div>
+
+  {# メッセージ #}
+  {% include 'layout/message.html' %}
+
   {% csrf_token %}
   <div class="row mb-3 align-items-center">
 
-    {# 検索キーワード #}
+    {# 基本検索：取引先名称 #}
     <div class="col col-md-3">
-      <label for="search_keyword" class="form-label visually-hidden">キーワード</label>
-      <input id="search_keyword" type="text" name="search_keyword" class="form-control"
-             value="{{ search_keyword }}" placeholder="取引先コード / 名称 / 担当者 / メール">
+      <label for="search_partner_name" class="form-label visually-hidden">取引先名称</label>
+      <input id="search_partner_name" type="text" name="search_partner_name" class="form-control"
+             value="{{ search_partner_name }}" placeholder="取引先名称">
+    </div>
+
+    {# 基本検索：取引先区分 #}
+    <div class="col col-md-1">
+      <label for="search_partner_type" class="form-label visually-hidden">取引先区分</label>
+      <select id="search_partner_type" class="form-control" name="search_partner_type">
+        <option value="">-- 全カテゴリ --</option>
+        {% for val,label in partner_types %}
+        <option value="{{ val }}" {% if search_partner_type == val|stringformat:"s" %}selected{% endif %}>
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    {# 基本検索：担当者名 #}
+    <div class="col col-md-2">
+      <label for="search_contact_name" class="form-label visually-hidden">担当者名</label>
+      <input id="search_contact_name" type="text" name="search_contact_name" class="form-control"
+             value="{{ search_contact_name }}" placeholder="担当者名">
     </div>
 
     {# 検索ボタン #}
@@ -46,9 +63,13 @@
               data-action="{% url 'partner_mst:list' %}">
         検索
       </button>
+      <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#detailSearch"
+              aria-expanded="false" aria-controls="detailSearch">
+        詳細検索
+      </button>
     </div>
 
-    {# 登録画面リンク #}
+    {# 登録ボタン #}
     {% if user.privilege <= PRIVILEGE_MANAGER %}
     <div class="col d-flex justify-content-end">
       <a class="btn btn-outline-primary"
@@ -60,6 +81,24 @@
       </a>
     </div>
     {% endif %}
+  </div>
+
+  {# 詳細検索エリア（折りたたみ） #}
+  <div class="collapse border rounded p-3 mb-2 bg-light" id="detailSearch">
+    <div class="row g-2">
+      <div class="col-md-4">
+        <input id="search_email" type="text" name="search_email" class="form-control"
+               value="{{ search_email }}" placeholder="メールアドレス">
+      </div>
+      <div class="col-md-2">
+        <input id="search_tel_number" type="text" name="search_tel_number" class="form-control"
+               value="{{ search_tel_number }}" placeholder="電話番号">
+      </div>
+      <div class="col-md-3">
+        <input id="search_address" type="text" name="search_address" class="form-control"
+               value="{{ search_address }}" placeholder="住所">
+      </div>
+    </div>
   </div>
 </form>
 
@@ -81,6 +120,8 @@
           </th>
           {% endif %}
           <th scope="col">取引先名称</th>
+          <th scope="col">取引先名称（カナ）</th>
+          <th scope="col">取引先区分</th>
           <th scope="col">担当者名</th>
           <th scope="col">メールアドレス</th>
           <th scope="col">電話番号</th>
@@ -97,12 +138,14 @@
           </td>
           {% endif %}
           <td>{{ partner.partner_name|default_if_none:'' }}</td>
+          <td>{{ partner.partner_name_kana|default_if_none:'' }}</td>
+          <td>{{ partner.get_partner_type_display }}</td>
           <td>{{ partner.contact_name|default_if_none:'' }}</td>
           <td>{{ partner.email|default_if_none:'' }}</td>
           <td>{{ partner.tel_number|default_if_none:'' }}</td>
           <td>
-            〒{{ partner.postal_code }}<br>
-            {{ partner.state }} {{ partner.city }} {{ partner.address }} {{ partner.address2 }}
+            {% if partner.postal_code %}〒{% endif %}{{ partner.postal_code|default_if_none:'' }}<br>
+            {{ partner.state|default_if_none:'' }} {{ partner.city|default_if_none:'' }} {{ partner.address|default_if_none:'' }} {{ partner.address2|default_if_none:'' }}
           </td>
           <td>
             {% if user.privilege <= PRIVILEGE_MANAGER %}

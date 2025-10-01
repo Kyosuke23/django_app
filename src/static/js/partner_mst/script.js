@@ -2,8 +2,9 @@ $(function () {
     // エクスポートボタン
     $('.export-btn').on('click', function () {
       const url = $(this).data('action');
+      const params = $('#search_form').serialize(); // 検索フォームを取得
       if (url) {
-        window.location.href = url;
+        window.location.href = params ? `${url}?${params}` : url;
       }
     });
 

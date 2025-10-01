@@ -22,7 +22,7 @@ class ExcelExportBaseView(View):
         file_name = f'{self.filename_prefix}_{timestamp}.xlsx'
 
         # --- データ取得 ---
-        data = self.get_queryset(request)
+        data = self.get_queryset(request).filter(is_deleted=False, tenant=request.user.tenant)
 
         # --- Workbook 作成 ---
         wb = openpyxl.Workbook()
@@ -85,7 +85,7 @@ class CSVExportBaseView(View):
 
     def get_queryset(self, request):
         '''サブクラスで必要に応じてフィルタリングを行う'''
-        return self.model_class.objects.all()
+        return self.model_class.objects.filter(is_deleted=False, tenant=request.user.tenant)
 
     def row(self, rec):
         '''サブクラスで1行分のリストを返す'''
@@ -119,12 +119,16 @@ class CSVImportBaseView(View):
         # --- ヘッダチェック ---
         if reader.fieldnames is None or any(h not in reader.fieldnames for h in self.expected_headers):
             return JsonResponse({
-                'error': 'CSVヘッダが正しくありません',
+                'error': 'CSVヘッダが正しくありません。',
                 'details': f'期待: {self.expected_headers}, 実際: {reader.fieldnames}'
             }, status=400)
 
         # --- バリデーション ---
-        existing = set(self.model_class.objects.values_list(self.unique_field, flat=True))
+        if isinstance(self.unique_field, (list, tuple)):
+            existing = set(self.model_class.objects.values_list(*self.unique_field))
+        else:
+            existing = set(self.model_class.objects.values_list(self.unique_field, flat=True))
+
         objects_to_create = []
         errors = []
 
@@ -137,7 +141,7 @@ class CSVImportBaseView(View):
                 objects_to_create.append(obj)
 
         if errors:
-            return JsonResponse({'error': 'CSVに問題があります', 'details': errors}, status=400)
+            return JsonResponse({'error': 'CSVに問題があります。', 'details': errors}, status=400)
 
         # --- bulk insert ---
         try:
@@ -145,11 +149,11 @@ class CSVImportBaseView(View):
                 self.model_class.objects.bulk_create(objects_to_create)
         except IntegrityError as e:
             return JsonResponse({
-                'error': '登録中にDBエラーが発生しました',
+                'error': '登録中にDBエラーが発生しました。',
                 'details': [str(e)]
             }, status=500)
 
-        return JsonResponse({'message': f'{len(objects_to_create)} 件をインポートしました'})
+        return JsonResponse({'message': f'{len(objects_to_create)}件をインポートしました。'})
 
     def validate_row(self, row: dict, idx: int, existing: set, request):
         '''

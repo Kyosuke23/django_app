@@ -35,10 +35,10 @@ class Product(BaseModel):
         return reverse('product_mst:product_update', kwargs={'pk': self.pk})
 
     def clean(self):
-        """
+        '''
         バリデーション:
         ・適用終了日 < 適用開始日ならエラー
-        """
+        '''
         super().clean()
         if self.start_date and self.end_date and self.end_date < self.start_date:
             raise ValidationError({'end_date': '適用終了日は適用開始日以降の日付を指定してください。'})

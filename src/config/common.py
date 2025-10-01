@@ -2,10 +2,17 @@ import re
 import datetime
 from django.core.paginator import Page
 from decimal import Decimal
+from django.core.validators import RegexValidator
 
 class Common:
     # 共通データカラムリスト
     COMMON_DATA_COLUMNS = ['create_user', 'created_at', 'update_user', 'updated_at']
+    
+    # 数値用バリデータ
+    numeric_validator = RegexValidator(
+        regex=r'^\d+$',
+        message='半角数字のみを入力してください。',
+    )
     
     @classmethod
     def set_pagination(cls, context, url_params):
@@ -90,4 +97,8 @@ class Common:
             selv.object.create_user = selv.request.user
         selv.object.update_user = selv.request.user
         selv.object.tenant = selv.request.user.tenant
+        form.instance.tenant = selv.request.user.tenant  
+        # 再バリデーション
+        if not form.is_valid():
+            return selv.form_invalid(form)
         selv.object.save()

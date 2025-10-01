@@ -20,25 +20,26 @@ from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
 DATA_COLUMNS = [
     'username', 'email', 'gender', 'tel_number'
     'employment_status', 'employment_end_date', 'privilege'
-] + Common.COMMON_DATA_COLUMNS
+]
 
 FILENAME_PREFIX = 'user_mst'
 
 # -----------------------------
 # User CRUD
 # -----------------------------
-
 class UserListView(PrivilegeRequiredMixin, generic.ListView):
-    """ユーザー一覧画面"""
+    '''
+    ユーザー一覧画面
+    '''
     model = CustomUser
     template_name = 'register/list.html'
     context_object_name = 'users'
     paginate_by = 20
 
     def get_queryset(self):
-        qs = CustomUser.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
-        qs = filter_data(self.request, qs)
-        return qs.order_by('username')
+        query_set = CustomUser.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
+        query_set = filter_data(self.request, query_set)
+        return query_set.order_by('username')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -52,7 +53,9 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
 
 
 class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
-    """ユーザー登録（モーダル対応）"""
+    '''
+    ユーザー登録
+    '''
     model = CustomUser
     form_class = SignUpForm
     template_name = 'register/form.html'
@@ -72,7 +75,6 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
 
     def form_valid(self, form):
         raw_password = secrets.token_urlsafe(8)  # 8文字程度の安全な文字列でランダムパスワード
-        print(f'----- random password: {raw_password} -----')
         self.object = form.save(commit=False)
         self.object.password = make_password(raw_password)
         self.object.create_user = self.request.user
@@ -100,7 +102,9 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
 
 
 class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
-    """ユーザー更新（モーダル対応）"""
+    '''
+    ユーザー更新
+    '''
     model = CustomUser
     form_class = SignUpForm
     template_name = 'register/form.html'
@@ -129,8 +133,6 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
             set_message(request, '更新', self.object.username)
             return JsonResponse({'success': True})
         else:
-            print("form errors:", form.errors)
-            print("non_field_errors:", form.non_field_errors())
             html = render_to_string(
                 self.template_name,
                 {
@@ -169,9 +171,9 @@ class ProfileUpdateView(generic.UpdateView):
 
     
 class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
-    """
+    '''
     パスワードの変更処理
-    """
+    '''
     form_class = ChangePasswordForm
     template_name = 'register/password_change.html'
 
@@ -181,7 +183,9 @@ class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
 
 
 class UserDeleteView(PrivilegeRequiredMixin, generic.View):
-    """ユーザー削除"""
+    '''
+    ユーザー削除（物理削除）
+    '''
     success_url = reverse_lazy('register:list')
 
     def post(self, request, *args, **kwargs):
@@ -204,7 +208,9 @@ class UserDeleteView(PrivilegeRequiredMixin, generic.View):
 
 
 class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
-    """ユーザー一括削除"""
+    '''
+    ユーザー一括削除
+    '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
         if ids:
@@ -227,15 +233,14 @@ class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
 # -----------------------------
 # Export / Import
 # -----------------------------
-
 class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return filter_data(request, qs)
+        query_set = super().get_queryset(request)
+        return filter_data(request, query_set).order_by('username')
 
     def row(self, rec):
         return get_row(rec)
@@ -247,8 +252,8 @@ class ExportCSV(PrivilegeRequiredMixin, CSVExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return filter_data(request, qs)
+        query_set = super().get_queryset(request)
+        return filter_data(request, query_set).order_by('username')
 
     def row(self, rec):
         return get_row(rec)
@@ -283,7 +288,6 @@ class ImportCSV(PrivilegeRequiredMixin, CSVImportBaseView):
 # -----------------------------
 # 共通関数
 # -----------------------------
-
 def get_row(rec):
     return [
         rec.username,
@@ -293,14 +297,12 @@ def get_row(rec):
         rec.employment_status,
         rec.employment_end_date,
         rec.privilege,
-    ] + Common.get_common_columns(rec=rec)
-
+    ]
 
 def filter_data(request, query_set):
     keyword = request.GET.get('search_keyword') or ''
     privilege = request.GET.get('search_privilege') or ''
     employment_status = request.GET.get('search_employment_status') or ''
-
     if keyword:
         query_set = query_set.filter(Q(username__icontains=keyword) | Q(email__icontains=keyword))
     if privilege:
@@ -308,7 +310,6 @@ def filter_data(request, query_set):
     if employment_status:
         query_set = query_set.filter(employment_status=employment_status)
     return query_set
-
 
 def set_message(request, action, username):
     messages.success(request, f'ユーザー「{username}」を{action}しました。')

@@ -1,0 +1,78 @@
+[
+  {
+    "model": "register.customuser",
+    "pk": 1,
+    "fields": {
+      "username": "system_user",
+      "email": "system@example.com",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
+      "privilege": "0",
+      "is_staff": true,
+      "is_superuser": true,
+      "is_active": true,
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1",
+      "tenant_id": "1"
+    }
+  },
+  {
+    "model": "register.customuser",
+    "pk": 2,
+    "fields": {
+      "username": "manager_user",
+      "email": "manager@example.com",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
+      "privilege": "1",
+      "is_staff": true,
+      "is_superuser": false,
+      "is_active": true,
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1",
+      "tenant_id": "1"
+    }
+  },
+  {
+    "model": "register.customuser",
+    "pk": 3,
+    "fields": {
+      "username": "editor_user",
+      "email": "editor@example.com",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
+      "privilege": "2",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true,
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1",
+      "tenant_id": "1"
+    }
+  },
+  {
+    "model": "register.customuser",
+    "pk": 4,
+    "fields": {
+      "username": "viewer_user",
+      "email": "viewer@example.com",
+      "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
+      "privilege": "3",
+      "is_staff": false,
+      "is_superuser": false,
+      "is_active": true,
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1",
+      "tenant_id": "1"
+    }
+  }
+]

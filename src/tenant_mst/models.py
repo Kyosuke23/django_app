@@ -1,9 +1,9 @@
 import uuid
+from django.conf import settings
 from django.db import models
-from config.base import BaseModel
 from django.urls import reverse
 
-class Tenant(BaseModel):
+class Tenant(models.Model):
     """
     企業・組織情報を管理するモデル
     """
@@ -64,6 +64,25 @@ class Tenant(BaseModel):
         blank=True,
         null=True,
         verbose_name='住所2'
+    )
+    
+    # Tenantモデルだけは共通クラスの継承をしない
+    is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+    create_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="%(class)s_creator",
+        verbose_name='作成者'
+    )
+    update_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="%(class)s_updater",
+        verbose_name='更新者'
     )
 
     def __str__(self):

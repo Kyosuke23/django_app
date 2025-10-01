@@ -20,15 +20,13 @@ from django.urls import reverse_lazy
 DATA_COLUMNS = [
     'product_name', 'start_date', 'end_date',
     'product_category', 'price', 'description'
-] + Common.COMMON_DATA_COLUMNS
-
+]
 FILENAME_PREFIX = 'product_mst'
 
 
 # -----------------------------
 # Product CRUD
 # -----------------------------
-
 class ProductListView(generic.ListView):
     '''
     商品一覧画面
@@ -147,7 +145,6 @@ class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
             return JsonResponse({'success': False, 'html': html})
 
 
-
 class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
     """
     商品削除処理
@@ -158,17 +155,10 @@ class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
 
     def post(self, request, *args, **kwargs):
         obj = get_object_or_404(Product, pk=kwargs['pk'])
-        try:
-            obj.delete()
-            set_message(self.request, '削除', obj.product_name)
-            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                return JsonResponse({'success': True})
-        except ProtectedError as e:
-            return JsonResponse({
-                'error': '使用中の商品は削除できません',
-                'details': ''
-            }, status=400)
-    
+        obj.delete()
+        set_message(self.request, '削除', obj.product_name)
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
     
     
 class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
@@ -176,23 +166,8 @@ class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
         if ids:
-            try:
-                Product.objects.filter(id__in=ids).delete()
-                return JsonResponse({'message': f'{len(ids)}件削除しました'})
-            except ProtectedError as e:
-                # 削除できなかった商品を抽出（SalesOrderDetail → product を辿る）
-                protected_products = set()
-                for obj in e.protected_objects:
-                    if isinstance(obj, SalesOrderDetail):
-                        protected_products.add(obj.product)
-
-                details = ', '.join(
-                    f"{p.product_name}" for p in protected_products
-                )
-                return JsonResponse({
-                    'error': '使用中の商品は削除できません',
-                    'details': details or str
-                }, status=400)
+            Product.objects.filter(id__in=ids).delete()
+            return JsonResponse({'message': f'{len(ids)}件削除しました'})
         else:
             messages.warning(request, '削除対象が選択されていません')
         return redirect('product_mst:list')
@@ -201,7 +176,6 @@ class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
 # -----------------------------
 # Export / Import
 # -----------------------------
-
 class ExportExcel(ExcelExportBaseView):
     '''
     商品マスタのExcel出力
@@ -215,7 +189,7 @@ class ExportExcel(ExcelExportBaseView):
     def get_queryset(self, request):
         '''検索条件を適用したクエリセットを返す'''
         qs = super().get_queryset(request)
-        return filter_data(request=request, query_set=qs)
+        return filter_data(request=request, query_set=qs).order_by('product_name')
 
     def row(self, rec):
         '''1行分のデータを返す'''
@@ -235,7 +209,7 @@ class ExportCSV(CSVExportBaseView):
     def get_queryset(self, request):
         '''検索条件を適用したクエリセットを返す'''
         qs = super().get_queryset(request)
-        return filter_data(request=request, query_set=qs)
+        return filter_data(request=request, query_set=qs).order_by('product_name')
 
     def row(self, rec):
         '''1行分のデータを返す'''
@@ -303,7 +277,6 @@ class ImportCSV(CSVImportBaseView):
 # -----------------------------
 # 共通関数
 # -----------------------------
-
 def get_row(rec):
     '''CSV/Excel出力用: 1行分のリストを返す'''
     return [
@@ -313,7 +286,7 @@ def get_row(rec):
         rec.product_category.product_category_name if rec.product_category else '',
         rec.price,
         rec.description,
-    ] + Common.get_common_columns(rec=rec)
+    ]
     
 
 def filter_data(request, query_set):
