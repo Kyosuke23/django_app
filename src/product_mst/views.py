@@ -1,7 +1,6 @@
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from .models import Product, ProductCategory
-from sales_order.models import SalesOrderDetail
 from .form import ProductForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
@@ -18,8 +17,7 @@ from django.urls import reverse_lazy
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
 DATA_COLUMNS = [
-    'product_name', 'start_date', 'end_date',
-    'product_category', 'price', 'description'
+    'product_name', 'product_category', 'price', 'description'
 ]
 FILENAME_PREFIX = 'product_mst'
 
@@ -105,6 +103,11 @@ class ProductCreateView(PrivilegeRequiredMixin, generic.CreateView):
 
 
 class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
+    '''
+    商品更新
+    - GET: 部分テンプレートを返す（Ajax）
+    - POST: Ajaxで更新処理
+    '''
     model = Product
     form_class = ProductForm
     template_name = 'product_mst/form.html'
@@ -146,10 +149,10 @@ class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
 
 
 class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
-    """
+    '''
     商品削除処理
-    - POST: 実際に削除
-    """
+    - 物理削除
+    '''
     template_name = 'product_mst/confirm_delete.html'
     success_url = reverse_lazy('product_mst:list')
 
@@ -162,7 +165,10 @@ class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
     
     
 class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
-    ''' 一括削除処理 '''
+    '''
+    一括削除処理
+    - 物理削除
+    '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
         if ids:
@@ -308,26 +314,12 @@ class ImportCSV(CSVImportBaseView):
         except ValueError:
             return None, f'{idx}行目: price "{price_val}" は数値である必要があります'
 
-        # 適用開始日 / 適用終了日の変換
-        start_date, err = Common.parse_date(value=row.get('start_date'), field_name='start_date', idx=idx)
-        if err:
-            return None, err
-        end_date, err = Common.parse_date(value=row.get('end_date'), field_name='end_date', idx=idx)
-        if err:
-            return None, err
-        
-        # 適用開始日 / 適用終了日の整合性チェック
-        if start_date and end_date and end_date < start_date:
-            return None, f'{idx}行目: 適用終了日が適用開始日より前の日付です'
-
         # Product オブジェクト生成
         obj = Product(
             product_name=row.get('product_name'),
             product_category=category,
             description=row.get('description') or '',
             price=price_val,
-            start_date=start_date,
-            end_date=end_date,
             create_user=request.user,
             update_user=request.user
         )
@@ -341,8 +333,6 @@ def get_row(rec):
     '''CSV/Excel出力用: 1行分のリストを返す'''
     return [
         rec.product_name,
-        rec.start_date,
-        rec.end_date,
         rec.product_category.product_category_name if rec.product_category else '',
         rec.price,
         rec.description,

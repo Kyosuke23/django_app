@@ -121,8 +121,6 @@
           </th>
           {% endif %}
           <th scope="col">商品名称</th>
-          <th scope="col">適用開始日</th>
-          <th scope="col">適用終了日</th>
           <th scope="col">商品カテゴリ</th>
           <th scope="col">価格</th>
           <th scope="col">説明文</th>
@@ -138,8 +136,6 @@
           </td>
           {% endif %}
           <td>{{ product.product_name|default_if_none:'' }}</td>
-          <td>{{ product.start_date }}</td>
-          <td>{{ product.end_date }}</td>
           <td>{{ product.product_category.product_category_name|default_if_none:'' }}</td>
           <td>{% if product.price %}¥{% endif %}{{ product.price|default_if_none:''|intcomma }}</td>
           <td>{{ product.description }}</td>

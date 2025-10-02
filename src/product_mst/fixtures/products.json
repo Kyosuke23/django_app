@@ -5,8 +5,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品001",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 2,
       "price": 100,
       "description": "サンプル商品 1 の説明です。",
@@ -23,8 +21,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品002",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 3,
       "price": 200,
       "description": "サンプル商品 2 の説明です。",
@@ -41,8 +37,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品003",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 1,
       "price": 300,
       "description": "サンプル商品 3 の説明です。",
@@ -59,8 +53,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品004",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 2,
       "price": 400,
       "description": "サンプル商品 4 の説明です。",
@@ -77,8 +69,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品005",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 3,
       "price": 500,
       "description": "サンプル商品 5 の説明です。",
@@ -95,8 +85,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品006",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 1,
       "price": 600,
       "description": "サンプル商品 6 の説明です。",
@@ -113,8 +101,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品007",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 2,
       "price": 700,
       "description": "サンプル商品 7 の説明です。",
@@ -131,8 +117,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品008",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 3,
       "price": 800,
       "description": "サンプル商品 8 の説明です。",
@@ -149,8 +133,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品009",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 1,
       "price": 900,
       "description": "サンプル商品 9 の説明です。",
@@ -167,8 +149,6 @@
     "fields": {
       "tenant": 1,
       "product_name": "商品010",
-      "start_date": "2025-09-29",
-      "end_date": "2035-09-27",
       "product_category": 2,
       "price": 1000,
       "description": "サンプル商品 10 の説明です。",

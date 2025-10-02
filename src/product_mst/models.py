@@ -1,23 +1,19 @@
 from django.db import models
 from config.base import BaseModel
 from django.urls import reverse
-from django.core.validators import RegexValidator
-from django.core.exceptions import ValidationError
 
 
 class Product(BaseModel):
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=['product_name', 'start_date', 'end_date', 'tenant'],
+                fields=['product_name', 'tenant'],
                 name='uq_product_name_period'
             )
         ]
-        ordering = ['product_name', 'start_date']
+        ordering = ['product_name']
 
     product_name = models.CharField(max_length=255, verbose_name='商品名称')
-    start_date = models.DateField(verbose_name='適用開始日')
-    end_date = models.DateField(verbose_name='適用終了日')
     product_category = models.ForeignKey(
         'ProductCategory',
         on_delete=models.SET_NULL,
@@ -33,15 +29,6 @@ class Product(BaseModel):
 
     def get_absolute_url(self):
         return reverse('product_mst:product_update', kwargs={'pk': self.pk})
-
-    def clean(self):
-        '''
-        バリデーション:
-        ・適用終了日 < 適用開始日ならエラー
-        '''
-        super().clean()
-        if self.start_date and self.end_date and self.end_date < self.start_date:
-            raise ValidationError({'end_date': '適用終了日は適用開始日以降の日付を指定してください。'})
 
     def save(self, *args, **kwargs):
         # save の前に clean を呼んでバリデーション
