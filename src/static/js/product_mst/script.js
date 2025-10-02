@@ -19,7 +19,7 @@ $(function () {
     });
 
     // モーダルフォーム共通処理を有効化
-    $(document).modal_form("#productModal");
+    $(document).modal_form('#productModal');
 
     // 一括削除処理
     $('#check-all').checkAll('.check-item');
@@ -28,23 +28,23 @@ $(function () {
     });
 
     // 保存／削除ボタンの動的アクション切り替え
-    $(document).on("click", "#editForm button[type=submit]", function (e) {
-        const form = $("#editForm");
-        const action = $(this).data("action");
-        const saveUrl = form.data("save-url");
-        const deleteUrl = form.data("delete-url");
-        const csrf = form.find("input[name=csrfmiddlewaretoken]").val();
+    $(document).on('click', '#editForm button[type=submit]', function (e) {
+        const form = $('#editForm');
+        const action = $(this).data('action');
+        const saveUrl = form.data('save-url');
+        const deleteUrl = form.data('delete-url');
+        const csrf = form.find('input[name=csrfmiddlewaretoken]').val();
 
-        if (action === "delete") {
+        if (action === 'delete') {
             e.preventDefault(); // 通常のsubmitは止める
-            if (!confirm("本当に削除しますか？")) {
+            if (!confirm('本当に削除しますか？')) {
                 return;
             }
 
             // Ajaxで削除リクエスト
             $.ajax({
                 url: deleteUrl,
-                type: "POST",
+                type: 'POST',
                 data: { csrfmiddlewaretoken: csrf },
                 success: function () {
                     location.reload(); // 削除成功時はリロード
@@ -53,13 +53,34 @@ $(function () {
                     if (xhr.responseJSON && xhr.responseJSON.error) {
                         alert(xhr.responseJSON.error);
                     } else {
-                        alert("削除に失敗しました");
+                        alert('削除に失敗しました');
                     }
                 }
             });
         } else {
             // 保存時は通常のsubmitを利用
-            form.attr("action", saveUrl);
+            form.attr('action', saveUrl);
+        }
+    });
+
+    // カテゴリ選択時に入力欄へ反映
+    $(document).on('change', '#categoryId', function () {
+        const selectedText = $(this).find('option:selected').text();
+        const selectedValue = $(this).val();
+
+        if (selectedValue) {
+            // 既存カテゴリ選択時 → 名前を入力欄に反映
+            $('#categoryName').val(selectedText);
+        } else {
+            // 新規作成選択時 → 入力欄をクリア
+            $('#categoryName').val('');
+        }
+    });
+
+    // 商品カテゴリ削除時に確認ダイアログを表示
+    $(document).on('click', 'button[name="action"][value="delete"]', function (e) {
+        if (!confirm('本当に削除しますか？')) {
+            e.preventDefault();
         }
     });
 });

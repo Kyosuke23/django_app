@@ -15,4 +15,6 @@ urlpatterns = [
     path('create/', views.ProductCreateView.as_view(), name='create'),
     path('<int:pk>/update/', views.ProductUpdateView.as_view(), name='update'),
     path('bulk_delete/', views.ProductBulkDeleteView.as_view(), name='bulk_delete'),
+    
+    path('category/save/', views.ProductCategoryEditView.as_view(), name='category_save'),
 ]

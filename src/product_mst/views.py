@@ -173,6 +173,66 @@ class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
         return redirect('product_mst:list')
 
 
+class ProductCategoryEditView(PrivilegeRequiredMixin, generic.View):
+    '''
+    商品カテゴリ編集処理
+    - 登録・編集・削除
+    '''
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
+        category_id = request.POST.get('category_id')
+        name = request.POST.get('category_name')
+
+        # 削除処理
+        if action == 'delete':
+            if not category_id:
+                messages.error(request, '削除対象を選択してください')
+                return redirect('product_mst:list')
+            category = get_object_or_404(ProductCategory, pk=category_id, tenant=request.user.tenant)
+            try:
+                cname = category.product_category_name
+                category.delete()
+                messages.success(request, f'カテゴリ「{cname}」を削除しました')
+            except ProtectedError:
+                messages.error(request, f'使用中の商品は削除できません')
+            return redirect(f"{reverse('product_mst:list')}?category_open=1")
+
+        # 入力値チェック
+        if not name:
+            messages.error(request, 'カテゴリ名を入力してください')
+            return redirect(f"{reverse('product_mst:list')}?category_open=1")
+        
+        # 既存チェック
+        exists = ProductCategory.objects.filter(
+            tenant=request.user.tenant,
+            product_category_name=name
+        )
+        if category_id:
+            exists = exists.exclude(pk=category_id)
+        if exists.exists():
+            messages.error(request, f'カテゴリ「{name}」は既に存在します')
+            return redirect(f"{reverse('product_mst:list')}?category_open=1")
+
+        # 更新処理
+        if category_id:
+            category = get_object_or_404(ProductCategory, pk=category_id, tenant=request.user.tenant)
+            category.product_category_name = name
+            category.update_user = request.user
+            category.save()
+            messages.success(request, f'カテゴリ「{name}」を更新しました')
+        # 登録処理
+        else:
+            ProductCategory.objects.create(
+                product_category_name=name,
+                tenant=request.user.tenant,
+                create_user=request.user,
+                update_user=request.user
+            )
+            messages.success(request, f'カテゴリ「{name}」を登録しました')
+
+        return redirect(f"{reverse('product_mst:list')}?category_open=1")
+
+
 # -----------------------------
 # Export / Import
 # -----------------------------
