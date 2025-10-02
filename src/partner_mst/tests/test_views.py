@@ -68,7 +68,7 @@ class PartnerViewTests(TestCase):
     # 検索処理
     # -------------------
     def test_2_1_1(self):
-        '''検索処理（取引先名称称）'''
+        '''検索処理（取引先名称）'''
         # レスポンス取得
         response = self.client.get(reverse('partner_mst:list'), {'search_partner_name': 'アルファ'})
 

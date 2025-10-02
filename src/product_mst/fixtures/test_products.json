@@ -1,0 +1,162 @@
+[
+  {
+    "model": "product_mst.product",
+    "pk": 1,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品001",
+      "product_category": 2,
+      "price": 100,
+      "description": "サンプル商品 1 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 2,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品002",
+      "product_category": 3,
+      "price": 200,
+      "description": "サンプル商品 2 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 3,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品003",
+      "product_category": 1,
+      "price": 300,
+      "description": "サンプル商品 3 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 4,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品004",
+      "product_category": 2,
+      "price": 400,
+      "description": "サンプル商品 4 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 5,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品005",
+      "product_category": 3,
+      "price": 500,
+      "description": "サンプル商品 5 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 6,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品006",
+      "product_category": 1,
+      "price": 600,
+      "description": "サンプル商品 6 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 7,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品007",
+      "product_category": 2,
+      "price": 700,
+      "description": "サンプル商品 7 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 8,
+    "fields": {
+      "tenant": 1,
+      "product_name": "商品008",
+      "product_category": 3,
+      "price": 800,
+      "description": "サンプル商品 8 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 9,
+    "fields": {
+      "tenant": 2,
+      "product_name": "商品009",
+      "product_category": 1,
+      "price": 900,
+      "description": "サンプル商品 9 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "product_mst.product",
+    "pk": 10,
+    "fields": {
+      "tenant": 3,
+      "product_name": "商品010",
+      "product_category": 2,
+      "price": 1000,
+      "description": "サンプル商品 10 の説明です。",
+      "is_deleted": false,
+      "created_at": "2025-09-29T00:00:00Z",
+      "updated_at": "2025-09-29T00:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  }
+]
