@@ -55,4 +55,48 @@ $(function () {
     $(document).on('change', 'input[name$="is_tax_exempt"]', function() {
       recalcAmount($(this).closest('tr'));
     });
+
+  const formatYen = function(value) {
+    return '¥' + Math.round(value).toLocaleString();
+  };
+
+
+  const recalcTotals = function() {
+    let subtotal = 0;
+    let taxTotal = 0;
+    let grandTotal = 0;
+
+    $('tbody tr').each(function () {
+      const qty = parseFloat($(this).find('input[name$="quantity"]').val()) || 0;
+      const unitPrice = parseFloat($(this).find('input[name$="unit_price"]').val()) || 0;
+      const taxRate = parseFloat($(this).find('select[name$="tax_rate"]').val()) || 0;
+      const isTaxExempt = $(this).find('input[name$="is_tax_exempt"]').is(':checked');
+
+      // 小計（税抜）
+      const lineSubtotal = qty * unitPrice;
+      subtotal += lineSubtotal;
+
+      // 税額
+      const lineTax = isTaxExempt ? 0 : lineSubtotal * taxRate;
+      taxTotal += lineTax;
+
+      // 金額（税込）
+      const lineTotal = lineSubtotal + lineTax;
+      grandTotal += lineTotal;
+
+      // 行ごとの金額セルを更新
+      $(this).find('.amount').text(formatYen(lineTotal));
+    });
+
+    // 集計欄を更新
+    $('#subtotal').text(formatYen(subtotal));
+    $('#tax-total').text(formatYen(taxTotal));
+    $('#grand-total').text(formatYen(grandTotal));
+  };
+
+  // 入力イベント監視（数量、単価、税率、税対象外）
+  $(document).on('input change', 'input[name$="quantity"], input[name$="unit_price"], select[name$="tax_rate"], input[name$="is_tax_exempt"]', recalcTotals);
+
+  // 初期計算
+  recalcTotals();
 });

@@ -17,6 +17,23 @@
 
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
+
+  <table class="table table-bordered mb-3 w-100">
+    <thead class="table-light text-center fw-bold">
+      <tr>
+        <th class="w-33">小計</th>
+        <th class="w-33">消費税合計</th>
+        <th class="w-34">合計金額</th>
+      </tr>
+    </thead>
+    <tbody class="text-center">
+      <tr>
+        <td id="subtotal">¥{{ form.instance.subtotal|floatformat:0|intcomma }}</td>
+        <td id="tax-total">¥{{ form.instance.tax_total|floatformat:0|intcomma }}</td>
+        <td id="grand-total" class="bg-warning">¥{{ form.instance.grand_total|floatformat:0|intcomma }}</td>
+      </tr>
+    </tbody>
+  </table>
   <div class="">
     <table class="table table-bordered table-sm align-middle text-nowrap table-responsive">
       <thead class="table-light">

@@ -71,7 +71,18 @@ class SalesOrder(BaseModel):
                 new_seq = 1
             self.sales_order_no = f'{prefix}-{new_seq:06d}'
         super().save(*args, **kwargs)
+        
+    @property
+    def subtotal(self):
+        return sum([(d.quantity or 0) * (d.unit_price or 0) for d in self.details.all()])
 
+    @property
+    def tax_total(self):
+        return sum([0 if d.is_tax_exempt else (d.quantity or 0) * (d.unit_price or 0) * float(d.tax_rate) for d in self.details.all()])
+
+    @property
+    def grand_total(self):
+        return self.subtotal + self.tax_total
 
 class SalesOrderDetail(BaseModel):
     '''
