@@ -70,7 +70,7 @@
     </div>
 
     {# 登録ボタン #}
-    {% if user.privilege <= PRIVILEGE_MANAGER %}
+    {% if user.privilege <= PRIVILEGE_EDITOR %}
     <div class="col d-flex justify-content-end">
       <a class="btn btn-outline-primary"
         href="#"
@@ -114,7 +114,7 @@
     <table class="table table-hover table-striped text-nowrap">
       <thead class="table-dark sticky-top">
         <tr>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <th class="text-center" scope="col">
             <input type="checkbox" id="check-all">
           </th>
@@ -126,13 +126,15 @@
           <th scope="col">メールアドレス</th>
           <th scope="col">電話番号</th>
           <th scope="col">住所</th>
-          <th scope="col">操作</th>
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
+            <th scope="col">操作</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for partner in partners %}
         <tr class="align-middle">
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td class="text-center">
             <input type="checkbox" name="ids" value="{{ partner.id }}" class="check-item">
           </td>
@@ -148,7 +150,7 @@
             {{ partner.state|default_if_none:'' }} {{ partner.city|default_if_none:'' }} {{ partner.address|default_if_none:'' }} {{ partner.address2|default_if_none:'' }}
           </td>
           <td>
-            {% if user.privilege <= PRIVILEGE_MANAGER %}
+            {% if user.privilege <= PRIVILEGE_EDITOR %}
             <a href="#"
               class="btn btn-sm btn-outline-secondary"
               data-bs-toggle="modal"
@@ -181,7 +183,7 @@
   <div>
     {% include 'layout/pagination.html' %}
   </div>
-  {% if user.privilege <= PRIVILEGE_MANAGER %}
+  {% if user.privilege <= PRIVILEGE_EDITOR %}
   <div class="text-end">
     <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'product_mst:bulk_delete' %}">
       一括削除

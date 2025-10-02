@@ -63,7 +63,7 @@ class PartnerViewTests(TestCase):
         # 取得データ確認
         list = response.context['partners']
         self.assertEqual(list.count(), 0)  # 件数
-
+        
     # -------------------
     # 検索処理
     # -------------------
@@ -209,7 +209,7 @@ class PartnerViewTests(TestCase):
     # 登録処理
     # -------------------
     def test_3_1_1(self):
-        '''登録画面表示'''
+        '''登録画面表示（正常系）'''
         # レスポンス取得
         response = self.client.get(reverse('partner_mst:create'))
         
@@ -226,7 +226,7 @@ class PartnerViewTests(TestCase):
 
         # モーダルタイトル確認
         self.assertEqual(modal_title, '取引先: 新規登録')
-
+        
     def test_3_2_1(self):
         '''
         登録処理（正常系：全項目に設定）
@@ -2098,7 +2098,7 @@ class PartnerViewTests(TestCase):
             ]
             self.assertEqual(row, expected)
 
-    def test_export_all(self):
+    def test_7_1_1(self):
         '''CSVエクスポート（正常系：n件）'''
         url = reverse('partner_mst:export_csv')
         rows = self._request_and_parse(url)
@@ -2110,7 +2110,7 @@ class PartnerViewTests(TestCase):
         ).order_by('partner_name')
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_empty(self):
+    def test_7_1_2(self):
         '''CSVエクスポート（正常系：0件）'''
         Partner.objects.all().delete()
         url = reverse('partner_mst:export_csv')
@@ -2118,7 +2118,7 @@ class PartnerViewTests(TestCase):
         # ヘッダのみ
         self.assertEqual(len(rows), 1)
 
-    def test_export_with_partner_name(self):
+    def test_7_1_3(self):
         '''CSVエクスポート（正常系：取引先名称検索）'''
         target = '株式会社アルファ'
         url = reverse('partner_mst:export_csv') + f'?search_partner_name={target}'
@@ -2131,7 +2131,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_partner_type(self):
+    def test_7_1_4(self):
         '''CSVエクスポート（正常系：区分検索）'''
         target = 'both'
         url = reverse('partner_mst:export_csv') + f'?search_partner_type={target}'
@@ -2144,7 +2144,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_contact_name(self):
+    def test_7_1_5(self):
         '''CSVエクスポート（正常系：担当者名検索）'''
         target = '佐藤'
         url = reverse('partner_mst:export_csv') + f'?search_contact_name={target}'
@@ -2157,7 +2157,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_tel_number(self):
+    def test_7_1_6(self):
         '''CSVエクスポート（正常系：電話番号検索）'''
         target = '0356781234'
         url = reverse('partner_mst:export_csv') + f'?search_tel_number={target}'
@@ -2170,7 +2170,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_email(self):
+    def test_7_1_7(self):
         '''CSVエクスポート（正常系：メールアドレス検索）'''
         target = 'cs.'
         url = reverse('partner_mst:export_csv') + f'?search_email={target}'
@@ -2183,7 +2183,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_state(self):
+    def test_7_1_8(self):
         '''CSVエクスポート（正常系：都道府県検索）'''
         target = '北海道'
         url = reverse('partner_mst:export_csv') + f'?search_address={target}'
@@ -2196,7 +2196,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_city(self):
+    def test_7_1_9(self):
         '''CSVエクスポート（正常系：市区町村検索）'''
         target = '千代田区'
         url = reverse('partner_mst:export_csv') + f'?search_address={target}'
@@ -2209,7 +2209,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_address(self):
+    def test_7_1_10(self):
         '''CSVエクスポート（正常系：住所検索）'''
         target = 'フーズビル'
         url = reverse('partner_mst:export_csv') + f'?search_address={target}'
@@ -2222,7 +2222,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_address2(self):
+    def test_7_1_11(self):
         '''CSVエクスポート（正常系：住所2検索）'''
         target = 'セカンドアドレス'
         url = reverse('partner_mst:export_csv') + f'?search_address={target}'
@@ -2235,7 +2235,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_export_with_not_found(self):
+    def test_export_with_nottest_7_1_12_found(self):
         '''CSVエクスポート（正常系：存在しない名称 → 0件）'''
         target = 'グローバル貿易株式会社'
         url = reverse('partner_mst:export_csv') + f'?search_partner_name={target}'
@@ -2417,3 +2417,253 @@ class PartnerViewTests(TestCase):
             reverse('partner_mst:export_excel') + f'?search_partner_name={target}',
             0, qs
         )
+
+    # -------------------
+    # 直リンク禁止
+    # -------------------
+    def test_9_1_1(self):
+        '''一覧画面表示（異常系：未ログイン）'''
+        url = reverse('partner_mst:list')
+
+        # 未ログイン状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/')
+        
+    def test_9_2_1(self):
+        '''登録画面画面表示（異常系：未ログイン）'''
+        url = reverse('partner_mst:create')
+
+        # 未ログイン状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/create/')
+        
+    def test_9_2_2(self):
+        '''登録画処理（異常系：未ログイン）'''
+        url = reverse('partner_mst:create')
+
+        # 未ログイン状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+        
+        # 取引先データを全削除
+        Partner.objects.all().delete()
+        
+        # 登録データ作成
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_type': 'customer',
+            'email': 'test@example.com',
+        }
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/create/')
+        
+        # DB登録されていないことを確認
+        self.assertEqual(Partner.objects.count(), 0)
+        
+    def test_9_3_1(self):
+        '''更新画面表示（異常系：未ログイン）'''
+        # 事前データ作成
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='ログイン株式会社',
+            partner_type='supplier',
+            email='login@example.com',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        
+        url = reverse('partner_mst:update', args=[partner.id])
+
+        # 未ログイン状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, f'/login/?next=/partner_mst/{partner.id}/update/')
+        
+    def test_9_3_2(self):
+        '''更新処理（異常系：未ログイン）'''
+        # 事前データ作成
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='ログイン株式会社',
+            partner_type='supplier',
+            email='login@example.com',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        
+        # 更新処理のURLとデータ作成
+        url = reverse('partner_mst:update', args=[partner.id])
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_type': 'customer',
+            'email': 'test@example.com',
+        }
+
+        # ログアウト
+        self.client.logout()
+        
+        # 処理実行
+        response = self.client.post(
+            url,
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, f'/login/?next=/partner_mst/{partner.id}/update/')
+        
+        # データ更新されていないことを確認
+        partner.refresh_from_db()
+        self.assertEqual(partner.partner_name, 'ログイン株式会社')
+        self.assertEqual(partner.partner_type, 'supplier')
+        self.assertEqual(partner.email, 'login@example.com')
+        
+    def test_9_4_1(self):
+        '''削除処理（異常系：未ログイン）'''
+        # 事前データ作成
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='ログイン株式会社',
+            partner_type='supplier',
+            email='login@example.com',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        
+        # 更新処理のURLとデータ作成
+        url = reverse('partner_mst:delete', args=[partner.id])
+
+        # ログアウト
+        self.client.logout()
+        
+        # 処理実行
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, f'/login/?next=/partner_mst/{partner.id}/delete/')
+        
+        # データ削除されていないことを確認
+        self.assertTrue(Partner.objects.filter(id=partner.id).exists())
+        
+    def test_9_5_1(self):
+        '''
+        一括削除（異常系：未ログイン）
+        '''
+        # 削除対象データ作成
+        partner1 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象1',
+            email='p1@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        partner2 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象2',
+            email='p2@example.com', 
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        
+        # ログアウト
+        self.client.logout()
+
+        # 処理実行
+        url = reverse('partner_mst:bulk_delete')
+        response = self.client.post(
+            url,
+            {'ids': [partner1.id, partner2.id]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+        
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/bulk_delete/')
+
+        # DB確認
+        self.assertTrue(Partner.objects.filter(id=partner1.id).exists())
+        self.assertTrue(Partner.objects.filter(id=partner2.id).exists())
+
+    def test_9_6_1(self):
+        '''CSVインポート（異常系：未ログイン）'''
+        url = reverse('partner_mst:import_csv')
+
+        # 未ログイン状態にする
+        self.client.logout()
+
+        # アクセス（リダイレクトされるはず）
+        response = self.client.get(url, follow=False)
+
+        # リダイレクトを確認
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/login/?next=/partner_mst/import/csv')
+
+    def test_9_7_1(self):
+        '''CSVエクスポート（異常系：未ログイン）'''
+        url = reverse('partner_mst:export_csv')
+
+        # 未ログイン状態にする
+        self.client.logout()
+
+        # アクセス（リダイレクトされるはず）
+        response = self.client.get(url, follow=False)
+
+        # リダイレクトを確認
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/login/?next=/partner_mst/export/csv')
+
+    def test_9_7_1(self):
+        '''EXCELエクスポート（異常系：未ログイン）'''
+        url = reverse('partner_mst:export_excel')
+
+        # 未ログイン状態にする
+        self.client.logout()
+
+        # アクセス（リダイレクトされるはず）
+        response = self.client.get(url, follow=False)
+
+        # リダイレクトを確認
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, '/login/?next=/partner_mst/export/excel')
+

@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # CSV/Excel の共通出力カラム定義
 DATA_COLUMNS = [
@@ -22,7 +23,7 @@ FILENAME_PREFIX = 'partner_mst'
 # -----------------------------
 # Partner CRUD
 # -----------------------------
-class PartnerListView(generic.ListView):
+class PartnerListView(LoginRequiredMixin, generic.ListView):
     model = Partner
     template_name = 'partner_mst/list.html'
     context_object_name = 'partners'
@@ -46,7 +47,7 @@ class PartnerListView(generic.ListView):
         return context
 
 
-class PartnerCreateView(PrivilegeRequiredMixin, generic.CreateView):
+class PartnerCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.CreateView):
     '''
     取引先登録
     - GET: 部分テンプレートを返す（Ajax）
@@ -100,7 +101,7 @@ class PartnerCreateView(PrivilegeRequiredMixin, generic.CreateView):
         return super().form_invalid(form)
 
 
-class PartnerUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
+class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.UpdateView):
     '''
     取引先更新
     - GET: 部分テンプレートを返す（Ajax）
@@ -151,7 +152,7 @@ class PartnerUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
         return super().form_invalid(form)
 
 
-class PartnerDeleteView(PrivilegeRequiredMixin, generic.View):
+class PartnerDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View):
     '''
     取引先削除処理（物理削除）
     '''
@@ -166,7 +167,7 @@ class PartnerDeleteView(PrivilegeRequiredMixin, generic.View):
             return JsonResponse({'success': True})
 
 
-class PartnerBulkDeleteView(PrivilegeRequiredMixin, generic.View):
+class PartnerBulkDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View):
     '''
     一括削除処理（物理削除）
     '''
@@ -183,7 +184,7 @@ class PartnerBulkDeleteView(PrivilegeRequiredMixin, generic.View):
 # -----------------------------
 # Export / Import
 # -----------------------------
-class ExportExcel(ExcelExportBaseView):
+class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
     model_class = Partner
     filename_prefix = FILENAME_PREFIX
     headers = DATA_COLUMNS
@@ -196,7 +197,7 @@ class ExportExcel(ExcelExportBaseView):
         return get_row(rec)
 
 
-class ExportCSV(CSVExportBaseView):
+class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     model_class = Partner
     filename_prefix = FILENAME_PREFIX
     headers = DATA_COLUMNS
@@ -209,7 +210,7 @@ class ExportCSV(CSVExportBaseView):
         return get_row(rec)
 
 
-class ImportCSV(CSVImportBaseView):
+class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
     expected_headers = DATA_COLUMNS
     model_class = Partner
     unique_field = ('tenant_id', 'partner_name', 'email')
