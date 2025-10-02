@@ -52,6 +52,8 @@ class ProductListView(generic.ListView):
         context = super().get_context_data(**kwargs)
         context['search_product_name'] = self.request.GET.get('search_product_name') or ''
         context['search_product_category'] = self.request.GET.get('search_product_category') or ''
+        context['search_price_min'] = self.request.GET.get('search_price_min') or ''
+        context['search_price_max'] = self.request.GET.get('search_price_max') or ''
         context['categories'] = ProductCategory.objects.filter(is_deleted=False, tenant=self.request.user.tenant).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
@@ -341,14 +343,28 @@ def get_row(rec):
 
 def filter_data(request, query_set):
     ''' 検索条件付与 '''
-    keyword = request.GET.get('search_product_name') or ''
+    # リクエストから検索フォームの入力値を取得
+    product_name = request.GET.get('search_product_name') or ''
     category = request.GET.get('search_product_category') or ''
-    if keyword:
-        query_set = query_set.filter(
-            Q(product_name__icontains=keyword)
-        )
+    price_min = request.GET.get('search_price_min') or ''
+    price_max = request.GET.get('search_price_max') or ''
+    
+    # フィルタ実行
+    if product_name:
+        query_set = query_set.filter(Q(product_name__icontains=product_name))
     if category:
         query_set = query_set.filter(product_category_id=category)
+    if price_min:
+        query_set = query_set.filter(price__gte=price_min)
+    if price_max:
+        query_set = query_set.filter(price__lte=price_max)
+    
+    # バリデーション
+    if price_min and price_max and int(price_min) > int(price_max):
+        messages.error(request, '価格(下限)は価格(上限)以下を指定してください')
+        query_set = query_set.none()
+
+    # クエリセットの返却
     return query_set
 
 def set_message(request, action, product_name):

@@ -30,6 +30,7 @@
 {% include 'layout/message.html' %}
 
 {# 検索フォーム #}
+{# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'product_mst:list' %}">
   {% csrf_token %}
   <div class="row mb-3 align-items-center">
@@ -47,9 +48,15 @@
         {% endfor %}
       </select>
     </div>
+
+    {# 価格検索フォーム（下限・上限を横並び） #}
+    <div class="col col-md-3 d-flex gap-2">
+      <input id="search_price_min" type="number" name="search_price_min" class="form-control" value="{{ search_price_min }}" placeholder="価格(下限)">
+      <input id="search_price_max" type="number" name="search_price_max" class="form-control" value="{{ search_price_max }}" placeholder="価格(上限)">
+    </div>
+
     <div class="col">
-      <button type="submit" class="btn btn-primary search_form_btn"
-              data-action="{% url 'product_mst:list' %}">
+      <button type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'product_mst:list' %}">
         検索
       </button>
     </div>
