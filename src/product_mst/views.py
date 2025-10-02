@@ -52,7 +52,7 @@ class ProductListView(generic.ListView):
         - ページネーション情報を追加
         '''
         context = super().get_context_data(**kwargs)
-        context['search_keyword'] = self.request.GET.get('search_keyword') or ''
+        context['search_product_name'] = self.request.GET.get('search_product_name') or ''
         context['search_product_category'] = self.request.GET.get('search_product_category') or ''
         context['categories'] = ProductCategory.objects.filter(is_deleted=False, tenant=self.request.user.tenant).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
@@ -291,7 +291,7 @@ def get_row(rec):
 
 def filter_data(request, query_set):
     ''' 検索条件付与 '''
-    keyword = request.GET.get('search_keyword') or ''
+    keyword = request.GET.get('search_product_name') or ''
     category = request.GET.get('search_product_category') or ''
     if keyword:
         query_set = query_set.filter(
