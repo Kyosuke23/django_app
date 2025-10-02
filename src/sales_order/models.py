@@ -28,6 +28,11 @@ def generate_sales_order_no(tenant):
     return f'{prefix}{new_seq:06d}'
 
 class SalesOrder(BaseModel):
+    ROUNDING_CHOICES = [
+        ('floor', '切り捨て'),
+        ('ceil', '切り上げ'),
+        ('round', '四捨五入'),
+    ]
     sales_order_no = models.CharField(max_length=20, verbose_name='受注番号')
     status_code = models.CharField(
         max_length=20,
@@ -37,8 +42,13 @@ class SalesOrder(BaseModel):
     sales_order_date = models.DateField(default=timezone.now, verbose_name='受注日')
     partner = models.ForeignKey('partner_mst.Partner', on_delete=models.SET_NULL, blank=True, null=True, verbose_name='取引先')
     remarks = models.TextField(blank=True, null=True, verbose_name='備考')
-    total_amount = models.IntegerField(default=0, verbose_name='受注合計金額')
-
+    rounding_method = models.CharField(  # ★ 小数点以下の丸め方
+        max_length=10,
+        choices=ROUNDING_CHOICES,
+        default='floor',
+        verbose_name='丸め方法'
+    )
+    
     class Meta:
         db_table = 'sales_order'
         verbose_name = '受注ヘッダ'
@@ -66,12 +76,6 @@ class SalesOrderDetail(BaseModel):
     '''
     受注明細（受注ヘッダにぶら下がる商品単位の情報）
     '''
-    ROUNDING_CHOICES = [
-        ('floor', '切り捨て'),
-        ('ceil', '切り上げ'),
-        ('round', '四捨五入'),
-    ]
-
     sales_order = models.ForeignKey(
         SalesOrder,
         related_name='details',
@@ -90,16 +94,10 @@ class SalesOrderDetail(BaseModel):
     unit = models.CharField(max_length=20, verbose_name='単位')  # 数量に対する単位
     unit_price = models.IntegerField(verbose_name='単価')
     amount = models.IntegerField(verbose_name='金額')
-    is_tax_exempt = models.BooleanField(default=False, verbose_name='消費税対象外')  
     tax_rate = models.DecimalField(  # ★ 消費税率（例: 0.1 = 10%）
         max_digits=3, decimal_places=2, default=0.10, verbose_name='消費税率'
     )
-    rounding_method = models.CharField(  # ★ 小数点以下の丸め方
-        max_length=10,
-        choices=ROUNDING_CHOICES,
-        default='floor',
-        verbose_name='丸め方法'
-    )
+    is_tax_exempt = models.BooleanField(default=False, verbose_name='消費税対象外')
 
     class Meta:
         db_table = 'sales_order_detail'

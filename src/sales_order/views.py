@@ -23,23 +23,23 @@ DATA_COLUMNS = [
 # -----------------------------
 
 class SalesOrderListView(generic.ListView):
-    """
+    '''
     受注一覧画面
     - 検索条件（キーワード / 受注日）に対応
     - ページネーション対応
-    """
+    '''
     model = SalesOrder
-    template_name = "sales_order/list.html"
-    context_object_name = "sales_orders"
+    template_name = 'sales_order/list.html'
+    context_object_name = 'sales_orders'
     paginate_by = 20
 
     def get_queryset(self):
         queryset = SalesOrder.objects.filter(
             is_deleted=False, tenant=self.request.user.tenant
-        ).select_related("partner")
+        ).select_related('partner')
 
-        search = self.request.GET.get("search")
-        sales_order_date = self.request.GET.get("sales_order_date")
+        search = self.request.GET.get('search')
+        sales_order_date = self.request.GET.get('sales_order_date')
 
         if search:
             queryset = queryset.filter(
@@ -50,12 +50,12 @@ class SalesOrderListView(generic.ListView):
         if sales_order_date:
             queryset = queryset.filter(sales_order_date=sales_order_date)
 
-        return queryset.order_by("sales_order_date", "sales_order_no")
+        return queryset.order_by('sales_order_date', 'sales_order_no')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["search"] = self.request.GET.get("search") or ""
-        context["sales_order_date"] = self.request.GET.get("sales_order_date") or ""
+        context['search'] = self.request.GET.get('search') or ''
+        context['sales_order_date'] = self.request.GET.get('sales_order_date') or ''
         context['partners'] = Partner.objects.filter(
             is_deleted=False, tenant=self.request.user.tenant
         ).order_by('id')
@@ -70,56 +70,56 @@ class SalesOrderListView(generic.ListView):
 class SalesOrderCreateView(generic.CreateView):
     model = SalesOrder
     form_class = SalesOrderForm
-    template_name = "sales_order/edit.html"
-    success_url = reverse_lazy("sales_order:list")
+    template_name = 'sales_order/edit.html'
+    success_url = reverse_lazy('sales_order:list')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_update"] = False
+        context['is_update'] = False
         formset = SalesOrderDetailFormSet(self.request.POST or None)
-        context["formset"] = fill_formset(formset)
-        context["form_action"] = reverse("sales_order:create")
-        context["modal_title"] = "受注新規登録"
+        context['formset'] = fill_formset(formset)
+        context['form_action'] = reverse('sales_order:create')
+        context['modal_title'] = '受注新規登録'
         return context
 
     def form_valid(self, form):
         form.instance.create_user = self.request.user
         form.instance.update_user = self.request.user
         form.instance.tenant = self.request.user.tenant
-        sales_order_message(self.request, "登録", form.instance.sales_order_no)
+        sales_order_message(self.request, '登録', form.instance.sales_order_no)
         return super().form_valid(form)
 
 
 class SalesOrderUpdateView(generic.UpdateView):
     model = SalesOrder
     form_class = SalesOrderForm
-    template_name = "sales_order/edit.html"
-    success_url = reverse_lazy("sales_order:list")
+    template_name = 'sales_order/edit.html'
+    success_url = reverse_lazy('sales_order:list')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["is_update"] = True
+        context['is_update'] = True
         return context
 
     def form_valid(self, form):
         form.instance.update_user = self.request.user
         form.instance.tenant = self.request.user.tenant
         response = super().form_valid(form)
-        sales_order_message(self.request, "更新", self.object.sales_order_no)
+        sales_order_message(self.request, '更新', self.object.sales_order_no)
         return response
 
 
 class SalesOrderDeleteView(generic.View):
-    """
+    '''
     受注削除（論理削除）
-    """
+    '''
     def post(self, request, *args, **kwargs):
-        obj = SalesOrder.objects.get(pk=kwargs["pk"])
+        obj = SalesOrder.objects.get(pk=kwargs['pk'])
         obj.is_deleted = True
         obj.update_user = request.user
         obj.save()
-        sales_order_message(request, "削除", obj.sales_order_no)
-        return HttpResponseRedirect(reverse_lazy("sales_order:list"))
+        sales_order_message(request, '削除', obj.sales_order_no)
+        return HttpResponseRedirect(reverse_lazy('sales_order:list'))
 
 
 # -----------------------------
@@ -127,18 +127,18 @@ class SalesOrderDeleteView(generic.View):
 # -----------------------------
 
 class SalesOrderCreateModalView(SalesOrderCreateView):
-    template_name = "sales_order/form.html"
+    template_name = 'sales_order/form.html'
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs["user"] = self.request.user
+        kwargs['user'] = self.request.user
         return kwargs
 
     def get(self, request, *args, **kwargs):
         self.object = None
         context = self.get_context_data()
         html = render_to_string(self.template_name, context, request)
-        return JsonResponse({"success": True, "html": html})
+        return JsonResponse({'success': True, 'html': html})
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
@@ -149,12 +149,12 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
 
         save_order_details(self.request, self.object)
 
-        sales_order_message(self.request, "登録", self.object.sales_order_no)
-        return JsonResponse({"success": True})
+        sales_order_message(self.request, '登録', self.object.sales_order_no)
+        return JsonResponse({'success': True})
 
 
 class SalesOrderUpdateModalView(SalesOrderUpdateView):
-    template_name = "sales_order/form.html"
+    template_name = 'sales_order/form.html'
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -164,31 +164,31 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         html = render_to_string(
             self.template_name,
             {
-                "form": form,
-                "formset": formset,
-                "form_action": reverse("sales_order:update", kwargs={"pk": self.object.pk}),
-                "modal_title": f"受注更新: {self.object.sales_order_no}",
-                "is_update": True,
+                'form': form,
+                'formset': formset,
+                'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
+                'modal_title': f'受注更新: {self.object.sales_order_no}',
+                'is_update': True,
             },
             request,
         )
-        return JsonResponse({"success": True, "html": html})
+        return JsonResponse({'success': True, 'html': html})
 
     def form_valid(self, form):
         self.object = form.save(commit=False)
         self.object.update_user = self.request.user
         self.object.tenant = self.request.user.tenant
         # ステータス制御
-        if self.request.POST.get("action_type") == "submit":
-            self.object.status_code = "SUBMITTED"
+        if self.request.POST.get('action_type') == 'submit':
+            self.object.status_code = 'SUBMITTED'
         else:
-            self.object.status_code = "DRAFT"
+            self.object.status_code = 'DRAFT'
         self.object.save()
 
         save_order_details(self.request, self.object)
 
-        sales_order_message(self.request, "更新", self.object.sales_order_no)
-        return JsonResponse({"success": True})
+        sales_order_message(self.request, '更新', self.object.sales_order_no)
+        return JsonResponse({'success': True})
 
 
 # -----------------------------
@@ -202,7 +202,7 @@ class ExportExcel(ExcelExportBaseView):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related("sales_order", "product", "sales_order__partner") \
+        return qs.select_related('sales_order', 'product', 'sales_order__partner') \
                  .filter(
                      is_deleted=False,
                      sales_order__in=search_order_data(
@@ -210,7 +210,7 @@ class ExportExcel(ExcelExportBaseView):
                          query_set=SalesOrder.objects.all()
                      )
                  ) \
-                 .order_by("sales_order__sales_order_no", "line_no")
+                 .order_by('sales_order__sales_order_no', 'line_no')
 
     def row(self, detail):
         return get_order_detail_row(detail.sales_order, detail)
@@ -223,7 +223,7 @@ class ExportCSV(CSVExportBaseView):
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        return qs.select_related("sales_order", "product", "sales_order__partner") \
+        return qs.select_related('sales_order', 'product', 'sales_order__partner') \
                  .filter(
                      is_deleted=False,
                      sales_order__in=search_order_data(
@@ -231,7 +231,7 @@ class ExportCSV(CSVExportBaseView):
                          query_set=SalesOrder.objects.all()
                      )
                  ) \
-                 .order_by("sales_order__sales_order_no", "line_no")
+                 .order_by('sales_order__sales_order_no', 'line_no')
                  
 
     def row(self, detail):
@@ -280,4 +280,4 @@ def search_order_data(request, query_set):
 
 
 def sales_order_message(request, action, sales_order_no):
-    messages.success(request, f"受注「{sales_order_no}」を{action}しました。")
+    messages.success(request, f'受注「{sales_order_no}」を{action}しました。')

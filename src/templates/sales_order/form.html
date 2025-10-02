@@ -1,5 +1,5 @@
 {% load django_bootstrap5 %}
-
+{% load widget_tweaks %}
 
 <div class="modal-header mb-3">
   <h4 class="modal-title">{{ modal_title }}</h4>
@@ -16,19 +16,18 @@
 
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
-  <div class="overflow-auto table-responsive">
-    <table class="table table-bordered table-sm align-middle">
+  <div class="">
+    <table class="table table-bordered table-sm align-middle text-nowrap table-responsive">
       <thead class="table-light">
         <tr>
-          <th>商品</th>
-          <th>数量</th>
-          <th>単位</th>
-          <th>単価</th>
-          <th>金額</th>
-          <th>消費税率</th>
-          <th>税対象外</th>
-          <th>丸め方法</th>
-          <th>削除</th>
+          <th class="w-25">商品</th>
+          <th class="w-10">数量</th>
+          <th class="w-10">単位</th>
+          <th class="w-15">単価</th>
+          <th class="w-20">金額</th>
+          <th class="w-10">消費税率</th>
+          <th class="w-5">税対象外</th>
+          <th class="w-5">削除</th>
         </tr>
       </thead>
       <tbody>
@@ -41,14 +40,20 @@
           <td>{{ detail_form.unit_price }}</td>
           <td>{{ detail_form.amount }}</td>
           <td>{{ detail_form.tax_rate }}</td>
-          <td>{{ detail_form.is_tax_exempt }}</td>
-          <td>{{ detail_form.rounding_method }}</td>
-          {% if is_update %}<td>{{ detail_form.DELETE }}</td>{% endif %}
+          <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
+          {% if is_update %}
+            <td class="text-center">
+              <div class="form-check d-flex justify-content-center">
+                {% render_field detail_form.DELETE class="form-check-input" %}
+              </div>
+            </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
   <div class="d-flex justify-content-end gap-2 mt-3">
     <input type="hidden" name="action_type" id="actionTypeField" value="">
     <button type="submit" class="btn btn-primary"

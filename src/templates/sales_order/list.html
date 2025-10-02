@@ -77,7 +77,7 @@
 </p>
 
 {# 検索結果表示 #}
-<div class="result-table overflow-auto table-responsive">
+<div class="result-table table-responsive">
   <table class="table table-hover table-striped text-nowrap">
     <thead class="table-dark sticky-top">
       <tr>
@@ -119,15 +119,15 @@
 
   <!-- モーダル -->
   <div class="modal fade" id="salesOrderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
       <div class="modal-content">
         <div class="modal-body">
-          <!-- Ajaxでここにフォームをロード -->
+            <!-- Ajaxでここにフォームをロード -->
+          </div>
         </div>
       </div>
     </div>
   </div>
-</div>
 
 {# ページネーション #}
 {% include 'layout/pagination.html' %}
