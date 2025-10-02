@@ -5,6 +5,7 @@ from django.db.models import Max
 from .constants import SalesOrderStatus
 from django.utils import timezone
 from django.db.models import Max
+from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING, ROUND_HALF_UP
 
 def generate_sales_order_no(tenant):
     year = timezone.now().strftime('%Y')
@@ -76,6 +77,10 @@ class SalesOrderDetail(BaseModel):
     '''
     受注明細（受注ヘッダにぶら下がる商品単位の情報）
     '''
+    TAX_RATE_CHOICES = [
+        (Decimal('0.10'), '10%'),
+        (Decimal('0.08'), '8%'),
+    ]
     sales_order = models.ForeignKey(
         SalesOrder,
         related_name='details',
@@ -93,9 +98,12 @@ class SalesOrderDetail(BaseModel):
     quantity = models.IntegerField(verbose_name='数量')
     unit = models.CharField(max_length=20, verbose_name='単位')  # 数量に対する単位
     unit_price = models.IntegerField(verbose_name='単価')
-    amount = models.IntegerField(verbose_name='金額')
-    tax_rate = models.DecimalField(  # ★ 消費税率（例: 0.1 = 10%）
-        max_digits=3, decimal_places=2, default=0.10, verbose_name='消費税率'
+    tax_rate = models.DecimalField(
+        max_digits=3,
+        decimal_places=2,
+        choices=TAX_RATE_CHOICES,
+        default=Decimal('0.10'),
+        verbose_name='消費税率'
     )
     is_tax_exempt = models.BooleanField(default=False, verbose_name='消費税対象外')
 
@@ -107,3 +115,27 @@ class SalesOrderDetail(BaseModel):
 
     def __str__(self):
         return f'{self.sales_order.sales_order_no} - {self.line_no}: {self.product.product_name}'
+    
+    @property
+    def amount(self):
+        # 商品のない行は処理しない
+        if not self.product:
+            return ''
+
+        # 数量 * 単価
+        base = Decimal(self.quantity or 0) * Decimal(self.unit_price or 0)
+
+        # 消費税率を加味
+        if not self.is_tax_exempt:
+            base = base * (1 + self.tax_rate)
+
+        # 小数点以下の処理を実施
+        if self.sales_order.rounding_method == 'floor':
+            value = base.to_integral_value(rounding=ROUND_FLOOR)
+        elif self.sales_order.rounding_method == 'ceil':
+            value = base.to_integral_value(rounding=ROUND_CEILING)
+        else:
+            value = base.to_integral_value(rounding=ROUND_HALF_UP)
+
+        # 整数値にして返却
+        return f'¥{int(value):,}'

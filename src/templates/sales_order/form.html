@@ -1,5 +1,6 @@
 {% load django_bootstrap5 %}
 {% load widget_tweaks %}
+{% load humanize %}
 
 <div class="modal-header mb-3">
   <h4 class="modal-title">{{ modal_title }}</h4>
@@ -24,9 +25,9 @@
           <th class="w-10">数量</th>
           <th class="w-10">単位</th>
           <th class="w-15">単価</th>
-          <th class="w-20">金額</th>
           <th class="w-10">消費税率</th>
           <th class="w-5">税対象外</th>
+          <th class="w-20">金額</th>
           <th class="w-5">削除</th>
         </tr>
       </thead>
@@ -38,9 +39,11 @@
           <td>{{ detail_form.quantity }}</td>
           <td>{{ detail_form.unit }}</td>
           <td>{{ detail_form.unit_price }}</td>
-          <td>{{ detail_form.amount }}</td>
           <td>{{ detail_form.tax_rate }}</td>
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
+          <td class="text-end amount">
+            {{ detail_form.instance.amount|intcomma }}
+          </td>
           {% if is_update %}
             <td class="text-center">
               <div class="form-check d-flex justify-content-center">
