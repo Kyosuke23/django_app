@@ -56,7 +56,7 @@
           <td>{{ forloop.counter }}</td>
           <td>{{ detail_form.product }}</td>
           <td>{{ detail_form.quantity }}</td>
-          <td>{{ detail_form.initial.unit }}</td>
+          <td class="unit-cell">{{ detail_form.instance.product.unit }}</td>
           <td>{{ detail_form.billing_unit_price }}</td>
           <td>{{ detail_form.tax_rate }}</td>
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>

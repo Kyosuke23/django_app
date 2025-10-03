@@ -73,6 +73,7 @@ $(function () {
       const taxRate = parseFloat($row.find('select[name$="tax_rate"]').val()) || 0;
       const isTaxExempt = $row.find('input[name$="is_tax_exempt"]').is(':checked');
       const isDeleted = $row.find('input[name$="DELETE"]').is(':checked');
+      const hasProduct = $row.find('select[name$="-product"]').val();
 
       // 小計対象金額（税抜）
       let lineSubtotal = qty * price;
@@ -87,7 +88,12 @@ $(function () {
       }
 
       // 金額セルの表示も更新
-      $row.find('.amount').text(lineTotal.toLocaleString());
+      if (isDeleted && !hasProduct) {
+        // 商品未選択かつ削除チェックONなら空白
+        $row.find('.amount').text('');
+      } else {
+        $row.find('.amount').text(lineTotal > 0 ? '¥' + lineTotal.toLocaleString() : '');
+      }
     });
 
     $('#subtotal').text('¥' + subtotal.toLocaleString());
@@ -121,7 +127,7 @@ $(function () {
         }
 
         // 単位フィールドに反映
-        $row.find('input[name$="-unit"]').val(data.unit);
+        $row.find('.unit-cell').text(data.unit);
 
         // 請求単価フィールドに反映
         $row.find('input[name$="-billing_unit_price"]').val(data.unit_price);

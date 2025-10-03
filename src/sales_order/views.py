@@ -72,7 +72,6 @@ class SalesOrderListView(generic.ListView):
 # -----------------------------
 # SalesOrder CRUD
 # -----------------------------
-
 class SalesOrderCreateView(generic.CreateView):
     model = SalesOrder
     form_class = SalesOrderForm
@@ -215,7 +214,7 @@ class ProductInfoView(generic.View):
             product = Product.objects.get(pk=product_id, tenant=request.user.tenant)
             return JsonResponse({
                 'unit': product.unit,
-                'unit_price': product.price,
+                'unit_price': product.unit_price,
             })
         except Product.DoesNotExist:
             return JsonResponse({'error': '商品が見つかりません'}, status=404)

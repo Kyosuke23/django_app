@@ -22,9 +22,6 @@ def save_order_details(request, sales_order):
         pk = request.POST.get(f'details-{i}-id')
         product = request.POST.get(f'details-{i}-product')
         delete_flag = request.POST.get(f'details-{i}-DELETE')
-        product_obj = Product.objects.get(pk=product, tenant=request.user.tenant)
-        master_price = product_obj.unit_price
-        master_unit = product_obj.unit
 
         if delete_flag and pk:
             SalesOrderDetail.objects.filter(pk=pk, sales_order=sales_order).delete()
@@ -32,6 +29,10 @@ def save_order_details(request, sales_order):
 
         if not product:
             continue
+        
+        product_obj = Product.objects.get(pk=product, tenant=request.user.tenant)
+        master_price = product_obj.unit_price
+        master_unit = product_obj.unit
 
         if pk:  # 既存行の更新
             detail = SalesOrderDetail.objects.get(pk=pk, sales_order=sales_order)
