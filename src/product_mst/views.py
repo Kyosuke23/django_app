@@ -17,7 +17,7 @@ from django.urls import reverse_lazy
 # CSV/Excel の共通出力カラム定義
 # アプリ固有のカラムに加え、共通カラムも連結
 DATA_COLUMNS = [
-    'product_name', 'product_category', 'price', 'description'
+    'product_name', 'product_category', 'unit_price', 'description'
 ]
 FILENAME_PREFIX = 'product_mst'
 
@@ -52,8 +52,8 @@ class ProductListView(generic.ListView):
         context = super().get_context_data(**kwargs)
         context['search_product_name'] = self.request.GET.get('search_product_name') or ''
         context['search_product_category'] = self.request.GET.get('search_product_category') or ''
-        context['search_price_min'] = self.request.GET.get('search_price_min') or ''
-        context['search_price_max'] = self.request.GET.get('search_price_max') or ''
+        context['search_unit_price_min'] = self.request.GET.get('search_unit_price_min') or ''
+        context['search_unit_price_max'] = self.request.GET.get('search_unit_price_max') or ''
         context['categories'] = ProductCategory.objects.filter(is_deleted=False, tenant=self.request.user.tenant).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
@@ -310,18 +310,18 @@ class ImportCSV(CSVImportBaseView):
             return None, f'{idx}行目: product_category "{category_name}" が存在しません'
 
         # 価格の変換
-        price_val = row.get('price')
+        unit_price_val = row.get('unit_price')
         try:
-            price_val = int(price_val) if price_val else 0
+            unit_price_val = int(unit_price_val) if unit_price_val else 0
         except ValueError:
-            return None, f'{idx}行目: price "{price_val}" は数値である必要があります'
+            return None, f'{idx}行目: unit_price "{unit_price_val}" は数値である必要があります'
 
         # Product オブジェクト生成
         obj = Product(
             product_name=row.get('product_name'),
             product_category=category,
             description=row.get('description') or '',
-            price=price_val,
+            unit_price=unit_price_val,
             create_user=request.user,
             update_user=request.user
         )
@@ -336,7 +336,7 @@ def get_row(rec):
     return [
         rec.product_name,
         rec.product_category.product_category_name if rec.product_category else '',
-        rec.price,
+        rec.unit_price,
         rec.description,
     ]
     
@@ -346,21 +346,21 @@ def filter_data(request, query_set):
     # リクエストから検索フォームの入力値を取得
     product_name = request.GET.get('search_product_name') or ''
     category = request.GET.get('search_product_category') or ''
-    price_min = request.GET.get('search_price_min') or ''
-    price_max = request.GET.get('search_price_max') or ''
+    unit_price_min = request.GET.get('search_unit_price_min') or ''
+    unit_price_max = request.GET.get('search_unit_price_max') or ''
     
     # フィルタ実行
     if product_name:
         query_set = query_set.filter(Q(product_name__icontains=product_name))
     if category:
         query_set = query_set.filter(product_category_id=category)
-    if price_min:
-        query_set = query_set.filter(price__gte=price_min)
-    if price_max:
-        query_set = query_set.filter(price__lte=price_max)
+    if unit_price_min:
+        query_set = query_set.filter(unit_price__gte=unit_price_min)
+    if unit_price_max:
+        query_set = query_set.filter(unit_price__lte=unit_price_max)
     
     # バリデーション
-    if price_min and price_max and int(price_min) > int(price_max):
+    if unit_price_min and unit_price_max and int(unit_price_min) > int(unit_price_max):
         messages.error(request, '価格(下限)は価格(上限)以下を指定してください')
         query_set = query_set.none()
 

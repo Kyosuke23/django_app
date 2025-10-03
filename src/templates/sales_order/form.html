@@ -38,6 +38,7 @@
     <table class="table table-bordered table-sm align-middle text-nowrap table-responsive">
       <thead class="table-light">
         <tr>
+          <th class="w-5">No.</th>
           <th class="w-25">商品</th>
           <th class="w-10">数量</th>
           <th class="w-10">単位</th>
@@ -52,10 +53,11 @@
         {% for detail_form in formset %}
         <tr>
           {{ detail_form.id }}
+          <td>{{ forloop.counter }}</td>
           <td>{{ detail_form.product }}</td>
           <td>{{ detail_form.quantity }}</td>
-          <td>{{ detail_form.unit }}</td>
-          <td>{{ detail_form.unit_price }}</td>
+          <td class="unit-cell">{{ detail_form.instance.product.unit }}</td>
+          <td>{{ detail_form.billing_unit_price }}</td>
           <td>{{ detail_form.tax_rate }}</td>
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
           <td class="text-end amount">

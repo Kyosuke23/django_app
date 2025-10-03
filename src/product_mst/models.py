@@ -21,7 +21,8 @@ class Product(BaseModel):
         null=True,
         verbose_name='商品カテゴリ'
     )
-    price = models.IntegerField(blank=True, null=True, verbose_name='価格')
+    unit = models.CharField(max_length=20, verbose_name='単位')  # 数量に対する単位
+    unit_price = models.IntegerField(blank=True, null=True, verbose_name='単価')
     description = models.TextField(blank=True, null=True, verbose_name='商品説明')
 
     def __str__(self):
