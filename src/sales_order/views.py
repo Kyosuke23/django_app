@@ -9,7 +9,7 @@ from partner_mst.models import Partner
 from .form import SalesOrderForm, SalesOrderDetailFormSet
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
-from .utils import fill_formset, save_order_details  # ← 共通関数を呼び出し
+from .utils import fill_formset, save_order_details
 
 DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'remarks',
@@ -38,24 +38,28 @@ class SalesOrderListView(generic.ListView):
             is_deleted=False, tenant=self.request.user.tenant
         ).select_related('partner')
 
-        search = self.request.GET.get('search')
-        sales_order_date = self.request.GET.get('sales_order_date')
+        # 検索フォームの入力値を取得
+        sales_order_no = self.request.GET.get('search_sales_order_no')
+        status_code = self.request.GET.get('search_status_code')
+        partner = self.request.GET.get('search_partner')
 
-        if search:
-            queryset = queryset.filter(
-                Q(order_no__icontains=search) |
-                Q(partner__partner_name__icontains=search)
-            )
+        # フィルタ適用
+        if sales_order_no:
+            queryset = queryset.filter(Q(sales_order_no__icontains=sales_order_no))
+        if status_code:
+            queryset = queryset.filter(status_code=status_code)
+        if partner:
+            queryset = queryset.filter(partner=partner)
 
-        if sales_order_date:
-            queryset = queryset.filter(sales_order_date=sales_order_date)
-
+        # クエリセット返却
         return queryset.order_by('sales_order_date', 'sales_order_no')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['search'] = self.request.GET.get('search') or ''
-        context['sales_order_date'] = self.request.GET.get('sales_order_date') or ''
+        context['search_sales_order_no'] = self.request.GET.get('search_sales_order_no') or ''
+        context['search_status_code'] = self.request.GET.get('search_status_code') or ''
+        context['search_partner'] = self.request.GET.get('search_partner') or ''
+        context['status_choices'] = SalesOrder.STATUS_CHOICES
         context['partners'] = Partner.objects.filter(
             is_deleted=False, tenant=self.request.user.tenant
         ).order_by('id')
@@ -64,7 +68,7 @@ class SalesOrderListView(generic.ListView):
 
 
 # -----------------------------
-# SalesOrder CRUD (通常遷移)
+# SalesOrder CRUD
 # -----------------------------
 
 class SalesOrderCreateView(generic.CreateView):
@@ -270,7 +274,7 @@ def get_order_detail_row(sales_order, detail):
 
 
 def search_order_data(request, query_set):
-    keyword = request.GET.get('search') or ''
+    keyword = request.GET.get('search_sales_order_no') or ''
     if keyword:
         query_set = query_set.filter(
             Q(order_no__icontains=keyword) |

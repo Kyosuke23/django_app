@@ -4,12 +4,18 @@ from .models import SalesOrder, SalesOrderDetail
 
 
 class SalesOrderForm(forms.ModelForm):
-    """
+    '''
     受注ヘッダ用フォーム
-    """
+    '''
     class Meta:
         model = SalesOrder
-        fields = ['sales_order_no', 'sales_order_date', 'partner', 'remarks', 'rounding_method',]
+        fields = [
+            'sales_order_no',
+            'sales_order_date',
+            'partner',
+            'remarks',
+            'rounding_method',
+        ]
         widgets = {
             'sales_order_no': forms.TextInput(attrs={'class': 'form-control'}),
             'sales_order_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
@@ -19,12 +25,12 @@ class SalesOrderForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user", None)
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user is not None:
-            self.fields["partner"].queryset = (
+            self.fields['partner'].queryset = (
                 # テナントに紐づく取引先だけに絞る
-                self.fields["partner"].queryset.filter(tenant=user.tenant)
+                self.fields['partner'].queryset.filter(tenant=user.tenant)
             )
 
 

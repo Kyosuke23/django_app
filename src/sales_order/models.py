@@ -2,7 +2,6 @@ from django.db import models
 from config.base import BaseModel
 from django.utils import timezone
 from django.db.models import Max
-from .constants import SalesOrderStatus
 from django.utils import timezone
 from django.db.models import Max
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING, ROUND_HALF_UP
@@ -29,6 +28,21 @@ def generate_sales_order_no(tenant):
     return f'{prefix}{new_seq:06d}'
 
 class SalesOrder(BaseModel):
+    STATUS_CHOICES = [
+        ('DRAFT', '仮作成'),
+        ('SUBMITTED', '社内承認待ち'),
+        ('APPROVED', '社内承認済'),
+        ('REJECTED_IN', '社内却下'),
+        ('CONFIRMED', '顧客承諾済'),
+        ('REJECTED_OUT', '顧客却下'),
+        # ('READY_SHIP', '出荷待ち'),
+        # ('SHIPPED', '出荷済'),
+        # ('BILLED', '請求済'),
+        # ('PAID', '入金済'),
+        ('CANCELED', 'キャンセル'),
+    ]
+
+
     ROUNDING_CHOICES = [
         ('floor', '切り捨て'),
         ('ceil', '切り上げ'),
@@ -37,8 +51,8 @@ class SalesOrder(BaseModel):
     sales_order_no = models.CharField(max_length=20, verbose_name='受注番号')
     status_code = models.CharField(
         max_length=20,
-        choices=SalesOrderStatus.choices,
-        default=SalesOrderStatus.DRAFT
+        choices=STATUS_CHOICES,
+        default='DRAFT'
     )
     sales_order_date = models.DateField(default=timezone.now, verbose_name='受注日')
     partner = models.ForeignKey('partner_mst.Partner', on_delete=models.SET_NULL, blank=True, null=True, verbose_name='取引先')
@@ -134,7 +148,8 @@ class SalesOrderDetail(BaseModel):
             return ''
 
         # 数量 * 単価
-        base = Decimal(self.quantity or 0) * Decimal(self.unit_price or 0)
+        # base = Decimal(self.quantity or 0) * Decimal(self.unit_price or 0)
+        base = 0
 
         # 消費税率を加味
         if not self.is_tax_exempt:

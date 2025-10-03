@@ -28,15 +28,28 @@
   {% csrf_token %}
   <div class="row mb-3 align-items-center">
 
-    {# キーワード検索（受注番号・備考など） #}
-    <div class="col col-md-3">
-      <label for="search" class="form-label visually-hidden">キーワード</label>
-      <input id="search" type="text" name="search" class="form-control"
-             value="{{ search }}" placeholder="受注番号・備考を入力してください">
+    {# 受注番号検索 #}
+    <div class="col col-md-2">
+      <label for="search_sales_order_no" class="form-label visually-hidden">キーワード</label>
+      <input id="search_sales_order_no" type="text" name="search_sales_order_no" class="form-control"
+             value="{{ search_sales_order_no }}" placeholder="受注番号を入力してください">
+    </div>
+
+    {# ステータス選択 #}
+    <div class="col col-md-1">
+      <label for="search_status_code" class="form-label visually-hidden">ステータス</label>
+      <select id="search_status_code" class="form-control" name="search_status_code">
+        <option value="">-- 全ステータス --</option>
+        {% for value,label in status_choices %}
+        <option value="{{ value }}" {% if search_status_code == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+        {% endfor %}
+      </select>
     </div>
 
     {# 取引先選択 #}
-    <div class="col col-md-3">
+    <div class="col col-md-2">
       <label for="search_partner" class="form-label visually-hidden">取引先</label>
       <select id="search_partner" class="form-control" name="search_partner">
         <option value="">-- 全取引先 --</option>
@@ -85,8 +98,9 @@
         <th scope="col">ステータス</th>
         <th scope="col">受注日</th>
         <th scope="col">取引先</th>
-        <th scope="col">備考</th>
+        <th scope="col">金額合計</th>
         <th scope="col">担当者</th>
+        <th scope="col">備考</th>
         <th scope="col">操作</th>
       </tr>
     </thead>
@@ -97,10 +111,11 @@
         <td>{{ sales_order.get_status_code_display   }}</td>
         <td>{{ sales_order.sales_order_date }}</td>
         <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
-        <td>{{ sales_order.remarks|truncatechars:20 }}</td>
+        <td>¥{{ sales_order.grand_total|floatformat:0|intcomma }}</td>
         <td>
-            {{ request.user.username }}
+          {{ request.user.username }}
         </td>
+        <td>{{ sales_order.remarks|truncatechars:20 }}</td>
         <td>
           {% if user.privilege <= PRIVILEGE_MANAGER %}
           <a href="#"

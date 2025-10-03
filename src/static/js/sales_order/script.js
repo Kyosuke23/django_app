@@ -66,37 +66,39 @@ $(function () {
     let taxTotal = 0;
     let grandTotal = 0;
 
-    $('tbody tr').each(function () {
-      const qty = parseFloat($(this).find('input[name$="quantity"]').val()) || 0;
-      const unitPrice = parseFloat($(this).find('input[name$="unit_price"]').val()) || 0;
-      const taxRate = parseFloat($(this).find('select[name$="tax_rate"]').val()) || 0;
-      const isTaxExempt = $(this).find('input[name$="is_tax_exempt"]').is(':checked');
+    $('table tbody tr').each(function() {
+      const $row = $(this);
+      const qty = parseFloat($row.find('input[name$="quantity"]').val()) || 0;
+      const price = parseFloat($row.find('input[name$="unit_price"]').val()) || 0;
+      const taxRate = parseFloat($row.find('select[name$="tax_rate"]').val()) || 0;
+      const isTaxExempt = $row.find('input[name$="is_tax_exempt"]').is(':checked');
+      const isDeleted = $row.find('input[name$="DELETE"]').is(':checked');
 
-      // 小計（税抜）
-      const lineSubtotal = qty * unitPrice;
-      subtotal += lineSubtotal;
+      // 小計対象金額（税抜）
+      let lineSubtotal = qty * price;
+      let lineTax = isTaxExempt ? 0 : Math.floor(lineSubtotal * taxRate);
+      let lineTotal = lineSubtotal + lineTax;
 
-      // 税額
-      const lineTax = isTaxExempt ? 0 : lineSubtotal * taxRate;
-      taxTotal += lineTax;
+      // 削除チェックがONなら除外
+      if (!isDeleted) {
+        subtotal += lineSubtotal;
+        taxTotal += lineTax;
+        grandTotal += lineTotal;
+      }
 
-      // 金額（税込）
-      const lineTotal = lineSubtotal + lineTax;
-      grandTotal += lineTotal;
-
-      // 行ごとの金額セルを更新
-      $(this).find('.amount').text(formatYen(lineTotal));
+      // 金額セルの表示も更新
+      $row.find('.amount').text(lineTotal.toLocaleString());
     });
 
-    // 集計欄を更新
-    $('#subtotal').text(formatYen(subtotal));
-    $('#tax-total').text(formatYen(taxTotal));
-    $('#grand-total').text(formatYen(grandTotal));
+    $('#subtotal').text('¥' + subtotal.toLocaleString());
+    $('#tax-total').text('¥' + taxTotal.toLocaleString());
+    $('#grand-total').text('¥' + grandTotal.toLocaleString());
   };
 
   // 入力イベント監視（数量、単価、税率、税対象外）
-  $(document).on('input change', 'input[name$="quantity"], input[name$="unit_price"], select[name$="tax_rate"], input[name$="is_tax_exempt"]', recalcTotals);
-
-  // 初期計算
-  recalcTotals();
+  $(document).on('input change', 
+    'input[name$="quantity"], input[name$="unit_price"], select[name$="tax_rate"], input[name$="is_tax_exempt"], input[name$="DELETE"]', 
+    function() {
+      recalcTotals();
+  });
 });
