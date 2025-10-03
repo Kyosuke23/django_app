@@ -6,13 +6,14 @@
       "tenant": 1,
       "product_name": "商品001",
       "product_category": 2,
-      "price": 100,
       "description": "サンプル商品 1 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 100,
+      "unit": "個"
     }
   },
   {
@@ -22,13 +23,14 @@
       "tenant": 1,
       "product_name": "商品002",
       "product_category": 3,
-      "price": 200,
       "description": "サンプル商品 2 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 200,
+      "unit": "本"
     }
   },
   {
@@ -38,13 +40,14 @@
       "tenant": 1,
       "product_name": "商品003",
       "product_category": 1,
-      "price": 300,
       "description": "サンプル商品 3 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 300,
+      "unit": "kg"
     }
   },
   {
@@ -54,13 +57,14 @@
       "tenant": 1,
       "product_name": "商品004",
       "product_category": 2,
-      "price": 400,
       "description": "サンプル商品 4 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 400,
+      "unit": "m"
     }
   },
   {
@@ -70,13 +74,14 @@
       "tenant": 1,
       "product_name": "商品005",
       "product_category": 3,
-      "price": 500,
       "description": "サンプル商品 5 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 500,
+      "unit": "セット"
     }
   },
   {
@@ -86,13 +91,14 @@
       "tenant": 1,
       "product_name": "商品006",
       "product_category": 1,
-      "price": 600,
       "description": "サンプル商品 6 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 600,
+      "unit": "箱"
     }
   },
   {
@@ -102,13 +108,14 @@
       "tenant": 1,
       "product_name": "商品007",
       "product_category": 2,
-      "price": 700,
       "description": "サンプル商品 7 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 700,
+      "unit": "袋"
     }
   },
   {
@@ -118,13 +125,14 @@
       "tenant": 1,
       "product_name": "商品008",
       "product_category": 3,
-      "price": 800,
       "description": "サンプル商品 8 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 800,
+      "unit": "台"
     }
   },
   {
@@ -134,13 +142,14 @@
       "tenant": 1,
       "product_name": "商品009",
       "product_category": 1,
-      "price": 900,
       "description": "サンプル商品 9 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 900,
+      "unit": "枚"
     }
   },
   {
@@ -150,13 +159,14 @@
       "tenant": 1,
       "product_name": "商品010",
       "product_category": 2,
-      "price": 1000,
       "description": "サンプル商品 10 の説明です。",
       "is_deleted": false,
       "created_at": "2025-09-29T00:00:00Z",
       "updated_at": "2025-09-29T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "unit_price": 1000,
+      "unit": "ℓ"
     }
   }
 ]

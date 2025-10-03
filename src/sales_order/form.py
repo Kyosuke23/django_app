@@ -42,7 +42,6 @@ class SalesOrderDetailForm(forms.ModelForm):
         fields = [
             'product',
             'quantity',
-            'unit',
             'master_unit_price',
             'billing_unit_price',
             'is_tax_exempt',
@@ -51,7 +50,6 @@ class SalesOrderDetailForm(forms.ModelForm):
         widgets = {
             'product': forms.Select(attrs={'class': 'form-select'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control text-end'}),
-            'unit': forms.TextInput(attrs={'class': 'form-control'}),
             'master_unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'billing_unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'is_tax_exempt': forms.CheckboxInput(attrs={'class': 'form-check-input'}),

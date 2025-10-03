@@ -214,7 +214,7 @@ class ProductInfoView(generic.View):
         try:
             product = Product.objects.get(pk=product_id, tenant=request.user.tenant)
             return JsonResponse({
-                # 'unit': product.unit,
+                'unit': product.unit,
                 'unit_price': product.price,
             })
         except Product.DoesNotExist:

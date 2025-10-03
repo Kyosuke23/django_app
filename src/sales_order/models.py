@@ -124,7 +124,6 @@ class SalesOrderDetail(BaseModel):
         verbose_name='商品'
     )
     quantity = models.IntegerField(verbose_name='数量')
-    unit = models.CharField(max_length=20, verbose_name='単位')  # 数量に対する単位
     master_unit_price = models.IntegerField(verbose_name='マスタ単価')  # 商品マスタの単価コピー
     billing_unit_price = models.IntegerField(verbose_name='請求単価')  # 受注明細フォームで入力した単価
     tax_rate = models.DecimalField(

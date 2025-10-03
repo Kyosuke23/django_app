@@ -51,8 +51,8 @@
 
     {# 価格検索フォーム（下限・上限を横並び） #}
     <div class="col col-md-3 d-flex gap-2">
-      <input id="search_price_min" type="number" name="search_price_min" class="form-control" value="{{ search_price_min }}" placeholder="価格(下限)">
-      <input id="search_price_max" type="number" name="search_price_max" class="form-control" value="{{ search_price_max }}" placeholder="価格(上限)">
+      <input id="search_unit_price_min" type="number" name="search_unit_price_min" class="form-control" value="{{ search_unit_price_min }}" placeholder="価格(下限)">
+      <input id="search_unit_price_max" type="number" name="search_unit_price_max" class="form-control" value="{{ search_unit_price_max }}" placeholder="価格(上限)">
     </div>
 
     <div class="col">
@@ -129,7 +129,8 @@
           {% endif %}
           <th scope="col">商品名称</th>
           <th scope="col">商品カテゴリ</th>
-          <th scope="col">価格</th>
+          <th scope="col">単価</th>
+          <th scope="col">単位</th>
           <th scope="col">説明文</th>
           <th scope="col">操作</th>
         </tr>
@@ -144,7 +145,8 @@
           {% endif %}
           <td>{{ product.product_name|default_if_none:'' }}</td>
           <td>{{ product.product_category.product_category_name|default_if_none:'' }}</td>
-          <td>{% if product.price %}¥{% endif %}{{ product.price|default_if_none:''|intcomma }}</td>
+          <td>{% if product.unit_price %}¥{% endif %}{{ product.unit_price|default_if_none:''|intcomma }}</td>
+          <td>{{ product.unit|default_if_none:'' }}</td>
           <td>{{ product.description }}</td>
           <td>
             {% if user.privilege <= PRIVILEGE_MANAGER %}
