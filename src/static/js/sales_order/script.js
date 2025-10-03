@@ -101,4 +101,34 @@ $(function () {
     function() {
       recalcTotals();
   });
+
+  // 商品マスタ選択時
+  $(document).on('change', 'select[name$="-product"]', function() {
+    var productId = $(this).val();
+    if (!productId) return;
+
+    var $row = $(this).closest('tr');
+
+    $.ajax({
+      url: '/sales_order/product/info/',
+      type: 'GET',
+      data: { 'product_id': productId },
+      dataType: 'json',
+      success: function(data) {
+        if (data.error) {
+          console.warn(data.error);
+          return;
+        }
+
+        // 単位フィールドに反映
+        $row.find('input[name$="-unit"]').val(data.unit);
+
+        // 請求単価フィールドに反映
+        $row.find('input[name$="-billing_unit_price"]').val(data.unit_price);
+      },
+      error: function(xhr, status, error) {
+        console.error('商品情報取得エラー:', error);
+      }
+    });
+  });
 });

@@ -14,4 +14,5 @@ urlpatterns = [
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     path('create/', views.SalesOrderCreateModalView.as_view(), name='create'),
     path('<int:pk>/update/', views.SalesOrderUpdateModalView.as_view(), name='update'),
+    path('product/info/', views.ProductInfoView.as_view(), name='product_info'),
 ]

@@ -27,14 +27,15 @@
       "product": 2,
       "quantity": 2,
       "unit": "セット",
-      "unit_price": 300,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 300,
+      "billing_unit_price": 300
     }
   },
   {
@@ -47,14 +48,15 @@
       "product": 3,
       "quantity": 3,
       "unit": "kg",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -85,14 +87,15 @@
       "product": 3,
       "quantity": 2,
       "unit": "kg",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -105,14 +108,15 @@
       "product": 5,
       "quantity": 3,
       "unit": "m",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -125,14 +129,15 @@
       "product": 7,
       "quantity": 4,
       "unit": "個",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -163,14 +168,15 @@
       "product": 4,
       "quantity": 2,
       "unit": "m",
-      "unit_price": 500,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 500,
+      "billing_unit_price": 500
     }
   },
   {
@@ -183,14 +189,15 @@
       "product": 7,
       "quantity": 3,
       "unit": "個",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -203,14 +210,15 @@
       "product": 10,
       "quantity": 4,
       "unit": "箱",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -223,14 +231,15 @@
       "product": 3,
       "quantity": 5,
       "unit": "セット",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -261,14 +270,15 @@
       "product": 5,
       "quantity": 2,
       "unit": "個",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -281,14 +291,15 @@
       "product": 9,
       "quantity": 3,
       "unit": "箱",
-      "unit_price": 100,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 100,
+      "billing_unit_price": 100
     }
   },
   {
@@ -301,14 +312,15 @@
       "product": 3,
       "quantity": 4,
       "unit": "セット",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -321,14 +333,15 @@
       "product": 7,
       "quantity": 5,
       "unit": "kg",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -341,14 +354,15 @@
       "product": 1,
       "quantity": 1,
       "unit": "m",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -379,14 +393,15 @@
       "product": 6,
       "quantity": 2,
       "unit": "箱",
-      "unit_price": 700,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 700,
+      "billing_unit_price": 700
     }
   },
   {
@@ -417,14 +432,15 @@
       "product": 7,
       "quantity": 2,
       "unit": "セット",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -437,14 +453,15 @@
       "product": 3,
       "quantity": 3,
       "unit": "kg",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -475,14 +492,15 @@
       "product": 8,
       "quantity": 2,
       "unit": "kg",
-      "unit_price": 900,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 900,
+      "billing_unit_price": 900
     }
   },
   {
@@ -495,14 +513,15 @@
       "product": 5,
       "quantity": 3,
       "unit": "m",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -515,14 +534,15 @@
       "product": 2,
       "quantity": 4,
       "unit": "個",
-      "unit_price": 300,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 300,
+      "billing_unit_price": 300
     }
   },
   {
@@ -553,14 +573,15 @@
       "product": 9,
       "quantity": 2,
       "unit": "m",
-      "unit_price": 100,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 100,
+      "billing_unit_price": 100
     }
   },
   {
@@ -573,14 +594,15 @@
       "product": 7,
       "quantity": 3,
       "unit": "個",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -593,14 +615,15 @@
       "product": 5,
       "quantity": 4,
       "unit": "箱",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -613,14 +636,15 @@
       "product": 3,
       "quantity": 5,
       "unit": "セット",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -651,14 +675,15 @@
       "product": 10,
       "quantity": 2,
       "unit": "個",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -671,14 +696,15 @@
       "product": 9,
       "quantity": 3,
       "unit": "箱",
-      "unit_price": 100,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 100,
+      "billing_unit_price": 100
     }
   },
   {
@@ -691,14 +717,15 @@
       "product": 8,
       "quantity": 4,
       "unit": "セット",
-      "unit_price": 900,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 900,
+      "billing_unit_price": 900
     }
   },
   {
@@ -711,14 +738,15 @@
       "product": 7,
       "quantity": 5,
       "unit": "kg",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -731,14 +759,15 @@
       "product": 6,
       "quantity": 1,
       "unit": "m",
-      "unit_price": 700,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 700,
+      "billing_unit_price": 700
     }
   },
   {
@@ -769,14 +798,15 @@
       "product": 1,
       "quantity": 2,
       "unit": "箱",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -807,14 +837,15 @@
       "product": 2,
       "quantity": 2,
       "unit": "セット",
-      "unit_price": 300,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 300,
+      "billing_unit_price": 300
     }
   },
   {
@@ -827,14 +858,15 @@
       "product": 3,
       "quantity": 3,
       "unit": "kg",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -865,14 +897,15 @@
       "product": 3,
       "quantity": 2,
       "unit": "kg",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -885,14 +918,15 @@
       "product": 5,
       "quantity": 3,
       "unit": "m",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -905,14 +939,15 @@
       "product": 7,
       "quantity": 4,
       "unit": "個",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -943,14 +978,15 @@
       "product": 4,
       "quantity": 2,
       "unit": "m",
-      "unit_price": 500,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 500,
+      "billing_unit_price": 500
     }
   },
   {
@@ -963,14 +999,15 @@
       "product": 7,
       "quantity": 3,
       "unit": "個",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -983,14 +1020,15 @@
       "product": 10,
       "quantity": 4,
       "unit": "箱",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -1003,14 +1041,15 @@
       "product": 3,
       "quantity": 5,
       "unit": "セット",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -1041,14 +1080,15 @@
       "product": 5,
       "quantity": 2,
       "unit": "個",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -1061,14 +1101,15 @@
       "product": 9,
       "quantity": 3,
       "unit": "箱",
-      "unit_price": 100,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 100,
+      "billing_unit_price": 100
     }
   },
   {
@@ -1081,14 +1122,15 @@
       "product": 3,
       "quantity": 4,
       "unit": "セット",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -1101,14 +1143,15 @@
       "product": 7,
       "quantity": 5,
       "unit": "kg",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -1121,14 +1164,15 @@
       "product": 1,
       "quantity": 1,
       "unit": "m",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -1159,14 +1203,15 @@
       "product": 6,
       "quantity": 2,
       "unit": "箱",
-      "unit_price": 700,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 700,
+      "billing_unit_price": 700
     }
   },
   {
@@ -1197,14 +1242,15 @@
       "product": 7,
       "quantity": 2,
       "unit": "セット",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -1217,14 +1263,15 @@
       "product": 3,
       "quantity": 3,
       "unit": "kg",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -1255,14 +1302,15 @@
       "product": 8,
       "quantity": 2,
       "unit": "kg",
-      "unit_price": 900,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 900,
+      "billing_unit_price": 900
     }
   },
   {
@@ -1275,14 +1323,15 @@
       "product": 5,
       "quantity": 3,
       "unit": "m",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -1295,14 +1344,15 @@
       "product": 2,
       "quantity": 4,
       "unit": "個",
-      "unit_price": 300,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 300,
+      "billing_unit_price": 300
     }
   },
   {
@@ -1333,14 +1383,15 @@
       "product": 9,
       "quantity": 2,
       "unit": "m",
-      "unit_price": 100,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 100,
+      "billing_unit_price": 100
     }
   },
   {
@@ -1353,14 +1404,15 @@
       "product": 7,
       "quantity": 3,
       "unit": "個",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -1373,14 +1425,15 @@
       "product": 5,
       "quantity": 4,
       "unit": "箱",
-      "unit_price": 600,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 600,
+      "billing_unit_price": 600
     }
   },
   {
@@ -1393,14 +1446,15 @@
       "product": 3,
       "quantity": 5,
       "unit": "セット",
-      "unit_price": 400,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 400,
+      "billing_unit_price": 400
     }
   },
   {
@@ -1431,14 +1485,15 @@
       "product": 10,
       "quantity": 2,
       "unit": "個",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   },
   {
@@ -1451,14 +1506,15 @@
       "product": 9,
       "quantity": 3,
       "unit": "箱",
-      "unit_price": 100,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 100,
+      "billing_unit_price": 100
     }
   },
   {
@@ -1471,14 +1527,15 @@
       "product": 8,
       "quantity": 4,
       "unit": "セット",
-      "unit_price": 900,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 900,
+      "billing_unit_price": 900
     }
   },
   {
@@ -1491,14 +1548,15 @@
       "product": 7,
       "quantity": 5,
       "unit": "kg",
-      "unit_price": 800,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 800,
+      "billing_unit_price": 800
     }
   },
   {
@@ -1511,14 +1569,15 @@
       "product": 6,
       "quantity": 1,
       "unit": "m",
-      "unit_price": 700,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 700,
+      "billing_unit_price": 700
     }
   },
   {
@@ -1549,14 +1608,15 @@
       "product": 1,
       "quantity": 2,
       "unit": "箱",
-      "unit_price": 200,
       "tax_rate": "0.10",
       "is_tax_exempt": false,
       "is_deleted": false,
       "created_at": "2025-10-01T00:00:00Z",
       "updated_at": "2025-10-01T00:00:00Z",
       "create_user": "1",
-      "update_user": "1"
+      "update_user": "1",
+      "master_unit_price": 200,
+      "billing_unit_price": 200
     }
   }
 ]

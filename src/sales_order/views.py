@@ -1,3 +1,4 @@
+from django.forms import inlineformset_factory
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
@@ -6,14 +7,15 @@ from django.http import JsonResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from .models import SalesOrder, SalesOrderDetail
 from partner_mst.models import Partner
-from .form import SalesOrderForm, SalesOrderDetailFormSet
+from product_mst.models import Product
+from .form import SalesOrderForm, SalesOrderDetailForm, SalesOrderDetailFormSet
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from .utils import fill_formset, save_order_details
 
 DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'remarks',
-    'line_no', 'product', 'quantity', 'unit', 'unit_price',
+    'line_no', 'product', 'quantity', 'unit', 'master_unit_price', 'billing_unit_price',
     'is_tax_exempt', 'tax_rate', 'rounding_method'
 ] + Common.COMMON_DATA_COLUMNS
 
@@ -129,7 +131,6 @@ class SalesOrderDeleteView(generic.View):
 # -----------------------------
 # SalesOrder CRUD (モーダル)
 # -----------------------------
-
 class SalesOrderCreateModalView(SalesOrderCreateView):
     template_name = 'sales_order/form.html'
 
@@ -140,8 +141,20 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
 
     def get(self, request, *args, **kwargs):
         self.object = None
-        context = self.get_context_data()
-        html = render_to_string(self.template_name, context, request)
+        form = self.get_form()
+        formset = fill_formset(get_sales_order_detail_formset())
+
+        html = render_to_string(
+            self.template_name,
+            {
+                'form': form,
+                'formset': formset,
+                'form_action': reverse('sales_order:create'),
+                'modal_title': '受注新規登録',
+                'is_update': False,
+            },
+            request,
+        )
         return JsonResponse({'success': True, 'html': html})
 
     def form_valid(self, form):
@@ -163,7 +176,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = self.get_form()
-        formset = fill_formset(SalesOrderDetailFormSet(instance=self.object))
+        formset = fill_formset(get_sales_order_detail_formset(instance=self.object))
 
         html = render_to_string(
             self.template_name,
@@ -195,10 +208,21 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         return JsonResponse({'success': True})
 
 
+class ProductInfoView(generic.View):
+    def get(self, request, *args, **kwargs):
+        product_id = request.GET.get('product_id')
+        try:
+            product = Product.objects.get(pk=product_id, tenant=request.user.tenant)
+            return JsonResponse({
+                # 'unit': product.unit,
+                'unit_price': product.price,
+            })
+        except Product.DoesNotExist:
+            return JsonResponse({'error': '商品が見つかりません'}, status=404)
+
 # -----------------------------
 # Export / Import
 # -----------------------------
-
 class ExportExcel(ExcelExportBaseView):
     model_class = SalesOrderDetail
     filename_prefix = 'sales_order'
@@ -255,7 +279,6 @@ class ImportCSV(CSVImportBaseView):
 # -----------------------------
 # 共通関数
 # -----------------------------
-
 def get_order_detail_row(sales_order, detail):
     return [
         sales_order.sales_order_no,
@@ -266,7 +289,7 @@ def get_order_detail_row(sales_order, detail):
         detail.product.product_name if detail and detail.product else '',
         detail.quantity if detail else '',
         detail.unit if detail else '',
-        detail.unit_price if detail else '',
+        detail.billing_unit_price if detail else '',
         '1' if (detail and detail.is_tax_exempt) else '0',
         detail.tax_rate if detail else '',
         detail.rounding_method if detail else '',
@@ -285,3 +308,17 @@ def search_order_data(request, query_set):
 
 def sales_order_message(request, action, sales_order_no):
     messages.success(request, f'受注「{sales_order_no}」を{action}しました。')
+
+# 動的にextraを決める関数
+def get_sales_order_detail_formset(instance=None, data=None):
+    count = instance.details.count() if instance else 0
+    extra = 10 if count < 10 else 0
+
+    DynamicFormSet = inlineformset_factory(
+        SalesOrder,
+        SalesOrderDetail,
+        form=SalesOrderDetailForm,
+        extra=extra,
+        can_delete=True
+    )
+    return DynamicFormSet(data=data, instance=instance)

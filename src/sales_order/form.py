@@ -33,7 +33,6 @@ class SalesOrderForm(forms.ModelForm):
                 self.fields['partner'].queryset.filter(tenant=user.tenant)
             )
 
-
 class SalesOrderDetailForm(forms.ModelForm):
     '''
     受注明細用フォーム
@@ -44,7 +43,8 @@ class SalesOrderDetailForm(forms.ModelForm):
             'product',
             'quantity',
             'unit',
-            'unit_price',
+            'master_unit_price',
+            'billing_unit_price',
             'is_tax_exempt',
             'tax_rate',
         ]
@@ -52,17 +52,17 @@ class SalesOrderDetailForm(forms.ModelForm):
             'product': forms.Select(attrs={'class': 'form-select'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'unit': forms.TextInput(attrs={'class': 'form-control'}),
-            'unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
+            'master_unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
+            'billing_unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'is_tax_exempt': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'tax_rate': forms.Select(attrs={'class': 'form-select'}),
         }
-
 
 # 受注明細の inline formset（新規で10行表示）
 SalesOrderDetailFormSet = inlineformset_factory(
     SalesOrder,
     SalesOrderDetail,
     form=SalesOrderDetailForm,
-    extra=10,      # 新規登録時に空行を10行用意
+    extra=0,
     can_delete=True
 )

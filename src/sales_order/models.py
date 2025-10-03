@@ -88,14 +88,17 @@ class SalesOrder(BaseModel):
         
     @property
     def subtotal(self):
-        return sum([(d.quantity or 0) * (d.unit_price or 0) for d in self.details.all()])
+        if not self.pk: return 0
+        return sum([(d.quantity or 0) * (d.billing_unit_price or 0) for d in self.details.all()])
 
     @property
     def tax_total(self):
-        return sum([0 if d.is_tax_exempt else (d.quantity or 0) * (d.unit_price or 0) * float(d.tax_rate) for d in self.details.all()])
+        if not self.pk: return 0
+        return sum([0 if d.is_tax_exempt else (d.quantity or 0) * (d.billing_unit_price or 0) * float(d.tax_rate) for d in self.details.all()])
 
     @property
     def grand_total(self):
+        if not self.pk: return 0
         return self.subtotal + self.tax_total
 
 class SalesOrderDetail(BaseModel):
@@ -122,7 +125,8 @@ class SalesOrderDetail(BaseModel):
     )
     quantity = models.IntegerField(verbose_name='数量')
     unit = models.CharField(max_length=20, verbose_name='単位')  # 数量に対する単位
-    unit_price = models.IntegerField(verbose_name='単価')
+    master_unit_price = models.IntegerField(verbose_name='マスタ単価')  # 商品マスタの単価コピー
+    billing_unit_price = models.IntegerField(verbose_name='請求単価')  # 受注明細フォームで入力した単価
     tax_rate = models.DecimalField(
         max_digits=3,
         decimal_places=2,
@@ -148,8 +152,7 @@ class SalesOrderDetail(BaseModel):
             return ''
 
         # 数量 * 単価
-        # base = Decimal(self.quantity or 0) * Decimal(self.unit_price or 0)
-        base = 0
+        base = Decimal(self.quantity or 0) * Decimal(self.billing_unit_price or 0)
 
         # 消費税率を加味
         if not self.is_tax_exempt:
