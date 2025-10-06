@@ -224,7 +224,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         self.object = self.get_object()
         # prefix を統一（POST と同じ）
         form = SalesOrderForm(instance=self.object, prefix='header')
-        formset = SalesOrderDetailFormSet(instance=self.object, prefix='details')
+        formset = get_sales_order_detail_formset(instance=self.object)
 
         html = render_to_string(
             self.template_name,
@@ -428,7 +428,11 @@ def sales_order_message(request, action, sales_order_no):
 # 動的にextraを決める関数
 def get_sales_order_detail_formset(instance=None, data=None):
     count = instance.details.count() if instance else 0
-    extra = 10 if count < 10 else 0
+
+    if count < 10:
+        extra = 10 - count  # 常に10行表示
+    else:
+        extra = 1  # 現行数 +1
 
     DynamicFormSet = inlineformset_factory(
         SalesOrder,
@@ -437,4 +441,5 @@ def get_sales_order_detail_formset(instance=None, data=None):
         extra=extra,
         can_delete=True
     )
+
     return DynamicFormSet(data=data, instance=instance)
