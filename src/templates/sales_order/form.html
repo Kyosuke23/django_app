@@ -12,15 +12,15 @@
   {% csrf_token %}
   <div class="row mb-3">
     <!-- ステータス -->
-    <div class="col-md-12">
+    <div class="col-md-3">
       <label class="form-label">ステータス</label>
       <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
     </div>
 
     <!-- 受注日 -->
-    <div class="col-md-6">
+    <div class="col-md-3">
       <label for="{{ form.sales_order_date.id_for_label }}" class="form-label">受注日</label>
-      {% render_field form.sales_order_date class="form-control" type="date" %}
+      <p class="form-control-plaintext">{{ form.instance.sales_order_date }}</p>
     </div>
 
     <!-- 受注担当者 -->

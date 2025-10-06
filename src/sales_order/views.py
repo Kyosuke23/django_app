@@ -172,10 +172,14 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
 class SalesOrderUpdateModalView(SalesOrderUpdateView):
     template_name = 'sales_order/form.html'
 
+    # ----------------------------------------------------
+    # GET（モーダル表示）
+    # ----------------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = self.get_form()
-        formset = fill_formset(get_sales_order_detail_formset(instance=self.object))
+        # prefix を統一（POST と同じ）
+        form = SalesOrderForm(instance=self.object, prefix='header')
+        formset = SalesOrderDetailFormSet(instance=self.object, prefix='details')
 
         html = render_to_string(
             self.template_name,
@@ -190,18 +194,52 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         )
         return JsonResponse({'success': True, 'html': html})
 
-    def form_valid(self, form):
-        self.object = form.save(commit=False)
-        self.object.update_user = self.request.user
-        self.object.tenant = self.request.user.tenant
-        # ステータス制御
-        if self.request.POST.get('action_type') == 'submit':
-            self.object.status_code = 'SUBMITTED'
-        else:
-            self.object.status_code = 'DRAFT'
-        self.object.save()
+    # ----------------------------------------------------
+    # POST（更新処理）
+    # ----------------------------------------------------
+    def post(self, request, *args, **kwargs):
+        order = self.get_object()
 
-        save_order_details(self.request, self.object)
+        form = SalesOrderForm(request.POST, instance=order, prefix='header')
+        formset = SalesOrderDetailFormSet(request.POST, instance=order, prefix='details')
+
+        # バリデーション
+        if not (form.is_valid() and formset.is_valid()):
+            return self.render_to_response({'form': form, 'formset': formset})
+
+        # ヘッダ保存
+        order = form.save(commit=False)
+        order.update_user = request.user
+        order.tenant = request.user.tenant
+        order.save()
+        self.object = order
+
+        # 削除対象を先に削除（deleted_objectsを得るために commit=False が必要
+        formset.save(commit=False)
+        for obj in formset.deleted_objects:
+            obj.delete()
+
+        # 既存明細を全削除して再登録（重複防止のため
+        SalesOrderDetail.objects.filter(sales_order=order).delete()
+
+        # 有効な行のみ保存
+        n = 1
+        for f in formset.forms:
+            if not f.cleaned_data: continue
+            if f.cleaned_data.get('DELETE'): continue
+            if not f.cleaned_data.get('product'): continue
+
+            d = f.save(commit=False)
+            d.sales_order = order
+            d.tenant = request.user.tenant
+
+            # 商品マスタ単価をコピー
+            if d.product_id and not d.master_unit_price:
+                d.master_unit_price = d.product.unit_price
+
+            d.line_no = n
+            n += 1
+            d.save()
 
         sales_order_message(self.request, '更新', self.object.sales_order_no)
         return JsonResponse({'success': True})

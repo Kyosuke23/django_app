@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 from .models import SalesOrder, SalesOrderDetail
+from django.forms.models import BaseInlineFormSet
 
 
 class SalesOrderForm(forms.ModelForm):
@@ -10,13 +11,11 @@ class SalesOrderForm(forms.ModelForm):
     class Meta:
         model = SalesOrder
         fields = [
-            'sales_order_date',
             'partner',
             'remarks',
             'rounding_method',
         ]
         widgets = {
-            'sales_order_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
             'partner': forms.Select(attrs={'class': 'form-select'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'rounding_method': forms.Select(attrs={'class': 'form-select'}),
@@ -40,7 +39,6 @@ class SalesOrderDetailForm(forms.ModelForm):
         fields = [
             'product',
             'quantity',
-            'master_unit_price',
             'billing_unit_price',
             'is_tax_exempt',
             'tax_rate',
@@ -48,17 +46,32 @@ class SalesOrderDetailForm(forms.ModelForm):
         widgets = {
             'product': forms.Select(attrs={'class': 'form-select'}),
             'quantity': forms.NumberInput(attrs={'class': 'form-control text-end'}),
-            'master_unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'billing_unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'is_tax_exempt': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
             'tax_rate': forms.Select(attrs={'class': 'form-select'}),
         }
 
-# 受注明細の inline formset（新規で10行表示）
+class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        seen = set(); dup = set()
+        for f in self.forms:
+            if not hasattr(f, 'cleaned_data'):
+                continue
+            if f.cleaned_data.get('DELETE'):
+                continue
+            p = f.cleaned_data.get('product')
+            if not p:
+                continue
+            if p in seen: dup.add(p)
+            seen.add(p)
+        if dup:
+            names = ', '.join([p.product_name for p in dup])
+            raise forms.ValidationError(f'同一商品が複数行に登録されています: {names}')
+
 SalesOrderDetailFormSet = inlineformset_factory(
-    SalesOrder,
-    SalesOrderDetail,
+    SalesOrder, SalesOrderDetail,
     form=SalesOrderDetailForm,
-    extra=0,
-    can_delete=True
+    formset=BaseSalesOrderDetailFormSet,
+    extra=1, can_delete=True,
 )
