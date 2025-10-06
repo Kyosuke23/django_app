@@ -461,6 +461,9 @@ def get_editable(user, form):
     instance = getattr(form, 'instance', None)
     status_code = getattr(instance, 'status_code', None)  # 受注ステータス
     create_user = instance.create_user  # 作成者（担当者）
+    reference_users_manager = getattr(instance, 'reference_users', None)
+    reference_users = reference_users_manager.all() if reference_users_manager else []  # 参照ユーザー
+
     
     # 新規作成：作成者未設定は新規作成とし、編集可
     if not create_user:
@@ -470,4 +473,4 @@ def get_editable(user, form):
         return create_user == login_user
     # 社内承認待ち：承認依頼先の人のみ編集可
     if status_code == STATUS_CODE_SUBMITTED:
-        pass
+        return login_user in reference_users

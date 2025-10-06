@@ -36,11 +36,7 @@
     <div class="col-md-6">
       <label class="form-label">受注担当者</label>
       <p class="form-control-plaintext">
-        {% if form.instance.pk %}
-          {{ form.instance.create_user }}
-        {% else %}
-          {{ request.user }}
-        {% endif %}
+        {{ form.instance.create_user }}
       </p>
       {{ form.instance.create_user.as_hidden }}
     </div>
@@ -236,23 +232,36 @@
       </tr>
     </template>
   </div>
-
   {# フッターボタン #}
   <div class="d-flex justify-content-end gap-2 mt-3">
     {% if is_editable %}
-      <input type="hidden" name="action_type" id="actionTypeField" value="">
-      <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='DRAFT'">
-        下書き保存
-      </button>
-      <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='SUBMITTED'">
-        提出
-      </button>
-      {% if is_update %}
-        <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger">削除</button>
-        </form>
+      {# 受注ステータス：仮作成　#}
+      {% if form.instance.status_code == 'DRAFT' %}
+        <input type="hidden" name="action_type" id="actionTypeField" value="">
+        <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='DRAFT'">
+          下書き保存
+        </button>
+        <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='SUBMITTED'">
+          提出
+        </button>
+        {% if is_update %}
+          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">削除</button>
+          </form>
+        {% endif %}
       {% endif %}
+      {# 受注ステータス：社内承認待ち #}
+      {% if form.instance.status_code == 'SUBMITTED' %}
+        <input type="hidden" name="action_type" id="actionTypeField" value="">
+        <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='APPROVED'">
+          承認
+        </button>
+        <button type="submit" class="btn btn-danger" onclick="document.getElementById('actionTypeField').value='REJECTED_IN'">
+          却下
+        </button>
+      {% endif %}
+      
     {% else %}
       <div class="alert alert-secondary text-center w-100 mb-0">
         この受注は <strong>{{ form.instance.get_status_code_display }}</strong> のため編集できません。

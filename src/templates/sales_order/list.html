@@ -113,7 +113,7 @@
         <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
         <td>¥{{ sales_order.grand_total|floatformat:0|intcomma }}</td>
         <td>
-          {{ request.user.username }}
+          {{ sales_order.create_user }}
         </td>
         <td>{{ sales_order.remarks|truncatechars:20 }}</td>
         <td>
