@@ -7,6 +7,7 @@ from django.db.models import Max
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING, ROUND_HALF_UP
 from .constants import STATUS_CHOICES
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 
 User = get_user_model()
 
@@ -51,6 +52,18 @@ class SalesOrder(BaseModel):
         choices=ROUNDING_CHOICES,
         default='floor',
         verbose_name='丸め方法'
+    )
+    reference_users = models.ManyToManyField(
+        User,
+        related_name='referenced_sales_orders',
+        blank=True,
+        verbose_name='参照ユーザー'
+    )
+    reference_groups = models.ManyToManyField(
+        Group,
+        related_name='referenced_sales_orders',
+        blank=True,
+        verbose_name='参照グループ'
     )
     
     class Meta:

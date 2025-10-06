@@ -64,9 +64,6 @@ class SalesOrderListView(generic.ListView):
         context['search_status_code'] = self.request.GET.get('search_status_code') or ''
         context['search_partner'] = self.request.GET.get('search_partner') or ''
         context['status_choices'] = STATUS_CHOICES
-        context['partners'] = Partner.objects.filter(
-            is_deleted=False, tenant=self.request.user.tenant
-        ).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -142,8 +139,11 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
 
     def get(self, request, *args, **kwargs):
         self.object = None
-        form = self.get_form()
+        form = SalesOrderForm(prefix='header', user=request.user)
         formset = fill_formset(get_sales_order_detail_formset())
+        
+        # 編集可否判定
+        is_editable = get_editable(user=request.user, form=form)
 
         html = render_to_string(
             self.template_name,
@@ -153,6 +153,7 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
                 'form_action': reverse('sales_order:create'),
                 'modal_title': '受注新規登録',
                 'is_update': False,
+                'is_editable': is_editable,
             },
             request,
         )
@@ -221,7 +222,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     # ----------------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = SalesOrderForm(instance=self.object, prefix='header')
+        form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
         formset = get_sales_order_detail_formset(instance=self.object)
         
         # 編集可否判定
@@ -254,7 +255,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
-        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type)
+        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
 
         # バリデーション
@@ -285,6 +286,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
             self.object.update_user = request.user
             self.object.tenant = request.user.tenant
             self.object.save()
+            form.save_m2m()  # 参照ユーザーと参照グループの保存
 
             # 明細全削除
             SalesOrderDetail.objects.filter(sales_order=self.object).delete()
@@ -460,10 +462,12 @@ def get_editable(user, form):
     status_code = getattr(instance, 'status_code', None)  # 受注ステータス
     create_user = instance.create_user  # 作成者（担当者）
     
-    # 編集可否判定
+    # 新規作成：作成者未設定は新規作成とし、編集可
+    if not create_user:
+        return True
+    # 仮作成：自分の作成分データのみ編集可
     if status_code == STATUS_CODE_DRAFT:
-        # 仮作成：自分の作成分データのみ編集可
         return create_user == login_user
+    # 社内承認待ち：承認依頼先の人のみ編集可
     if status_code == STATUS_CODE_SUBMITTED:
-        # 社内承認待ち：承認依頼先の人のみ編集可
         pass
