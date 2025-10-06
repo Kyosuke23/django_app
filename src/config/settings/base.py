@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'product_mst.apps.ProductMstConfig',
     'sales_order.apps.SalesOrderConfig',
     'tenant_mst.apps.TenantMstConfig',
+    'config',
 ]
 
 MIDDLEWARE = [

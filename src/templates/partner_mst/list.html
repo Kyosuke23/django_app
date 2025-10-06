@@ -3,6 +3,7 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
+{% load formatters %}
 {# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'partner_mst:list' %}">
   {# ページタイトル & 操作用ボタン #}
@@ -144,9 +145,9 @@
           <td>{{ partner.get_partner_type_display }}</td>
           <td>{{ partner.contact_name|default_if_none:'' }}</td>
           <td>{{ partner.email|default_if_none:'' }}</td>
-          <td>{{ partner.tel_number|default_if_none:'' }}</td>
+          <td>{{ partner.tel_number|format_tel }}</td>
           <td>
-            {% if partner.postal_code %}〒{% endif %}{{ partner.postal_code|default_if_none:'' }}<br>
+            {% if partner.postal_code %}〒{% endif %}{{ partner.postal_code|format_postal|default_if_none:'' }}<br>
             {{ partner.state|default_if_none:'' }} {{ partner.city|default_if_none:'' }} {{ partner.address|default_if_none:'' }} {{ partner.address2|default_if_none:'' }}
           </td>
           <td>

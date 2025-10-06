@@ -1,6 +1,7 @@
 {% load django_bootstrap5 %}
 {% load widget_tweaks %}
 {% load humanize %}
+{% load formatters %}
 
 <div class="modal-header mb-3">
   <h4 class="modal-title">{{ modal_title }}</h4>
@@ -45,10 +46,10 @@
       <div class="col-md-12">
         <div id="partner-info" class="border rounded p-2 bg-light small text-muted">
           {% if form.instance.partner %}
-            {% if form.instance.partner.postal_code %}〒{{ form.instance.partner.postal_code|slice:":3" }}-{{ form.instance.partner.postal_code|slice:"3:" }}<br>{% endif %}
+            {% if form.instance.partner.postal_code %}〒{{ form.instance.partner.postal_code|format_postal }}<br>{% endif %}
             {% if form.instance.partner.state %}住所: {{ form.instance.partner.state }}{{ form.instance.partner.city }}{{ form.instance.partner.address }}{{ form.instance.partner.address2 }}<br>{% endif %}
             {% if form.instance.partner.contact_name %}担当者: {{ form.instance.partner.contact_name }}<br>{% endif %}
-            {% if form.instance.partner.tel_number %}TEL: {{ form.instance.partner.tel_number }}<br>{% endif %}
+            {% if form.instance.partner.tel_number %}TEL: {{ form.instance.partner.tel_number|format_tel }}<br>{% endif %}
             {% if form.instance.partner.email %}Email: {{ form.instance.partner.email }}{% endif %}
           {% else %}
             取引先を選択すると情報が表示されます
