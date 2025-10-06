@@ -17,6 +17,7 @@ def save_order_details(request, sales_order):
     - DELETE チェックがある行は物理削除
     '''
     total_forms = int(request.POST.get('details-TOTAL_FORMS', 0))
+    valid_line_no = 1  # 有効行のカウント用
 
     for i in range(total_forms):
         pk = request.POST.get(f'details-{i}-id')
@@ -30,9 +31,13 @@ def save_order_details(request, sales_order):
         if not product:
             continue
         
+        # 商品マスタ情報取得
         product_obj = Product.objects.get(pk=product, tenant=request.user.tenant)
-        master_price = product_obj.unit_price
-        master_unit = product_obj.unit
+        master_unit_price = product_obj.unit_price
+        
+        # 明細行Noの計算
+        line_no = valid_line_no
+        valid_line_no += 1
 
         if pk:  # 既存行の更新
             detail = SalesOrderDetail.objects.get(pk=pk, sales_order=sales_order)
@@ -41,21 +46,18 @@ def save_order_details(request, sales_order):
             detail.billing_unit_price = request.POST.get(f'details-{i}-billing_unit_price') or 0
             detail.tax_rate = request.POST.get(f'details-{i}-tax_rate') or 10
             detail.is_tax_exempt = bool(request.POST.get(f'details-{i}-is_tax_exempt'))
-            detail.rounding_method = request.POST.get(f'details-{i}-rounding_method') or 'floor'
             detail.update_user = request.user
             detail.save()
         else:  # 新規作成
             SalesOrderDetail.objects.create(
                 sales_order = sales_order,
-                line_no = i,
+                line_no = line_no,
                 product_id = product,
                 quantity = request.POST.get(f'details-{i}-quantity') or 0,
-                unit = master_unit,
-                master_unit = master_price,
+                master_unit_price = master_unit_price,
                 billing_unit_price = request.POST.get(f'details-{i}-billing_unit_price') or 0,
                 tax_rate = request.POST.get(f'details-{i}-tax_rate') or 10,
                 is_tax_exempt = bool(request.POST.get(f'details-{i}-is_tax_exempt')),
-                rounding_method = request.POST.get(f'details-{i}-rounding_method') or 'floor',
                 tenant = request.user.tenant,
                 create_user = request.user,
                 update_user = request.user,
