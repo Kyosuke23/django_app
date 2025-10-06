@@ -54,7 +54,7 @@ class SalesOrderDetailForm(forms.ModelForm):
 class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
     def clean(self):
         cleaned_data = super().clean()
-        seen = {}
+        seen = {}  # チェック後の商品名称が入る
         dup = set()
 
         for i, row in enumerate(self.forms):
@@ -64,8 +64,13 @@ class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
             if not data or data.get('DELETE'):
                 continue
 
+            # 選択された商品
             product = data.get('product')
+            
+            # 商品・単価・数量の相関チェック
             if not product:
+                if row.cleaned_data.get('quantity') or row.cleaned_data.get('unit_price'):
+                    row.add_error('product', f'商品を選択してください。')
                 continue
 
             # 同一商品を検出
@@ -81,6 +86,17 @@ class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
                 seen[product] = row
 
         return cleaned_data
+    
+    def _construct_form(self, i, **kwargs):
+        form = super()._construct_form(i, **kwargs)
+        # product が空なら、その行は空フォームとして許可
+        if not any([
+            form.data.get(f"{self.prefix}-{i}-product"),
+            form.data.get(f"{self.prefix}-{i}-quantity"),
+            form.data.get(f"{self.prefix}-{i}-billing_unit_price"),
+        ]):
+            form.empty_permitted = True
+        return form
 
 SalesOrderDetailFormSet = inlineformset_factory(
     SalesOrder, SalesOrderDetail,

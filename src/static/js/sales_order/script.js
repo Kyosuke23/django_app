@@ -206,4 +206,78 @@ $(function () {
       }
     });
   });
+
+  // =====================================================
+  // 明細行追加ボタン処理
+  // =====================================================
+  $(document).on('click', '#add-row-btn', function () {
+    const $detailBody = $('#detail-body');
+    const $emptyTemplate = $('#empty-form-template');
+    const $totalForms = $('#id_details-TOTAL_FORMS');
+    const formCount = parseInt($totalForms.val(), 10);
+
+    // templateの中身（<tr>付き）をDOM化
+    const $newRow = $($emptyTemplate.html().replace(/__prefix__/g, formCount).trim());
+
+    // tbody末尾に追加
+    $detailBody.append($newRow);
+
+    // Django formset 管理フォーム更新
+    $totalForms.val(formCount + 1);
+
+    // No.列を再採番
+    $detailBody.find('tr').each(function (i) {
+      $(this).find('td:first').text(i + 1);
+    });
+
+    // 追加した行を強調（視覚的フィードバック）
+    $newRow.hide().fadeIn(200).addClass('table-success');
+    setTimeout(() => $newRow.removeClass('table-success'), 800);
+
+    // 自動フォーカス：商品選択フィールドへ
+    const $productSelect = $newRow.find('select[name$="-product"]');
+    if ($productSelect.length) {
+      $productSelect.focus();        // 即座にフォーカス
+      $productSelect.select2?.('open'); // select2等を使用していれば自動オープン
+    }
+  });
+
+  // =====================================================
+  // 行削除ボタン処理
+  // =====================================================
+  $(document).on('click', '.delete-row-btn', function () {
+    const $row = $(this).closest('tr');
+    const $detailBody = $('#detail-body');
+    const $totalForms = $('input[id$="-TOTAL_FORMS"]');
+    const prefix = $totalForms.attr('id').replace(/^id_/, '').replace(/-TOTAL_FORMS$/, '');
+
+    // fadeOut後に削除
+    $row.fadeOut(150, function () {
+      $(this).remove();
+
+      // 行番号を振り直し
+      $detailBody.find('tr').each(function (i) {
+        $(this).find('td:first').text(i + 1);
+      });
+
+      // TOTAL_FORMS の値を再設定（削除後の実行行数に合わせる）
+      const currentCount = $detailBody.find('tr').length;
+      $totalForms.val(currentCount);
+
+      // ついでにフォームのname/idも整理しておく（__prefix__置換の整合性維持）
+      $detailBody.find('tr').each(function (i) {
+        $(this)
+          .find(':input')
+          .each(function () {
+            const name = $(this).attr('name');
+            const id = $(this).attr('id');
+            if (name) $(this).attr('name', name.replace(new RegExp(`${prefix}-\\d+-`), `${prefix}-${i}-`));
+            if (id) $(this).attr('id', id.replace(new RegExp(`id_${prefix}-\\d+-`), `id_${prefix}-${i}-`));
+          });
+      });
+
+      recalcTotals();
+    });
+  });
+
 });

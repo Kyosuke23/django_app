@@ -14,7 +14,7 @@
       data-delete-url="{% if form.instance.pk %}{% url 'sales_order:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
 
-  <!-- ★ form全体またはformset全体のエラー表示 -->
+  {# form全体のエラー表示 #}
   {% if formset.non_form_errors %}
     <div class="alert alert-danger">
       {{ formset.non_form_errors|safe }}
@@ -22,19 +22,17 @@
   {% endif %}
 
   <div class="row mb-3">
-    <!-- ステータス -->
+    {# ステータス #}
     <div class="col-md-3">
       <label class="form-label">ステータス</label>
       <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
     </div>
-
-    <!-- 受注日 -->
+    {# 受注日 #}
     <div class="col-md-3">
-      <label for="{{ form.sales_order_date.id_for_label }}" class="form-label">受注日</label>
+      <label class="form-label">受注日</label>
       <p class="form-control-plaintext">{{ form.instance.sales_order_date }}</p>
     </div>
-
-    <!-- 受注担当者 -->
+    {# 受注担当者 #}
     <div class="col-md-6">
       <label class="form-label">受注担当者</label>
       <p class="form-control-plaintext">
@@ -45,8 +43,7 @@
         {% endif %}
       </p>
     </div>
-
-    <!-- 取引先 -->
+    {# 取引先 #}
     <div class="col-md-12">
       <label for="{{ form.partner.id_for_label }}" class="form-label">取引先</label>
       {% render_field form.partner class="form-select" %}
@@ -54,8 +51,7 @@
         <div class="text-danger small">{{ form.partner.errors }}</div>
       {% endif %}
     </div>
-
-    <!-- 取引先情報 -->
+    {# 取引先情報 #}
     <div class="row mb-3">
       <div class="col-md-12">
         <div id="partner-info" class="border rounded p-2 bg-light small text-muted">
@@ -72,7 +68,7 @@
       </div>
     </div>
 
-    <!-- 備考 -->
+    {# 備考 #}
     <div class="col-md-12">
       <label for="{{ form.remarks.id_for_label }}" class="form-label">備考</label>
       {% render_field form.remarks class="form-control" rows="3" %}
@@ -82,6 +78,9 @@
     </div>
   </div>
 
+  {# ======================================= #}
+  {# 受注明細 #}
+  {# ======================================= #}
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
 
@@ -104,52 +103,68 @@
     </tbody>
   </table>
 
-  <!-- ★ 明細フォーム -->
+
+  {# 明細行追加ボタン #}
+  <div class="text-start mt-2 mb-2">
+    <button type="button" id="add-row-btn" class="btn btn-outline-primary btn-sm">
+      <svg class="icon text-primary" width="16" height="16">
+        <use href="#plus-circle"></use>
+      </svg>  明細行を追加
+    </button>
+  </div>
+
+  {# 受注明細テーブル #}
   <div class="table-responsive">
-    <table class="table table-bordered table-sm align-middle text-nowrap">
-      <thead class="table-light">
+    <table id="detail-table" class="table table-bordered table-sm align-middle text-nowrap">
+      <thead class="table-light text-center fw-bold">
         <tr>
           <th class="w-5">No.</th>
           <th class="w-25">商品</th>
           <th class="w-10">数量</th>
           <th class="w-10">単位</th>
           <th class="w-15">単価</th>
-          <th class="w-10">消費税率</th>
+          <th class="w-10">税率</th>
           <th class="w-5">税対象外</th>
           <th class="w-20">金額</th>
           <th class="w-5">削除</th>
         </tr>
       </thead>
-      <tbody>
-        {% for detail_form in formset %}
-        <tr class="{% if detail_form.errors %}table-danger{% endif %}">
+      <tbody id="detail-body">
+        {% for detail_form in formset.forms %}
+        <tr class="align-middle {% if detail_form.errors %}table-danger{% endif %}">
           {{ detail_form.id }}
           <td>{{ forloop.counter }}</td>
 
+          {# 商品 #}
           <td>
             {{ detail_form.product }}
             {% if detail_form.product.errors %}
               <div class="text-danger small">
-                {{ detail_form.product.errors.as_text }}
+                {{ detail_form.product.errors.as_text|linebreaksbr }}
               </div>
             {% endif %}
           </td>
 
+          {# 数量 #}
           <td>
             {{ detail_form.quantity }}
             {% if detail_form.quantity.errors %}
-              <div class="text-danger small">{{ detail_form.quantity.errors }}</div>
+              <div class="text-danger small">
+                {{ detail_form.quantity.errors.as_text|linebreaksbr }}
+              </div>
             {% endif %}
           </td>
 
-          <td class="unit-cell">
-            {{ detail_form.instance.product.unit }}
-          </td>
+          {# 単位 #}
+          <td class="unit-cell">{{ detail_form.instance.product.unit }}</td>
 
+          {# 単価 #}
           <td>
             {{ detail_form.billing_unit_price }}
             {% if detail_form.billing_unit_price.errors %}
-              <div class="text-danger small">{{ detail_form.billing_unit_price.errors }}</div>
+              <div class="text-danger small">
+                {{ detail_form.billing_unit_price.errors.as_text|linebreaksbr }}
+              </div>
             {% endif %}
           </td>
 
@@ -157,32 +172,57 @@
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
           <td class="text-end amount">{{ detail_form.instance.amount|intcomma }}</td>
 
-          {% if is_update %}
-            <td class="text-center">
-              <div class="form-check d-flex justify-content-center">
-                {% render_field detail_form.DELETE class="form-check-input" %}
-              </div>
-            </td>
-          {% endif %}
+          <td class="text-center">
+            {% render_field detail_form.DELETE class="form-check-input d-none" %}
+            <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">
+              <svg class="icon" width="16" height="16">
+                <use href="#trash"></use>
+              </svg>
+            </button>
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+
+    {# 明細行追加テンプレート #}
+    <template id="empty-form-template">
+      <tr class="align-middle">
+        {{ formset.empty_form.id }}
+        <td></td>
+        <td>{{ formset.empty_form.product }}</td>
+        <td>{{ formset.empty_form.quantity }}</td>
+        <td class="unit-cell"></td>
+        <td>{{ formset.empty_form.billing_unit_price }}</td>
+        <td>{{ formset.empty_form.tax_rate }}</td>
+        <td class="text-center">{{ formset.empty_form.is_tax_exempt }}</td>
+        <td class="text-end amount"></td>
+        <td class="text-center">
+          <input type="checkbox"
+                name="{{ formset.prefix }}-__prefix__-DELETE"
+                id="id_{{ formset.prefix }}-__prefix__-DELETE"
+                class="form-check-input d-none">
+          <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">
+            <svg class="icon" width="16" height="16">
+              <use href="#trash"></use>
+            </svg>
+          </button>
+        </td>
+      </tr>
+    </template>
   </div>
 
+  {# フッターボタン #}
   <div class="d-flex justify-content-end gap-2 mt-3">
     <input type="hidden" name="action_type" id="actionTypeField" value="">
-    <button type="submit" class="btn btn-primary"
-            onclick="document.getElementById('actionTypeField').value='draft'">
+    <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='draft'">
       下書き保存
     </button>
-    <button type="submit" class="btn btn-success"
-            onclick="document.getElementById('actionTypeField').value='submit'">
+    <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='submit'">
       提出
     </button>
     {% if is_update %}
-      <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
-            onsubmit="return confirm('本当に削除してよろしいですか？');">
+      <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
         {% csrf_token %}
         <button type="submit" class="btn btn-danger">削除</button>
       </form>
