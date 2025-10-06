@@ -9,11 +9,60 @@
 
 <form method="post" id="salesOrderForm" action="{{ form_action }}">
   {% csrf_token %}
-  <div class="mb-3">
-    <label class="form-label">ステータス</label>
-    <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
+  <div class="row mb-3">
+    <!-- ステータス -->
+    <div class="col-md-12">
+      <label class="form-label">ステータス</label>
+      <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
+    </div>
+
+    <!-- 受注日 -->
+    <div class="col-md-6">
+      <label for="{{ form.sales_order_date.id_for_label }}" class="form-label">受注日</label>
+      {% render_field form.sales_order_date class="form-control" type="date" %}
+    </div>
+
+    <!-- 受注担当者 -->
+    <div class="col-md-6">
+      <label class="form-label">受注担当者</label>
+      <p class="form-control-plaintext">
+        {% if form.instance.pk %}
+          {{ form.instance.create_user }}
+        {% else %}
+          {{ request.user }}
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- 取引先 -->
+    <div class="col-md-12">
+      <label for="{{ form.partner.id_for_label }}" class="form-label">取引先</label>
+      {% render_field form.partner class="form-select" %}
+    </div>
+
+    <!-- 取引先情報の表示領域 -->
+    <div class="row mb-3">
+      <div class="col-md-12">
+        <div id="partner-info" class="border rounded p-2 bg-light small text-muted">
+          {% if form.instance.partner %}
+            {% if form.instance.partner.postal_code %}〒{{ form.instance.partner.postal_code|slice:":3" }}-{{ form.instance.partner.postal_code|slice:"3:" }}<br>{% endif %}
+            {% if form.instance.partner.state %}住所: {{ form.instance.partner.state }}{{ form.instance.partner.city }}{{ form.instance.partner.address }}{{ form.instance.partner.address2 }}<br>{% endif %}
+            {% if form.instance.partner.contact_name %}担当者: {{ form.instance.partner.contact_name }}<br>{% endif %}
+            {% if form.instance.partner.tel_number %}TEL: {{ form.instance.partner.tel_number }}<br>{% endif %}
+            {% if form.instance.partner.email %}Email: {{ form.instance.partner.email }}{% endif %}
+          {% else %}
+            取引先を選択すると情報が表示されます
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- 備考 -->
+    <div class="col-md-12">
+      <label for="{{ form.remarks.id_for_label }}" class="form-label">備考</label>
+      {% render_field form.remarks class="form-control" rows="3" %}
+    </div>
   </div>
-  {% bootstrap_form form %}
 
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
@@ -21,13 +70,15 @@
   <table class="table table-bordered mb-3 w-100">
     <thead class="table-light text-center fw-bold">
       <tr>
-        <th class="w-33">小計</th>
-        <th class="w-33">消費税合計</th>
-        <th class="w-34">合計金額</th>
+        <th class="w-25">小数点処理</th>
+        <th class="w-25">小計</th>
+        <th class="w-25">消費税合計</th>
+        <th class="w-25">合計金額</th>
       </tr>
     </thead>
-    <tbody class="text-center">
+    <tbody class="text-center align-middle">
       <tr>
+        <td id="rounding-method">{{ form.rounding_method }}</td>
         <td id="subtotal">¥{{ form.instance.subtotal|floatformat:0|intcomma }}</td>
         <td id="tax-total">¥{{ form.instance.tax_total|floatformat:0|intcomma }}</td>
         <td id="grand-total" class="bg-warning">¥{{ form.instance.grand_total|floatformat:0|intcomma }}</td>

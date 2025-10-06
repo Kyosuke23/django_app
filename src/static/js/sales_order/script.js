@@ -137,4 +137,37 @@ $(function () {
       }
     });
   });
+
+  // 取引先選択時
+  $(document).on('change', '#id_partner', function() {
+    var partnerId = $(this).val();
+    if (!partnerId) {
+      $('#partner-info').html('取引先を選択すると情報が表示されます');
+      return;
+    }
+
+    $.ajax({
+      url: '/sales_order/partner/info/',
+      type: 'GET',
+      data: { 'partner_id': partnerId },
+      dataType: 'json',
+      success: function(data) {
+        if (data.error) {
+          $('#partner-info').html('<span class="text-danger">' + data.error + '</span>');
+          return;
+        }
+
+        // 取引先情報を整形して表示
+        var html = (data.postal_code ? '〒' + data.postal_code + '<br>' : '')
+                 + (data.address ? '住所: ' + data.address + '<br>' : '')
+                 + (data.contact_name ? '担当者: ' + data.contact_name + '<br>' : '')
+                 + (data.tel_number ? 'TEL: ' + data.tel_number + '<br>' : '')
+                 + (data.email ? 'Email: ' + data.email : '');
+        $('#partner-info').html(html);
+      },
+      error: function(xhr, status, error) {
+        $('#partner-info').html('<span class="text-danger">情報取得に失敗しました</span>');
+      }
+    });
+  });
 });

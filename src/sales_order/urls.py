@@ -15,4 +15,5 @@ urlpatterns = [
     path('create/', views.SalesOrderCreateModalView.as_view(), name='create'),
     path('<int:pk>/update/', views.SalesOrderUpdateModalView.as_view(), name='update'),
     path('product/info/', views.ProductInfoView.as_view(), name='product_info'),
+    path('partner/info/', views.PartnerInfoView.as_view(), name='partner_info'),
 ]

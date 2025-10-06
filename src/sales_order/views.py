@@ -218,6 +218,24 @@ class ProductInfoView(generic.View):
             })
         except Product.DoesNotExist:
             return JsonResponse({'error': '商品が見つかりません'}, status=404)
+        
+class PartnerInfoView(generic.View):
+    def get(self, request, *args, **kwargs):
+        partner_id = request.GET.get('partner_id')
+        try:
+            partner = Partner.objects.get(pk=partner_id, tenant=request.user.tenant)
+            return JsonResponse({
+                'postal_code': partner.postal_code,
+                'state': partner.state,
+                'city': partner.city,
+                'address': partner.address,
+                'address': partner.address2,
+                'contact_name': partner.contact_name,
+                'tel_number': partner.tel_number,
+                'email': partner.email,
+            })
+        except Partner.DoesNotExist:
+            return JsonResponse({'error': '取引先が見つかりません'}, status=404)
 
 # -----------------------------
 # Export / Import
