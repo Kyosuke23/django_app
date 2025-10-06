@@ -54,9 +54,9 @@ class SalesOrderForm(forms.ModelForm):
                 self.fields['partner'].queryset.filter(tenant=user.tenant)
             )
 
-            # --- reference_users: 同じテナント所属ユーザーを候補に ---
+            # --- reference_users: 同じテナント所属 & 管理者以上のユーザーを候補に ---
             self.fields['reference_users'].queryset = (
-                User.objects.filter(tenant=user.tenant)
+                User.objects.filter(tenant=user.tenant, privilege__lte=1)
                 .exclude(id=user.id)
                 .order_by('username')
             )
