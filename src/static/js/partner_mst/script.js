@@ -19,14 +19,27 @@ $(function () {
         $().import_data(this); // 既存の処理
     });
 
-    // モーダルフォーム共通処理を有効化
-    $(document).modal_form("#partnerModal");
-
     // 一括削除処理
     $('#check-all').checkAll('.check-item');
     $(document).on('click', '#bulk-delete-btn', function() {
         $('#bulk-delete-btn').call_bulk_delete('/partner_mst/bulk_delete/', '取引先');
     });
+
+    // 一覧画面へのSelect2適用
+    (($) => {
+        $(function() {
+            const partner_types = $('#search_partner_type');
+
+            const opt = {
+                width: '100%',
+                allowClear: true,
+                tags: false,
+                placeholder: '選択してください',
+            };
+
+            partner_types.select2({...opt, placeholder: '-- 全区分 --'});
+        });
+    })(jQuery);
 
     // 保存／削除ボタンの動的アクション切り替え
     $(document).on("click", "#editForm button[type=submit]", function (e) {
@@ -62,5 +75,25 @@ $(function () {
             // 保存時は通常のsubmitを利用
             form.attr("action", saveUrl);
         }
+    });
+
+    // =====================================================
+    // モーダルフォーム共通処理
+    // =====================================================
+    $(document).modal_form('#partnerModal', function($modal) {
+        // 適用先フォームの取得
+        const partner_types = $modal.find('#id_partner_type');
+
+        // Select2のオプション設定
+        const opt = {
+            width: '100%',
+            allowClear: true,
+            tags: false,
+            dropdownParent: $modal,
+            placeholder: '選択してください',
+        };
+
+        // Select2を適用
+        partner_types.select2({ ...opt, placeholder: '取引先区分を選択...' });
     });
 });

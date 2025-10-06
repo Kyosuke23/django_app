@@ -264,16 +264,15 @@ $(function () {
         });
     });
 
-    /**
-     * Select2の初期化処理
-     * 共通関数modal_form()内でコールバックされる
-     * @param {*} $modal 
-     */
-    const initSelect2 = function($modal) {
+    // =====================================================
+    // モーダルフォーム共通処理
+    // =====================================================
+    $(document).modal_form('#salesOrderModal', function($modal) {
         // 適用先フォームの取得
         const partners  = $modal.find('#id_header-partner');
         const ref_users  = $modal.find('#id_header-reference_users');
         const ref_groups = $modal.find('#id_header-reference_groups');
+        const products  = $modal.find('select[id^="id_details-"][id$="-product"]')
 
         // Select2のオプション設定
         const opt = {
@@ -288,11 +287,6 @@ $(function () {
         partners.select2({ ...opt, placeholder: '取引先を選択...' });
         ref_users.select2({ ...opt, placeholder: 'ユーザーを選択...' });
         ref_groups.select2({ ...opt, placeholder: 'グループを選択...' });
-    };
-
-
-    // =====================================================
-    // モーダルフォーム共通処理
-    // =====================================================
-    $(document).modal_form('#salesOrderModal', initSelect2);
+        products.select2({ ...opt, placeholder: '商品を選択...' });
+    });
 });

@@ -18,14 +18,29 @@ $(function () {
         $().import_data(this);
     });
 
-    // モーダルフォーム共通処理を有効化
-    $(document).modal_form("#userModal");
-
     // 一括削除処理
     $('#check-all').checkAll('.check-item');
     $(document).on('click', '#bulk-delete-btn', function() {
         $('#bulk-delete-btn').call_bulk_delete('/register/bulk_delete/', 'ユーザー');
     });
+
+    // 一覧画面へのSelect2適用
+    (($) => {
+        $(function() {
+            const privileges = $('#search_privilege');
+            const employment_statuses = $('#search_employment_status');
+
+            const opt = {
+                width: '100%',
+                allowClear: true,
+                tags: false,
+                placeholder: '選択してください',
+            };
+
+            privileges.select2({...opt, placeholder: '-- 権限を選択 --'});
+            employment_statuses.select2({...opt, placeholder: '-- 雇用状態を選択 --'});
+        });
+    })(jQuery);
 
     // 保存／削除ボタンの動的アクション切り替え
     $(document).on("click", "#editForm button[type=submit]", function (e) {
@@ -61,5 +76,26 @@ $(function () {
             // 保存時は通常のsubmitを利用
             form.attr("action", saveUrl);
         }
+    });
+    // =====================================================
+    // モーダルフォーム共通処理
+    // =====================================================
+    $(document).modal_form('#userModal', function($modal) {
+        // 適用先フォームの取得
+        const genders  = $modal.find('#id_gender');
+        const privileges = $modal.find('#id_privilege');
+
+        // Select2のオプション設定
+        const opt = {
+            width: '100%',
+            allowClear: true,
+            tags: false,
+            dropdownParent: $modal,
+            placeholder: '選択してください',
+        };
+
+        // Select2を適用
+        genders.select2({ ...opt, placeholder: '性別を選択...' });
+        privileges.select2({ ...opt, placeholder: '権限を選択...' });
     });
 });

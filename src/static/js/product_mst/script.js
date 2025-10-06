@@ -18,14 +18,29 @@ $(function () {
         $().import_data(this);
     });
 
-    // モーダルフォーム共通処理を有効化
-    $(document).modal_form('#productModal');
-
     // 一括削除処理
     $('#check-all').checkAll('.check-item');
     $(document).on('click', '#bulk-delete-btn', function() {
         $('#bulk-delete-btn').call_bulk_delete('/product_mst/bulk_delete/', '商品');
     });
+
+    // 一覧画面へのSelect2適用
+    (($) => {
+        $(function() {
+            const product_category_eidtor = $('#categoryId');
+            const product_categories = $('#search_product_category');
+
+            const opt = {
+                width: '100%',
+                allowClear: true,
+                tags: false,
+                placeholder: '選択してください',
+            };
+
+            product_category_eidtor.select2({...opt, placeholder: '--- 新規作成 ---'});
+            product_categories.select2({...opt, placeholder: '-- 全カテゴリ --'});
+        });
+    })(jQuery);
 
     // 保存／削除ボタンの動的アクション切り替え
     $(document).on('click', '#editForm button[type=submit]', function (e) {
@@ -82,5 +97,25 @@ $(function () {
         if (!confirm('本当に削除しますか？')) {
             e.preventDefault();
         }
+    });
+
+    // =====================================================
+    // モーダルフォーム共通処理
+    // =====================================================
+    $(document).modal_form('#productModal', function($modal) {
+        // 適用先フォームの取得
+        const categories  = $modal.find('#id_product_category');
+
+        // Select2のオプション設定
+        const opt = {
+            width: '100%',
+            allowClear: true,
+            tags: false,
+            dropdownParent: $modal,
+            placeholder: '選択してください',
+        };
+
+        // Select2を適用
+        categories.select2({ ...opt, placeholder: '商品カテゴリを選択...' });
     });
 });
