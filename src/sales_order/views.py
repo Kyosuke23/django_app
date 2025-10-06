@@ -139,7 +139,7 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
 
     def get(self, request, *args, **kwargs):
         self.object = None
-        form = self.get_form()
+        form = SalesOrderForm(prefix='header', user=request.user)
         formset = fill_formset(get_sales_order_detail_formset())
         
         # 編集可否判定

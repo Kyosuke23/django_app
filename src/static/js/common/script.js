@@ -153,75 +153,64 @@ $(function () {
      * @param {*} modalSelector モーダルのセレクタ
      */
     $.fn.modal_form = function (modalSelector, afterLoadCallback) {
-    const $modal = $(modalSelector);
+        const $modal = $(modalSelector);
 
-    // モーダル表示時にフォームをロード
-    $modal.on('show.bs.modal', function (e) {
-        const url = $(e.relatedTarget).data('url');
+        // モーダル表示時にフォームをロード
+        $modal.on('show.bs.modal', function (e) {
+            const url = $(e.relatedTarget).data('url');
 
-        $.ajax({
-        url: url,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        dataType: 'json',
-        })
-        .done(function (data) {
-        // HTMLを差し替え
-        $modal.find('.modal-body').html(data.html);
-
-        // ----------------------------------------------------
-        // オプション：afterLoadCallback があれば呼び出す
-        // ----------------------------------------------------
-        if (typeof afterLoadCallback === 'function') {
-            afterLoadCallback($modal);
-        }
-        })
-        .fail(function () {
-        $('#flash_message_area').flash_message({
-            text: 'フォームの読込に失敗しました',
-            class_name: 'error',
-            how: 'append',
-            time: 4000
+            $.ajax({
+                url: url,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                dataType: 'json',
+            })
+            .done(function (data) {
+                $modal.find('.modal-body').html(data.html);
+                afterLoadCallback($modal);
+            })
+            .fail(function () {
+                $('#flash_message_area').flash_message({
+                    text: 'フォームの読込に失敗しました',
+                    class_name: 'error',
+                    how: 'append',
+                    time: 4000
+                });
+            });
         });
+
+        // モーダル内フォーム送信
+        $modal.on('submit', 'form', function (e) {
+            e.preventDefault();
+            const $form = $(this);
+
+            $.ajax({
+                url: $form.attr('action') || window.location.href,
+                type: 'POST',
+                data: new FormData(this),
+                processData: false,
+                contentType: false,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                dataType: 'json'
+            })
+            .done(function (data) {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    $modal.find('.modal-body').html(data.html);
+                    afterLoadCallback($modal);
+                }
+            })
+            .fail(function () {
+                $('#flash_message_area').flash_message({
+                    text: 'サーバー通信に失敗しました',
+                    class_name: 'error',
+                    how: 'append',
+                    time: 4000
+                });
+            });
         });
-    });
 
-    // モーダル内フォーム送信
-    $modal.on('submit', 'form', function (e) {
-        e.preventDefault();
-        const $form = $(this);
-
-        $.ajax({
-        url: $form.attr('action') || window.location.href,
-        type: 'POST',
-        data: new FormData(this),
-        processData: false,
-        contentType: false,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' },
-        dataType: 'json'
-        })
-        .done(function (data) {
-        if (data.success) {
-            location.reload();
-        } else {
-            $modal.find('.modal-body').html(data.html);
-
-            // POST後も再初期化したい場合に対応
-            if (typeof afterLoadCallback === 'function') {
-            afterLoadCallback($modal);
-            }
-        }
-        })
-        .fail(function () {
-        $('#flash_message_area').flash_message({
-            text: 'サーバー通信に失敗しました',
-            class_name: 'error',
-            how: 'append',
-            time: 4000
-        });
-        });
-    });
-
-    return this;
+        return this;
     };
 
 
