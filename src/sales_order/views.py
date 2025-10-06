@@ -141,6 +141,9 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
         self.object = None
         form = self.get_form()
         formset = fill_formset(get_sales_order_detail_formset())
+        
+        # 編集可否判定
+        is_editable = get_editable(user=request.user, form=form)
 
         html = render_to_string(
             self.template_name,
@@ -150,6 +153,7 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
                 'form_action': reverse('sales_order:create'),
                 'modal_title': '受注新規登録',
                 'is_update': False,
+                'is_editable': is_editable,
             },
             request,
         )
@@ -458,10 +462,12 @@ def get_editable(user, form):
     status_code = getattr(instance, 'status_code', None)  # 受注ステータス
     create_user = instance.create_user  # 作成者（担当者）
     
-    # 編集可否判定
+    # 新規作成：作成者未設定は新規作成とし、編集可
+    if not create_user:
+        return True
+    # 仮作成：自分の作成分データのみ編集可
     if status_code == STATUS_CODE_DRAFT:
-        # 仮作成：自分の作成分データのみ編集可
         return create_user == login_user
+    # 社内承認待ち：承認依頼先の人のみ編集可
     if status_code == STATUS_CODE_SUBMITTED:
-        # 社内承認待ち：承認依頼先の人のみ編集可
         pass
