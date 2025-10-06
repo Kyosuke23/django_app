@@ -46,9 +46,13 @@
     {# 取引先 #}
     <div class="col-md-12">
       <label for="{{ form.partner.id_for_label }}" class="form-label">取引先</label>
-      {% render_field form.partner class="form-select" %}
       {% if form.partner.errors %}
-        <div class="text-danger small">{{ form.partner.errors }}</div>
+        {% render_field form.partner class="form-select is-invalid" %}
+        <div class="invalid-feedback d-block">
+          {{ form.partner.errors|join:", " }}
+        </div>
+      {% else %}
+        {% render_field form.partner class="form-select" %}
       {% endif %}
     </div>
     {# 取引先情報 #}
@@ -215,10 +219,10 @@
   {# フッターボタン #}
   <div class="d-flex justify-content-end gap-2 mt-3">
     <input type="hidden" name="action_type" id="actionTypeField" value="">
-    <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='draft'">
+    <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='DRAFT'">
       下書き保存
     </button>
-    <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='submit'">
+    <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='SUBMITTED'">
       提出
     </button>
     {% if is_update %}

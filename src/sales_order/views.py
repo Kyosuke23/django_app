@@ -13,6 +13,7 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from .utils import fill_formset
 from django.db import transaction
+from .constants import STATUS_CHOICES
 
 DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'remarks',
@@ -62,7 +63,7 @@ class SalesOrderListView(generic.ListView):
         context['search_sales_order_no'] = self.request.GET.get('search_sales_order_no') or ''
         context['search_status_code'] = self.request.GET.get('search_status_code') or ''
         context['search_partner'] = self.request.GET.get('search_partner') or ''
-        context['status_choices'] = SalesOrder.STATUS_CHOICES
+        context['status_choices'] = STATUS_CHOICES
         context['partners'] = Partner.objects.filter(
             is_deleted=False, tenant=self.request.user.tenant
         ).order_by('id')
@@ -161,57 +162,54 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
     # POST（登録処理）
     # ----------------------------------------------------
     def post(self, request, *args, **kwargs):
-        self.object = None
-        form = SalesOrderForm(request.POST, prefix='header', user=request.user)
+        form = SalesOrderForm(request.POST, prefix='header')
         formset = SalesOrderDetailFormSet(request.POST, prefix='details')
 
-        # バリデーション
+        # ▼ バリデーション
         if not (form.is_valid() and formset.is_valid()):
-            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                html = render_to_string(
-                    self.template_name,
-                    {
-                        'form': form,
-                        'formset': formset,
-                        'form_action': reverse('sales_order:create'),
-                        'modal_title': '受注新規登録',
-                        'is_update': False,
-                    },
-                    request,
-                )
-                return JsonResponse({'success': False, 'html': html})
-            return super().form_invalid(form)
+            html = render_to_string(
+                self.template_name,
+                {
+                    'form': form,
+                    'formset': formset,
+                    'form_action': reverse('sales_order:create'),
+                    'modal_title': '受注登録',
+                    'is_update': False,
+                },
+                request,
+            )
+            return JsonResponse({'success': False, 'html': html})
 
-        # ヘッダ保存
-        self.object = form.save(commit=False)
-        self.object.create_user = request.user
-        self.object.update_user = request.user
-        self.object.tenant = request.user.tenant
-        self.object.save()
+        with transaction.atomic():
+            # ヘッダ保存
+            sales_order = form.save(commit=False)
+            sales_order.create_user = request.user
+            sales_order.update_user = request.user
+            sales_order.tenant = request.user.tenant
+            sales_order.save()
 
-        # 明細保存
-        n = 1
-        for f in formset.forms:
-            if not f.cleaned_data:
-                continue
-            if f.cleaned_data.get('DELETE'):
-                continue
-            if not f.cleaned_data.get('product'):
-                continue
+            # 明細登録
+            line_no = 1
+            for f in formset.forms:
+                if not f.cleaned_data:
+                    continue
+                if not f.cleaned_data.get('product'):
+                    continue
 
-            d = f.save(commit=False)
-            d.sales_order = self.object
-            d.tenant = request.user.tenant
+                d = f.save(commit=False)
+                d.sales_order = sales_order
+                d.tenant = request.user.tenant
+                d.line_no = line_no
 
-            # 商品マスタ単価をコピー
-            if d.product_id and not d.master_unit_price:
-                d.master_unit_price = d.product.unit_price
+                # 単価が空なら商品マスタ単価を使用
+                if d.product_id and not d.master_unit_price:
+                    d.master_unit_price = d.product.unit_price
 
-            d.line_no = n
-            n += 1
-            d.save()
+                d.save()
+                line_no += 1
 
-        sales_order_message(self.request, '登録', self.object.sales_order_no)
+        # 成功メッセージ
+        sales_order_message(request, '登録', sales_order.sales_order_no)
         return JsonResponse({'success': True})
 
 
@@ -245,30 +243,12 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     # ----------------------------------------------------
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
-
-        form = SalesOrderForm(request.POST, instance=self.object, prefix='header')
+        action_type = request.POST.get('action_type')
+        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type)
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
 
         # バリデーション
         if not (form.is_valid() and formset.is_valid()):
-            import pprint
-            print("---- [DEBUG] form.errors ----")
-            pprint.pprint(form.errors)
-
-            print("---- [DEBUG] form.non_field_errors ----")
-            pprint.pprint(form.non_field_errors())
-
-            print("---- [DEBUG] formset.non_form_errors ----")
-            pprint.pprint(formset.non_form_errors())
-
-            print("---- [DEBUG] formset.errors ----")
-            for i, e in enumerate(formset.errors):
-                print(f"  formset[{i}]: {e}")
-
-            # optional: 明細データも確認
-            for i, f in enumerate(formset.forms):
-                print(f"  [{i}] cleaned_data (raw): {getattr(f, 'cleaned_data', None)}")
-
             if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 obj = getattr(self, 'object', None)
                 modal_title = f'受注更新: {obj.sales_order_no}' if obj else '受注更新'
@@ -289,17 +269,17 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
             return super().form_invalid(form)
 
         with transaction.atomic():
-            # --- ヘッダ保存 ---
-
+            # ヘッダ保存
             self.object = form.save(commit=False)
+            self.object.status_code = action_type
             self.object.update_user = request.user
             self.object.tenant = request.user.tenant
             self.object.save()
 
-            # --- 明細全削除 ---
+            # 明細全削除
             SalesOrderDetail.objects.filter(sales_order=self.object).delete()
 
-            # --- 明細再登録 ---
+            # 明細再登録
             line_no = 1
             for f in formset.forms:
                 if not f.cleaned_data:

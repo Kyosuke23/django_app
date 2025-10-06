@@ -5,6 +5,7 @@ from django.db.models import Max
 from django.utils import timezone
 from django.db.models import Max
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING, ROUND_HALF_UP
+from .constants import STATUS_CHOICES
 
 def generate_sales_order_no(tenant):
     year = timezone.now().strftime('%Y')
@@ -28,21 +29,6 @@ def generate_sales_order_no(tenant):
     return f'{prefix}{new_seq:06d}'
 
 class SalesOrder(BaseModel):
-    STATUS_CHOICES = [
-        ('DRAFT', '仮作成'),
-        ('SUBMITTED', '社内承認待ち'),
-        ('APPROVED', '社内承認済'),
-        ('REJECTED_IN', '社内却下'),
-        ('CONFIRMED', '顧客承諾済'),
-        ('REJECTED_OUT', '顧客却下'),
-        # ('READY_SHIP', '出荷待ち'),
-        # ('SHIPPED', '出荷済'),
-        # ('BILLED', '請求済'),
-        # ('PAID', '入金済'),
-        ('CANCELED', 'キャンセル'),
-    ]
-
-
     ROUNDING_CHOICES = [
         ('floor', '切り捨て'),
         ('ceil', '切り上げ'),

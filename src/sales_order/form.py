@@ -1,6 +1,7 @@
 from django import forms
 from django.forms import inlineformset_factory
 from .models import SalesOrder, SalesOrderDetail
+from .constants import STATUS_CODE_DRAFT
 from django.forms.models import BaseInlineFormSet
 
 
@@ -23,12 +24,23 @@ class SalesOrderForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        self.action_type = kwargs.pop('action_type', None)
         super().__init__(*args, **kwargs)
         if user is not None:
             self.fields['partner'].queryset = (
                 # テナントに紐づく取引先だけに絞る
                 self.fields['partner'].queryset.filter(tenant=user.tenant)
             )
+            
+    def clean(self):
+        cleaned_data = super().clean()
+        partner = cleaned_data.get('partner')
+
+        # ステータスが仮作成以外かつ取引先未選択
+        if self.action_type != STATUS_CODE_DRAFT and not partner:
+            self.add_error('partner', '取引先を選択してください。')
+
+        return cleaned_data
 
 class SalesOrderDetailForm(forms.ModelForm):
     '''
