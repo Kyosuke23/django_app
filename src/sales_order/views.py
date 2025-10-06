@@ -13,7 +13,7 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
 from .utils import fill_formset
 from django.db import transaction
-from .constants import STATUS_CHOICES
+from .constants import STATUS_CHOICES, STATUS_CODE_DRAFT, STATUS_CODE_SUBMITTED
 
 DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'remarks',
@@ -221,9 +221,18 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     # ----------------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        # prefix を統一（POST と同じ）
         form = SalesOrderForm(instance=self.object, prefix='header')
         formset = get_sales_order_detail_formset(instance=self.object)
+        
+        # 編集可否判定
+        is_editable = get_editable(user=request.user, form=form)
+        # フィールドの一括制御
+        if not is_editable:
+            for field in form.fields.values():
+                field.widget.attrs['disabled'] = True
+            for f in formset.forms:
+                for field in f.fields.values():
+                    field.widget.attrs['disabled'] = True
 
         html = render_to_string(
             self.template_name,
@@ -233,6 +242,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
                 'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
                 'modal_title': f'受注更新: {self.object.sales_order_no}',
                 'is_update': True,
+                'is_editable': is_editable, 
             },
             request,
         )
@@ -440,3 +450,20 @@ def get_sales_order_detail_formset(instance=None, data=None):
     )
 
     return DynamicFormSet(data=data, instance=instance)
+
+def get_editable(user, form):
+    # ログインユーザー
+    login_user = user
+    
+    # 受注データ情報
+    instance = getattr(form, 'instance', None)
+    status_code = getattr(instance, 'status_code', None)  # 受注ステータス
+    create_user = instance.create_user  # 作成者（担当者）
+    
+    # 編集可否判定
+    if status_code == STATUS_CODE_DRAFT:
+        # 仮作成：自分の作成分データのみ編集可
+        return create_user == login_user
+    if status_code == STATUS_CODE_SUBMITTED:
+        # 社内承認待ち：承認依頼先の人のみ編集可
+        pass

@@ -6,6 +6,9 @@ from django.utils import timezone
 from django.db.models import Max
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING, ROUND_HALF_UP
 from .constants import STATUS_CHOICES
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 def generate_sales_order_no(tenant):
     year = timezone.now().strftime('%Y')
