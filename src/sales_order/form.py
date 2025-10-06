@@ -53,21 +53,34 @@ class SalesOrderDetailForm(forms.ModelForm):
 
 class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
     def clean(self):
-        super().clean()
-        seen = set(); dup = set()
-        for f in self.forms:
-            if not hasattr(f, 'cleaned_data'):
+        cleaned_data = super().clean()
+        seen = {}
+        dup = set()
+
+        for i, row in enumerate(self.forms):
+            if not hasattr(row, 'cleaned_data'):
                 continue
-            if f.cleaned_data.get('DELETE'):
+            data = row.cleaned_data
+            if not data or data.get('DELETE'):
                 continue
-            p = f.cleaned_data.get('product')
-            if not p:
+
+            product = data.get('product')
+            if not product:
                 continue
-            if p in seen: dup.add(p)
-            seen.add(p)
-        if dup:
-            names = ', '.join([p.product_name for p in dup])
-            raise forms.ValidationError(f'同一商品が複数行に登録されています: {names}')
+
+            # 同一商品を検出
+            if product in seen:
+                dup.add(product)
+                # エラーメッセージ
+                error_msg = f'同一商品が複数行に登録されています（{product.product_name}）。'
+                # 2行目以降にもエラーを表示
+                row.add_error('product', error_msg)
+                # 最初の行にもエラーを表示（ユーザーが気づきやすいように）
+                seen[product].add_error('product', error_msg)
+            else:
+                seen[product] = row
+
+        return cleaned_data
 
 SalesOrderDetailFormSet = inlineformset_factory(
     SalesOrder, SalesOrderDetail,

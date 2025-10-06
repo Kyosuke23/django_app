@@ -28,7 +28,7 @@ $(function () {
         $('#bulk-delete-btn').call_bulk_delete('/partner_mst/bulk_delete/', '取引先');
     });
 
-      // 保存／削除ボタンの動的アクション切り替え
+    // 保存／削除ボタンの動的アクション切り替え
     $(document).on("click", "#editForm button[type=submit]", function (e) {
         const form = $("#editForm");
         const action = $(this).data("action");

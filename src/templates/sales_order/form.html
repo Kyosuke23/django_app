@@ -8,8 +8,19 @@
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
-<form method="post" id="salesOrderForm" action="{{ form_action }}">
+<form method="post" id="editForm"
+      action="{{ form_action }}"
+      data-save-url="{{ form_action }}"
+      data-delete-url="{% if form.instance.pk %}{% url 'sales_order:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
+
+  <!-- ★ form全体またはformset全体のエラー表示 -->
+  {% if formset.non_form_errors %}
+    <div class="alert alert-danger">
+      {{ formset.non_form_errors|safe }}
+    </div>
+  {% endif %}
+
   <div class="row mb-3">
     <!-- ステータス -->
     <div class="col-md-3">
@@ -39,9 +50,12 @@
     <div class="col-md-12">
       <label for="{{ form.partner.id_for_label }}" class="form-label">取引先</label>
       {% render_field form.partner class="form-select" %}
+      {% if form.partner.errors %}
+        <div class="text-danger small">{{ form.partner.errors }}</div>
+      {% endif %}
     </div>
 
-    <!-- 取引先情報の表示領域 -->
+    <!-- 取引先情報 -->
     <div class="row mb-3">
       <div class="col-md-12">
         <div id="partner-info" class="border rounded p-2 bg-light small text-muted">
@@ -62,6 +76,9 @@
     <div class="col-md-12">
       <label for="{{ form.remarks.id_for_label }}" class="form-label">備考</label>
       {% render_field form.remarks class="form-control" rows="3" %}
+      {% if form.remarks.errors %}
+        <div class="text-danger small">{{ form.remarks.errors }}</div>
+      {% endif %}
     </div>
   </div>
 
@@ -86,8 +103,10 @@
       </tr>
     </tbody>
   </table>
-  <div class="">
-    <table class="table table-bordered table-sm align-middle text-nowrap table-responsive">
+
+  <!-- ★ 明細フォーム -->
+  <div class="table-responsive">
+    <table class="table table-bordered table-sm align-middle text-nowrap">
       <thead class="table-light">
         <tr>
           <th class="w-5">No.</th>
@@ -103,18 +122,41 @@
       </thead>
       <tbody>
         {% for detail_form in formset %}
-        <tr>
+        <tr class="{% if detail_form.errors %}table-danger{% endif %}">
           {{ detail_form.id }}
           <td>{{ forloop.counter }}</td>
-          <td>{{ detail_form.product }}</td>
-          <td>{{ detail_form.quantity }}</td>
-          <td class="unit-cell">{{ detail_form.instance.product.unit }}</td>
-          <td>{{ detail_form.billing_unit_price }}</td>
+
+          <td>
+            {{ detail_form.product }}
+            {% if detail_form.product.errors %}
+              <div class="text-danger small">
+                {{ detail_form.product.errors.as_text }}
+              </div>
+            {% endif %}
+          </td>
+
+          <td>
+            {{ detail_form.quantity }}
+            {% if detail_form.quantity.errors %}
+              <div class="text-danger small">{{ detail_form.quantity.errors }}</div>
+            {% endif %}
+          </td>
+
+          <td class="unit-cell">
+            {{ detail_form.instance.product.unit }}
+          </td>
+
+          <td>
+            {{ detail_form.billing_unit_price }}
+            {% if detail_form.billing_unit_price.errors %}
+              <div class="text-danger small">{{ detail_form.billing_unit_price.errors }}</div>
+            {% endif %}
+          </td>
+
           <td>{{ detail_form.tax_rate }}</td>
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
-          <td class="text-end amount">
-            {{ detail_form.instance.amount|intcomma }}
-          </td>
+          <td class="text-end amount">{{ detail_form.instance.amount|intcomma }}</td>
+
           {% if is_update %}
             <td class="text-center">
               <div class="form-check d-flex justify-content-center">
@@ -146,5 +188,4 @@
       </form>
     {% endif %}
   </div>
-
 </form>
