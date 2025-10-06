@@ -270,25 +270,26 @@ $(function () {
      * @param {*} $modal 
      */
     const initSelect2 = function($modal) {
-      // 適用先フォームを取得
-      const partners = $modal.find('#id_header-partner');
-      const ref_users  = $modal.find('#id_header-reference_users');
-      const ref_groups = $modal.find('#id_header-reference_groups');
+        // 適用先フォームの取得
+        const partners  = $modal.find('#id_header-partner');
+        const ref_users  = $modal.find('#id_header-reference_users');
+        const ref_groups = $modal.find('#id_header-reference_groups');
 
-      // Select2オプション設定
-      const opts = {
-        width: '100%',
-        allowClear: true,
-        tags: false,
-        dropdownParent: $modal,
-        placeholder: '選択してください',
-      };
+        // Select2のオプション設定
+        const opt = {
+            width: '100%',
+            allowClear: true,
+            tags: false,
+            dropdownParent: $modal,
+            placeholder: '選択してください',
+        };
 
-      // Select2を有効化
-      if (partners.length) partners.select2({opts});
-      if (ref_users.length) partners.select2({opts});
-      if (ref_groups.length) partners.select2({opts});
+        // Select2を適用
+        partners.select2({ ...opt, placeholder: '取引先を選択...' });
+        ref_users.select2({ ...opt, placeholder: 'ユーザーを選択...' });
+        ref_groups.select2({ ...opt, placeholder: 'グループを選択...' });
     };
+
 
     // =====================================================
     // モーダルフォーム共通処理
