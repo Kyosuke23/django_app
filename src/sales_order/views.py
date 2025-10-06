@@ -64,9 +64,6 @@ class SalesOrderListView(generic.ListView):
         context['search_status_code'] = self.request.GET.get('search_status_code') or ''
         context['search_partner'] = self.request.GET.get('search_partner') or ''
         context['status_choices'] = STATUS_CHOICES
-        context['partners'] = Partner.objects.filter(
-            is_deleted=False, tenant=self.request.user.tenant
-        ).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -221,7 +218,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     # ----------------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = SalesOrderForm(instance=self.object, prefix='header')
+        form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
         formset = get_sales_order_detail_formset(instance=self.object)
         
         # 編集可否判定
@@ -254,7 +251,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
-        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type)
+        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
 
         # バリデーション
@@ -285,6 +282,7 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
             self.object.update_user = request.user
             self.object.tenant = request.user.tenant
             self.object.save()
+            form.save_m2m()  # 参照ユーザーと参照グループの保存
 
             # 明細全削除
             SalesOrderDetail.objects.filter(sales_order=self.object).delete()

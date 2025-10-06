@@ -72,13 +72,35 @@
         </div>
       </div>
     </div>
-
     {# 備考 #}
     <div class="col-md-12">
       <label for="{{ form.remarks.id_for_label }}" class="form-label">備考</label>
       {% render_field form.remarks class="form-control" rows="3" %}
       {% if form.remarks.errors %}
         <div class="text-danger small">{{ form.remarks.errors }}</div>
+      {% endif %}
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">参照ユーザー</label>
+      {% if form.reference_users.errors %}
+        {% render_field form.reference_users class="form-select is-invalid" %}
+        <div class="invalid-feedback d-block">
+          {{ form.reference_users.errors|join:", " }}
+        </div>
+      {% else %}
+        {% render_field form.reference_users class="form-select" %}
+      {% endif %}
+    </div>
+
+    <div class="col-md-6">
+      <label class="form-label">参照グループ</label>
+      {% if form.reference_groups.errors %}
+        {% render_field form.reference_groups class="form-select is-invalid" %}
+        <div class="invalid-feedback d-block">
+          {{ form.reference_groups.errors|join:", " }}
+        </div>
+      {% else %}
+        {% render_field form.reference_groups class="form-select" %}
       {% endif %}
     </div>
   </div>
@@ -219,10 +241,10 @@
   <div class="d-flex justify-content-end gap-2 mt-3">
     {% if is_editable %}
       <input type="hidden" name="action_type" id="actionTypeField" value="">
-      <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='draft'">
+      <button type="submit" class="btn btn-primary" onclick="document.getElementById('actionTypeField').value='DRAFT'">
         下書き保存
       </button>
-      <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='submit'">
+      <button type="submit" class="btn btn-success" onclick="document.getElementById('actionTypeField').value='SUBMIT'">
         提出
       </button>
       {% if is_update %}

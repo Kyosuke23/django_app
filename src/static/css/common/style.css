@@ -131,3 +131,8 @@ input[disabled], select[disabled], textarea[disabled] {
   color: #6c757d !important;
   cursor: not-allowed;
 }
+
+/* 初期は非表示 */
+select.select2-hidden-initial {
+  visibility: hidden;
+}

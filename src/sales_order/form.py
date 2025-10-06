@@ -1,20 +1,41 @@
 from django import forms
 from django.forms import inlineformset_factory
+from django.forms.models import BaseInlineFormSet
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from .models import SalesOrder, SalesOrderDetail
 from .constants import STATUS_CODE_DRAFT
-from django.forms.models import BaseInlineFormSet
+
+User = get_user_model()
 
 
 class SalesOrderForm(forms.ModelForm):
     '''
     受注ヘッダ用フォーム
+    - partner, remarks, rounding_method に加え
+    - 提出時に参照可能なユーザー・グループを指定できる
     '''
+    reference_users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        label='参照ユーザー'
+    )
+    reference_groups = forms.ModelMultipleChoiceField(
+        queryset=Group.objects.all(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
+        label='参照グループ'
+    )
+
     class Meta:
         model = SalesOrder
         fields = [
             'partner',
             'remarks',
             'rounding_method',
+            'reference_users',
+            'reference_groups',
         ]
         widgets = {
             'partner': forms.Select(attrs={'class': 'form-select'}),
@@ -26,12 +47,29 @@ class SalesOrderForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         self.action_type = kwargs.pop('action_type', None)
         super().__init__(*args, **kwargs)
+
         if user is not None:
+            # --- partner をテナント内に限定 ---
             self.fields['partner'].queryset = (
-                # テナントに紐づく取引先だけに絞る
                 self.fields['partner'].queryset.filter(tenant=user.tenant)
             )
-            
+
+            # --- reference_users: 同じテナント所属ユーザーを候補に ---
+            self.fields['reference_users'].queryset = (
+                User.objects.filter(tenant=user.tenant)
+                .exclude(id=user.id)
+                .order_by('username')
+            )
+
+            # --- reference_groups: テナント紐づきグループがある場合 ---
+            if hasattr(user, 'tenant') and hasattr(user.tenant, 'groups'):
+                self.fields['reference_groups'].queryset = (
+                    user.tenant.groups.all().order_by('name')
+                )
+            else:
+                # テナントとグループが未連携なら全グループから選択
+                self.fields['reference_groups'].queryset = Group.objects.all().order_by('name')
+
     def clean(self):
         cleaned_data = super().clean()
         partner = cleaned_data.get('partner')
@@ -41,6 +79,7 @@ class SalesOrderForm(forms.ModelForm):
             self.add_error('partner', '取引先を選択してください。')
 
         return cleaned_data
+
 
 class SalesOrderDetailForm(forms.ModelForm):
     '''
@@ -63,10 +102,11 @@ class SalesOrderDetailForm(forms.ModelForm):
             'tax_rate': forms.Select(attrs={'class': 'form-select'}),
         }
 
+
 class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
     def clean(self):
         cleaned_data = super().clean()
-        seen = {}  # チェック後の商品名称が入る
+        seen = {}
         dup = set()
 
         for i, row in enumerate(self.forms):
@@ -76,32 +116,28 @@ class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
             if not data or data.get('DELETE'):
                 continue
 
-            # 選択された商品
             product = data.get('product')
-            
+
             # 商品・単価・数量の相関チェック
             if not product:
                 if row.cleaned_data.get('quantity') or row.cleaned_data.get('unit_price'):
-                    row.add_error('product', f'商品を選択してください。')
+                    row.add_error('product', '商品を選択してください。')
                 continue
 
-            # 同一商品を検出
+            # 同一商品チェック
             if product in seen:
                 dup.add(product)
-                # エラーメッセージ
                 error_msg = f'同一商品が複数行に登録されています（{product.product_name}）。'
-                # 2行目以降にもエラーを表示
                 row.add_error('product', error_msg)
-                # 最初の行にもエラーを表示（ユーザーが気づきやすいように）
                 seen[product].add_error('product', error_msg)
             else:
                 seen[product] = row
 
         return cleaned_data
-    
+
     def _construct_form(self, i, **kwargs):
         form = super()._construct_form(i, **kwargs)
-        # product が空なら、その行は空フォームとして許可
+        # 空行を許可
         if not any([
             form.data.get(f"{self.prefix}-{i}-product"),
             form.data.get(f"{self.prefix}-{i}-quantity"),
@@ -109,6 +145,7 @@ class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
         ]):
             form.empty_permitted = True
         return form
+
 
 SalesOrderDetailFormSet = inlineformset_factory(
     SalesOrder, SalesOrderDetail,
