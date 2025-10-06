@@ -54,7 +54,6 @@ class ProductListView(generic.ListView):
         context['search_product_category'] = self.request.GET.get('search_product_category') or ''
         context['search_unit_price_min'] = self.request.GET.get('search_unit_price_min') or ''
         context['search_unit_price_max'] = self.request.GET.get('search_unit_price_max') or ''
-        context['categories'] = ProductCategory.objects.filter(is_deleted=False, tenant=self.request.user.tenant).order_by('id')
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
