@@ -222,6 +222,23 @@ class SalesOrderUpdateView(generic.UpdateView):
             # 最新の状態を再描画
             form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
             formset = get_sales_order_detail_formset(instance=self.object)
+            status_code = getattr(self.object, 'status_code', None)
+            create_user = getattr(self.object, 'create_user', None)
+            
+            # ボタン操作可否判定
+            is_submittable = get_submittable(user=request.user, form=form)
+            
+            # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
+            if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
+                for field in form.fields.values():
+                    field.widget.attrs['disabled'] = True
+                for f in formset.forms:
+                    for field in f.fields.values():
+                        field.widget.attrs['disabled'] = True
+                        
+            # フィールド個別の操作制御
+            form = apply_field_permissions(form=form, user=request.user)
+        
             html = render_to_string(
                 self.template_name,
                 {
@@ -230,7 +247,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                     'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
                     'modal_title': f'受注更新: {self.object.sales_order_no}',
                     'is_update': True,
-                    'is_submittable': get_submittable(user=user, form=form),
+                    'is_submittable': is_submittable,
                 },
                 request,
             )
