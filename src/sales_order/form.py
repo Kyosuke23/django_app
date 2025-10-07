@@ -93,6 +93,11 @@ class SalesOrderForm(forms.ModelForm):
 
         return cleaned_data
 
+    def clean_remarks(self):
+        remarks = self.cleaned_data.get('remarks', '')
+        if remarks:
+            return remarks.strip()
+        return remarks
 
 class SalesOrderDetailForm(forms.ModelForm):
     '''

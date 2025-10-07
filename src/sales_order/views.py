@@ -203,9 +203,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         
         #  顧客による承認 / 却下
         if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT]:
-            # 保存処理
             self.object.status_code = action_type
-            self.object.save(update_fields=['status_code'])
+            self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
+            self.object.save(update_fields=['status_code', 'customer_comment'])
             return redirect('sales_order:public_thanks')
         
         form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
@@ -240,7 +240,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         if action_type == STATUS_CODE_APPROVED:
             with transaction.atomic():
                 self.object.status_code = STATUS_CODE_APPROVED
-                self.object.manager_comment = request.POST.get('header-manager_comment')
+                self.object.manager_comment = request.POST.get('manager_comment', '').strip()
                 self.object.update_user = user
                 self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
 

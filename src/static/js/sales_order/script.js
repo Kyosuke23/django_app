@@ -18,6 +18,7 @@ $(function () {
         const saveUrl = form.data('save-url');
         const deleteUrl = form.data('delete-url');
         const csrf = form.find('input[name=csrfmiddlewaretoken]').val();
+        const manager_comment = $('#id_header-manager_comment').val();
 
         // ----------------------------------------------------------
         // ▼ 削除処理
@@ -48,7 +49,8 @@ $(function () {
         // ▼ 保存・提出・再編集(RETAKE)などの送信処理
         // ----------------------------------------------------------
         const formData = form.serializeArray();
-        formData.push({ name: 'action_type', value: actionType }); // ← action_type を明示的に追加
+        formData.push({ name: 'action_type', value: actionType });
+        formData.push({ name: 'manager_comment', value: manager_comment });
 
         $.ajax({
             url: saveUrl,
@@ -308,11 +310,11 @@ $(function () {
         products.select2({ ...opt, placeholder: '商品を選択...' });
     });
 
-    $(document).on('click', '#editForm button[data-action]', function (e) {
+    $(document).on('click', '#confirmForm button[data-action]', function (e) {
         const action = $(this).data('action');
         $('#action_type').val(action);
 
-        const manager_comment = $('#id_header-manager_comment').val();
-        $('#manager_comment').val(manager_comment);
+        const comment = $('#customer_comment').val();
+        $('#customer_comment').val(comment);
     });
 });
