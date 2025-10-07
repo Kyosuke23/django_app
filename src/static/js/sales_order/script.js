@@ -25,40 +25,73 @@ $(function () {
     // =====================================================
     // 保存／削除ボタンの動的アクション切り替え
     // =====================================================
-    $(document).on("click", "#editForm button[type=submit]", function (e) {
-        const form = $("#editForm");
-        const action = $(this).data("action");
-        const saveUrl = form.data("save-url");
-        const deleteUrl = form.data("delete-url");
-        const csrf = form.find("input[name=csrfmiddlewaretoken]").val();
+    $(document).on('click', '#editForm button[type=submit]', function (e) {
+        e.preventDefault();
 
-        if (action === "delete") {
-            e.preventDefault(); // 通常のsubmitは止める
+        const form = $('#editForm');
+        const actionType = $(this).data('action');
+        const saveUrl = form.data('save-url');
+        const deleteUrl = form.data('delete-url');
+        const csrf = form.find('input[name=csrfmiddlewaretoken]').val();
+
+        // ----------------------------------------------------------
+        // ▼ 削除処理
+        // ----------------------------------------------------------
+        if (actionType === 'delete') {
             if (!confirm("本当に削除しますか？")) {
-                return;
+            return;
             }
-
-            // Ajaxで削除リクエスト
             $.ajax({
-                url: deleteUrl,
-                type: "POST",
-                data: { csrfmiddlewaretoken: csrf },
-                success: function () {
-                    location.reload(); // 削除成功時はリロード
-                },
-                error: function (xhr) {
-                    if (xhr.responseJSON && xhr.responseJSON.error) {
-                        alert(xhr.responseJSON.error);
-                    } else {
-                        alert("削除に失敗しました");
-                    }
+            url: deleteUrl,
+            type: "POST",
+            data: { csrfmiddlewaretoken: csrf },
+            success: function () {
+                location.reload(); // 削除成功時はリロード
+            },
+            error: function (xhr) {
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                alert(xhr.responseJSON.error);
+                } else {
+                alert("削除に失敗しました");
                 }
+            }
             });
-        } else {
-            // 保存時は通常のsubmitを利用
-            form.attr("action", saveUrl);
+            return;
         }
+
+        // ----------------------------------------------------------
+        // ▼ 保存・提出・再編集(RETAKE)などの送信処理
+        // ----------------------------------------------------------
+        const formData = form.serializeArray();
+        formData.push({ name: 'action_type', value: actionType }); // ← action_type を明示的に追加
+
+        $.ajax({
+            url: saveUrl,
+            type: 'POST',
+            data: $.param(formData),
+            success: function (response) {
+            if (response.success) {
+                // success時に html があれば → モーダル再描画（閉じない）
+                if (response.html) {
+                $("#modalBody").html(response.html);
+                } else {
+                // html がなければ → 通常の更新完了（モーダル閉じるなど）
+                $("#modal").modal("hide");
+                location.reload();
+                }
+            } else if (response.html) {
+                // バリデーションエラーなど: モーダル内容更新
+                $("#modalBody").html(response.html);
+            } else {
+                alert("更新に失敗しました");
+            }
+            },
+            error: function () {
+            alert("サーバーエラーが発生しました");
+            }
+        });
     });
+
 
     // =====================================================
     // 消費税率・金額再計算
@@ -288,5 +321,10 @@ $(function () {
         ref_users.select2({ ...opt, placeholder: 'ユーザーを選択...' });
         ref_groups.select2({ ...opt, placeholder: 'グループを選択...' });
         products.select2({ ...opt, placeholder: '商品を選択...' });
+    });
+
+    $('#confirmForm button[data-action]').on('click', function() {
+        var action = $(this).data('action');
+        $('#action_type').val(action);
     });
 });

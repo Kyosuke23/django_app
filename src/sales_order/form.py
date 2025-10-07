@@ -55,11 +55,16 @@ class SalesOrderForm(forms.ModelForm):
             )
 
             # --- reference_users: 同じテナント所属 & 管理者以上のユーザーを候補に ---
-            self.fields['reference_users'].queryset = (
-                User.objects.filter(tenant=user.tenant, privilege__lte=1)
-                .exclude(id=user.id)
-                .order_by('username')
-            )
+            queryset = User.objects.filter(
+                tenant=user.tenant,
+                privilege__lte=1
+            ).order_by('username')
+            
+            # 仮保存データのみ自分を除去
+            status_code = getattr(self.instance, 'status_code', None)
+            if status_code == STATUS_CODE_DRAFT:
+                queryset = queryset.exclude(id=user.id)
+            self.fields['reference_users'].queryset = queryset
 
             # --- reference_groups: テナント紐づきグループがある場合 ---
             if hasattr(user, 'tenant') and hasattr(user.tenant, 'groups'):
