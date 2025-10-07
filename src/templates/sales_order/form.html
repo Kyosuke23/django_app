@@ -29,19 +29,14 @@
     <div class="col-md-3">
       <label class="form-label">受注担当者</label>
       <p class="form-control-plaintext">
-        {{ form.instance.create_user }}
+        {{ form.instance.create_user|default_if_none:'' }}
       </p>
       {{ form.instance.create_user.as_hidden }}
     </div>
     {# 受注日 #}
-    <div class="col-md-3">
+    <div class="col-md-6">
       <label class="form-label">受注日</label>
       <p class="form-control-plaintext">{{ form.instance.sales_order_date|default_if_none:'' }}</p>
-    </div>
-    {# 納入日 #}
-    <div class="col-md-3">
-      <label class="form-label">納入日</label>
-      <p class="form-control-plaintext">{{ form.instance.delivery_due_date|default_if_none:'' }}</p>
     </div>
     {# 取引先 #}
     <div class="col-md-12 mb-2">
@@ -70,6 +65,16 @@
           {% endif %}
         </div>
       </div>
+    </div>
+    {# 納入予定日 #}
+    <div class="col-md-3">
+      <label class="form-label">納入予定日</label>
+      {% render_field form.delivery_due_date class="form-control" %}
+    </div>
+    {# 納入場所 #}
+    <div class="col-md-9">
+      <label class="form-label">納入場所</label>
+      {% render_field form.delivery_place class="form-control" %}
     </div>
     {# 備考 #}
     <div class="col-md-12 mb-2">
@@ -131,7 +136,7 @@
   </table>
 
   {# 明細行追加ボタン #}
-  {% if is_editable %}
+  {% if is_submittable %}
   <div class="text-start mt-2 mb-2">
     <button type="button" id="add-row-btn" class="btn btn-outline-primary btn-sm">
       <svg class="icon text-primary" width="16" height="16">
