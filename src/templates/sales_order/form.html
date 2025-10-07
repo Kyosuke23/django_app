@@ -25,18 +25,23 @@
       <label class="form-label">ステータス</label>
       <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
     </div>
-    {# 受注日 #}
-    <div class="col-md-3">
-      <label class="form-label">受注日</label>
-      <p class="form-control-plaintext">{{ form.instance.sales_order_date }}</p>
-    </div>
     {# 受注担当者 #}
-    <div class="col-md-6">
+    <div class="col-md-3">
       <label class="form-label">受注担当者</label>
       <p class="form-control-plaintext">
         {{ form.instance.create_user }}
       </p>
       {{ form.instance.create_user.as_hidden }}
+    </div>
+    {# 受注日 #}
+    <div class="col-md-3">
+      <label class="form-label">受注日</label>
+      <p class="form-control-plaintext">{{ form.instance.sales_order_date|default_if_none:'' }}</p>
+    </div>
+    {# 納入日 #}
+    <div class="col-md-3">
+      <label class="form-label">納入日</label>
+      <p class="form-control-plaintext">{{ form.instance.delivery_date|default_if_none:'' }}</p>
     </div>
     {# 取引先 #}
     <div class="col-md-12 mb-2">

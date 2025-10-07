@@ -45,6 +45,7 @@ class SalesOrder(BaseModel):
         default='DRAFT'
     )
     sales_order_date = models.DateField(default=timezone.now, verbose_name='受注日')
+    delivery_date = models.DateField(null=True, blank=True, verbose_name='納入日')
     partner = models.ForeignKey('partner_mst.Partner', on_delete=models.SET_NULL, blank=True, null=True, verbose_name='取引先')
     remarks = models.TextField(blank=True, null=True, verbose_name='備考')
     rounding_method = models.CharField(  # ★ 小数点以下の丸め方
