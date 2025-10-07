@@ -246,7 +246,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         user = request.user
         
         # 再作成時は登録値を引き継いで受注ステータスを仮保存に戻す
-        if action_type == STAUS_CODE_RETAKE:
+        if action_type == STATUS_CODE_RETAKE:
             with transaction.atomic():
                 self.object.status_code = STATUS_CODE_DRAFT
                 self.object.update_user = request.user
@@ -417,7 +417,7 @@ class PartnerInfoView(generic.View):
                 'state': partner.state,
                 'city': partner.city,
                 'address': partner.address,
-                'address': partner.address2,
+                'address2': partner.address2,
                 'contact_name': partner.contact_name,
                 'tel_number': partner.tel_number,
                 'email': partner.email,
@@ -591,7 +591,7 @@ def search_order_data(request, query_set):
     keyword = request.GET.get('search_sales_order_no') or ''
     if keyword:
         query_set = query_set.filter(
-            Q(order_no__icontains=keyword) |
+            Q(sales_order_no__icontains=keyword) |
             Q(partner__partner_name__icontains=keyword)
         )
     return query_set
