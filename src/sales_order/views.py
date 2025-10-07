@@ -79,15 +79,13 @@ class SalesOrderListView(generic.ListView):
 # -----------------------------
 class SalesOrderDeleteView(generic.View):
     '''
-    受注削除（論理削除）
+    受注削除（物理削除）
     '''
     def post(self, request, *args, **kwargs):
         obj = SalesOrder.objects.get(pk=kwargs['pk'])
-        obj.is_deleted = True
-        obj.update_user = request.user
-        obj.save()
+        obj.delete()
         sales_order_message(request, '削除', obj.sales_order_no)
-        return HttpResponseRedirect(reverse_lazy('sales_order:list'))
+        return JsonResponse({'success': True})
 
 
 # -----------------------------
