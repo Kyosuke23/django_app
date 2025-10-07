@@ -239,7 +239,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         
         if action_type == STATUS_CODE_APPROVED:
             with transaction.atomic():
-                # self.object.status_code = STATUS_CODE_APPROVED
+                self.object.status_code = STATUS_CODE_APPROVED
                 self.object.manager_comment = request.POST.get('header-manager_comment')
                 self.object.update_user = user
                 self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
