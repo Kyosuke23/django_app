@@ -324,28 +324,17 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
                             'sales_order_id': self.object.id,
                             'partner_email': partner.email,
                         })
-                        # url = 'xxxxxxx'
                         url = request.build_absolute_uri(reverse('sales_order:public_detail', kwargs={'token': token}))
                         print(url)
                         self.object.subject = f"【承認通知】受注番号 {self.object.sales_order_no}"
-                        message = f"""
-    {partner.partner_name} 様
+                        context = {
+                            'partner': partner,
+                            'order': self.object,
+                            'url': url,
+                            'now': timezone.now(),
+                        }
+                        message = render_to_string('sales_order/mails/mail_approved.txt', context)
 
-    以下の受注データが社内で承認されました。
-    詳細は以下のリンクからご確認ください。
-
-    {url}
-
-    ※リンクの有効期限は3日間です。
-    ※このメールは自動送信です。返信は不要です。
-
-    ---------------------------------
-    受注番号: {self.object.sales_order_no}
-    件名: {self.object.subject or '(件名未設定)'}
-    受注日: {self.object.sales_order_date.strftime('%Y-%m-%d')}
-    更新日時: {timezone.now().strftime('%Y-%m-%d %H:%M')}
-    ---------------------------------
-    """
                         # send_mail(
                         #     subject,
                         #     message.strip(),
@@ -354,10 +343,8 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
                         #     fail_silently=False,
                         # )
                     except Exception as e:
-                        # エラーをログに残す（通知失敗しても致命的エラーにはしない）
-                        import logging
-                        logger = logging.getLogger(__name__)
-                        logger.error(f"承認通知メール送信エラー: {e}")
+                        sales_order_message(request, '承認', self.object.sales_order_no)
+                        return JsonResponse({'success': False})
 
                 sales_order_message(request, '承認', self.object.sales_order_no)
                 return JsonResponse({'success': True})
