@@ -1,20 +1,17 @@
 from django.shortcuts import redirect
 from decimal import Decimal
-from django.forms import inlineformset_factory
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
-from django.contrib import messages
 from django.http import JsonResponse, HttpResponseRedirect
 from django.template.loader import render_to_string
 from .models import SalesOrder, SalesOrderDetail
 from partner_mst.models import Partner
 from product_mst.models import Product
-from .form import SalesOrderForm, SalesOrderDetailForm, SalesOrderDetailFormSet
+from .form import SalesOrderForm, SalesOrderDetailFormSet
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from .utils import fill_formset
+from .services import *
 from django.db import transaction
 from .constants import *
 from django.core.mail import send_mail
@@ -110,11 +107,7 @@ class SalesOrderCreateView(generic.CreateView):
     def get(self, request, *args, **kwargs):
         self.object = None
         form = SalesOrderForm(prefix='header', user=request.user)
-        formset = fill_formset(get_sales_order_detail_formset())
-        
-        # 編集可否判定
-        is_submittable = get_submittable(user=request.user, form=form)
-
+        formset = fill_formset(get_sales_order_detail_formset())        
         html = render_to_string(
             self.template_name,
             {
@@ -123,7 +116,7 @@ class SalesOrderCreateView(generic.CreateView):
                 'form_action': reverse('sales_order:create'),
                 'modal_title': '受注新規登録',
                 'is_update': False,
-                'is_submittable': is_submittable,
+                'is_submittable': True,
             },
             request,
         )
@@ -151,36 +144,8 @@ class SalesOrderCreateView(generic.CreateView):
             )
             return JsonResponse({'success': False, 'html': html})
 
-        with transaction.atomic():
-            # ヘッダ保存
-            sales_order = form.save(commit=False)
-            sales_order.create_user = request.user
-            sales_order.update_user = request.user
-            sales_order.tenant = request.user.tenant
-            sales_order.save()
-
-            # 明細登録
-            line_no = 1
-            for f in formset.forms:
-                if not f.cleaned_data:
-                    continue
-                if not f.cleaned_data.get('product'):
-                    continue
-
-                d = f.save(commit=False)
-                d.sales_order = sales_order
-                d.tenant = request.user.tenant
-                d.line_no = line_no
-
-                # 単価が空なら商品マスタ単価を使用
-                if d.product_id and not d.master_unit_price:
-                    d.master_unit_price = d.product.unit_price
-
-                d.save()
-                line_no += 1
-
-        # 成功メッセージ
-        sales_order_message(request, '登録', sales_order.sales_order_no)
+        order = save_details(form, formset, request.user)
+        sales_order_message(request, '登録', order.sales_order_no)
         return JsonResponse({'success': True})
 
 # -----------------------------
@@ -199,15 +164,14 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object = self.get_object()
         form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
         formset = get_sales_order_detail_formset(instance=self.object)
-        user = request.user
         status_code = getattr(self.object, 'status_code', None)
         create_user = getattr(self.object, 'create_user', None)
         
         # ボタン操作可否判定
-        is_submittable = get_submittable(user=user, form=form)
+        is_submittable = get_submittable(user=request.user, form=form)
         
         # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
-        if not (status_code == STATUS_CODE_DRAFT and create_user == user):
+        if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
             for field in form.fields.values():
                 field.widget.attrs['disabled'] = True
             for f in formset.forms:
@@ -237,6 +201,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         
         #  顧客による承認 / 却下
         if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT]:
+            # 保存処理
             self.object.status_code = action_type
             self.object.save(update_fields=['status_code'])
             return redirect('sales_order:public_thanks')
@@ -247,18 +212,14 @@ class SalesOrderUpdateView(generic.UpdateView):
         
         # 再作成時は登録値を引き継いで受注ステータスを仮保存に戻す
         if action_type == STATUS_CODE_RETAKE:
-            with transaction.atomic():
-                self.object.status_code = STATUS_CODE_DRAFT
-                self.object.update_user = request.user
-                self.object.save(update_fields=['status_code', 'update_user'])
+            # 保存処理
+            self.object.status_code = STATUS_CODE_DRAFT
+            self.object.update_user = request.user
+            self.object.save(update_fields=['status_code', 'update_user'])
 
-            # ここで最新の状態を再描画
+            # 最新の状態を再描画
             form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
             formset = get_sales_order_detail_formset(instance=self.object)
-
-            # ボタン操作可否判定
-            is_submittable = get_submittable(user=user, form=form)
-        
             html = render_to_string(
                 self.template_name,
                 {
@@ -267,12 +228,11 @@ class SalesOrderUpdateView(generic.UpdateView):
                     'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
                     'modal_title': f'受注更新: {self.object.sales_order_no}',
                     'is_update': True,
-                    'is_submittable': is_submittable,
+                    'is_submittable': get_submittable(user=user, form=form),
                 },
                 request,
             )
-
-            # success + 再描画HTMLを返してモーダルを再描画
+            # モーダルを再描画
             return JsonResponse({'success': True, 'html': html})
         
         if action_type == STATUS_CODE_APPROVED:
@@ -316,10 +276,9 @@ class SalesOrderUpdateView(generic.UpdateView):
 
         # 仮保存 or 提出時以外は受注ステータスの更新のみとする
         if action_type not in [STATUS_CODE_DRAFT, STATUS_CODE_SUBMITTED]:
-            with transaction.atomic():
-                self.object.status_code = action_type
-                self.object.update_user = request.user
-                self.object.save(update_fields=['status_code', 'update_user'])
+            self.object.status_code = action_type
+            self.object.update_user = request.user
+            self.object.save(update_fields=['status_code', 'update_user'])
             sales_order_message(request, '更新', self.object.sales_order_no)
             return JsonResponse({'success': True})
 
@@ -344,46 +303,17 @@ class SalesOrderUpdateView(generic.UpdateView):
                 return JsonResponse({'success': False, 'html': html})
             return super().form_invalid(form)
 
-        with transaction.atomic():
-            # ヘッダ保存
-            self.object = form.save(commit=False)
-            self.object.status_code = action_type
-            self.object.update_user = request.user
-            self.object.tenant = request.user.tenant
-            self.object.save()
-            form.save_m2m()  # 参照ユーザーと参照グループの保存
-
-            # 明細全削除
-            SalesOrderDetail.objects.filter(sales_order=self.object).delete()
-
-            # 明細再登録
-            line_no = 1
-            for f in formset.forms:
-                if not f.cleaned_data:
-                    continue
-                if not f.cleaned_data.get('product'):
-                    continue
-
-                d = f.save(commit=False)
-                d.sales_order = self.object
-                d.tenant = request.user.tenant
-                d.line_no = line_no
-
-                # 単価未設定なら商品マスタからコピー
-                if d.product_id and not d.master_unit_price:
-                    d.master_unit_price = d.product.unit_price
-
-                d.save()
-                line_no += 1
-
-        sales_order_message(request, '更新', self.object.sales_order_no)
+        order = save_details(form, formset, request.user)
+        sales_order_message(request, '更新', order.sales_order_no)
         return JsonResponse({'success': True})
     
 # -----------------------------
 # 顧客回答後の画面表示
 # -----------------------------
 class SalesOrderPublicThanksView(generic.View):
-    """顧客回答後の完了画面"""
+    '''
+    顧客回答後の完了画面
+    '''
     template_name = "sales_order/public_thanks.html"
 
     def get(self, request, *args, **kwargs):
@@ -551,104 +481,7 @@ class ExportCSV(CSVExportBaseView):
                      )
                  ) \
                  .order_by('sales_order__sales_order_no', 'line_no')
-                 
 
     def row(self, detail):
         # 明細1件を1行に整形
         return [Common.format_for_csv(v) for v in get_order_detail_row(detail.sales_order, detail)]
-
-
-class ImportCSV(CSVImportBaseView):
-    expected_headers = DATA_COLUMNS
-    model_class = SalesOrder
-    unique_field = 'sales_order_no'
-
-    def validate_row(self, row, idx, existing, request):
-        pass
-        
-
-# -----------------------------
-# 共通関数
-# -----------------------------
-def get_order_detail_row(sales_order, detail):
-    return [
-        sales_order.sales_order_no,
-        sales_order.partner.partner_name if sales_order.partner else '',
-        sales_order.sales_order_date,
-        sales_order.remarks,
-        detail.line_no if detail else '',
-        detail.product.product_name if detail and detail.product else '',
-        detail.quantity if detail else '',
-        detail.unit if detail else '',
-        detail.billing_unit_price if detail else '',
-        '1' if (detail and detail.is_tax_exempt) else '0',
-        detail.tax_rate if detail else '',
-        detail.rounding_method if detail else '',
-    ] + Common.get_common_columns(rec=sales_order)
-
-
-def search_order_data(request, query_set):
-    keyword = request.GET.get('search_sales_order_no') or ''
-    if keyword:
-        query_set = query_set.filter(
-            Q(sales_order_no__icontains=keyword) |
-            Q(partner__partner_name__icontains=keyword)
-        )
-    return query_set
-
-
-def sales_order_message(request, action, sales_order_no):
-    messages.success(request, f'受注「{sales_order_no}」を{action}しました。')
-
-# 動的にextraを決める関数
-def get_sales_order_detail_formset(instance=None, data=None):
-    count = instance.details.count() if instance else 0
-
-    if count < 10:
-        extra = 10 - count  # 常に10行表示
-    else:
-        extra = 1  # 現行数 +1
-
-    DynamicFormSet = inlineformset_factory(
-        SalesOrder,
-        SalesOrderDetail,
-        form=SalesOrderDetailForm,
-        extra=extra,
-        can_delete=True
-    )
-
-    return DynamicFormSet(data=data, instance=instance)
-
-def get_submittable(user, form):
-    # ログインユーザー
-    login_user = user
-    
-    # 受注データ情報
-    instance = getattr(form, 'instance', None)
-    status_code = getattr(instance, 'status_code', None)  # 受注ステータス
-    create_user = instance.create_user  # 作成者（担当者）
-    reference_users_manager = getattr(instance, 'reference_users', None)
-    reference_users = reference_users_manager.all() if reference_users_manager else []  # 参照ユーザー
-    
-    # 新規作成：作成者未設定は新規作成とし、可
-    if not create_user:
-        return True
-    # 仮作成：担当者のみ可
-    if status_code == STATUS_CODE_DRAFT:
-        return create_user == login_user
-    # 社内承認待ち：承認依頼先の人のみ可
-    if status_code == STATUS_CODE_SUBMITTED:
-        return login_user in reference_users
-    # 社内却下：担当者のみ可
-    if status_code == STATUS_CODE_REJECTED_IN:
-        return create_user == login_user
-    # 社内承認済：担当者のみ可
-    if status_code == STATUS_CODE_APPROVED:
-        return create_user == login_user
-    # 顧客却下：担当者のみ可
-    if status_code == STATUS_CODE_REJECTED_OUT:
-        return create_user == login_user
-    # 顧客承諾：担当者のみ可
-    if status_code == STATUS_CODE_CONFIRMED:
-        return create_user == login_user
-    return False

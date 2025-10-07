@@ -63,8 +63,7 @@
 
     {# 検索ボタン #}
     <div class="col">
-      <button type="submit" class="btn btn-primary search_form_btn"
-              data-action="{% url 'sales_order:list' %}">
+      <button type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'sales_order:list' %}">
         検索
       </button>
     </div>
@@ -147,5 +146,6 @@
 {# ページネーション #}
 {% include 'layout/pagination.html' %}
 
+{# 個別JS読み込み #}
 <script type="text/javascript" src="{% static 'js/sales_order/script.js' %}"></script>
 {% endblock %}

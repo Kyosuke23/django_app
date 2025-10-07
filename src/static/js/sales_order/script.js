@@ -4,22 +4,7 @@ $(function () {
     // =====================================================
     $('.export-btn').on('click', function () {
         const url = $(this).data('action');
-        if (url) {
-            window.location.href = url;
-        }
-    });
-
-    // =====================================================
-    // IMPORTボタン
-    // =====================================================
-    $('#import-btn').on('click', function (e) {
-        e.preventDefault();
-        $('#file-input').click();
-    });
-
-    // ファイル選択時
-    $('#file-input').on('change', function () {
-        $().import_data(this); // 既存の処理
+        if (url) window.location.href = url;
     });
 
     // =====================================================
@@ -38,23 +23,23 @@ $(function () {
         // ▼ 削除処理
         // ----------------------------------------------------------
         if (actionType === 'delete') {
-            if (!confirm("本当に削除しますか？")) {
+            if (!confirm('本当に削除しますか？')) {
             return;
             }
             $.ajax({
-            url: deleteUrl,
-            type: "POST",
-            data: { csrfmiddlewaretoken: csrf },
-            success: function () {
-                location.reload(); // 削除成功時はリロード
-            },
-            error: function (xhr) {
-                if (xhr.responseJSON && xhr.responseJSON.error) {
-                alert(xhr.responseJSON.error);
-                } else {
-                alert("削除に失敗しました");
+                url: deleteUrl,
+                type: 'POST',
+                data: { csrfmiddlewaretoken: csrf },
+                success: function () {
+                    location.reload(); // 削除成功時はリロード
+                },
+                error: function (xhr) {
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        alert(xhr.responseJSON.error);
+                    } else {
+                        alert('削除に失敗しました');
+                    }
                 }
-            }
             });
             return;
         }
@@ -70,24 +55,24 @@ $(function () {
             type: 'POST',
             data: $.param(formData),
             success: function (response) {
-            if (response.success) {
-                // success時に html があれば → モーダル再描画（閉じない）
-                if (response.html) {
-                $("#modalBody").html(response.html);
+                if (response.success) {
+                    // success時に html があれば → モーダル再描画（閉じない）
+                    if (response.html) {
+                    $("#modalBody").html(response.html);
+                    } else {
+                    // html がなければ → 通常の更新完了（モーダル閉じるなど）
+                    $("#modal").modal("hide");
+                    location.reload();
+                    }
+                } else if (response.html) {
+                    // バリデーションエラーなど: モーダル内容更新
+                    $("#modalBody").html(response.html);
                 } else {
-                // html がなければ → 通常の更新完了（モーダル閉じるなど）
-                $("#modal").modal("hide");
-                location.reload();
+                    alert("更新に失敗しました");
                 }
-            } else if (response.html) {
-                // バリデーションエラーなど: モーダル内容更新
-                $("#modalBody").html(response.html);
-            } else {
-                alert("更新に失敗しました");
-            }
-            },
-            error: function () {
-            alert("サーバーエラーが発生しました");
+                },
+                error: function () {
+                alert("サーバーエラーが発生しました");
             }
         });
     });
@@ -207,7 +192,7 @@ $(function () {
     // =====================================================
     // 取引先情報の動的表示
     // =====================================================
-    $(document).on('change', '#id_partner', function () {
+    $(document).on('change', '#id_header-partner', function () {
         var partnerId = $(this).val();
         if (!partnerId) {
             $('#partner-info').html('取引先を選択すると情報が表示されます');

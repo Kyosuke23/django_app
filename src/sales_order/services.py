@@ -1,0 +1,118 @@
+from .constants import *
+from .form import  SalesOrderDetailForm
+from .models import SalesOrder, SalesOrderDetail
+from django.contrib import messages
+from django.db import transaction
+from django.db.models import Q
+from django.forms import inlineformset_factory
+
+def fill_formset(formset, min_forms=10):
+    '''FormSetを指定数まで補充する'''
+    while len(formset.forms) < min_forms:
+        formset.forms.append(formset.empty_form)
+    return formset
+
+def get_order_detail_row(sales_order, detail):
+    return [
+        sales_order.sales_order_no,
+        sales_order.partner.partner_name if sales_order.partner else '',
+        sales_order.sales_order_date,
+        sales_order.remarks,
+        detail.line_no if detail else '',
+        detail.product.product_name if detail and detail.product else '',
+        detail.quantity if detail else '',
+        detail.unit if detail else '',
+        detail.billing_unit_price if detail else '',
+        '1' if (detail and detail.is_tax_exempt) else '0',
+        detail.tax_rate if detail else '',
+        detail.rounding_method if detail else '',
+    ]
+
+def search_order_data(request, query_set):
+    keyword = request.GET.get('search_sales_order_no') or ''
+    if keyword:
+        query_set = query_set.filter(
+            Q(sales_order_no__icontains=keyword) |
+            Q(partner__partner_name__icontains=keyword)
+        )
+    return query_set
+
+def sales_order_message(request, action, sales_order_no):
+    '''CRUD後のメッセージ表示'''
+    messages.success(request, f'受注「{sales_order_no}」を{action}しました。')
+
+def get_sales_order_detail_formset(instance=None, data=None):
+    '''受注明細行の初期表示行数を算出'''
+    count = instance.details.count() if instance else 0
+
+    if count < 10:
+        extra = 10 - count  # 常に10行表示
+    else:
+        extra = 1  # 現行数 +1
+
+    DynamicFormSet = inlineformset_factory(
+        SalesOrder,
+        SalesOrderDetail,
+        form=SalesOrderDetailForm,
+        extra=extra,
+        can_delete=True
+    )
+
+    return DynamicFormSet(data=data, instance=instance)
+
+def get_submittable(user, form):
+    '''ログインユーザーと受注ステータスから、ボタン操作可否を判定する'''
+    # ログインユーザー
+    login_user = user
+    
+    # 受注データ情報
+    instance = getattr(form, 'instance', None)
+    status_code = getattr(instance, 'status_code', None)  # 受注ステータス
+    create_user = instance.create_user  # 作成者（担当者）
+    reference_users_manager = getattr(instance, 'reference_users', None)
+    reference_users = reference_users_manager.all() if reference_users_manager else []  # 参照ユーザー
+    
+    # 新規作成：作成者未設定は新規作成とし、可
+    if not create_user:
+        return True
+    # 仮作成：担当者のみ可
+    if status_code == STATUS_CODE_DRAFT:
+        return create_user == login_user
+    # 社内承認待ち：承認依頼先の人のみ可
+    if status_code == STATUS_CODE_SUBMITTED:
+        return login_user in reference_users
+    # 社内却下：担当者のみ可
+    if status_code == STATUS_CODE_REJECTED_IN:
+        return create_user == login_user
+    # 社内承認済：担当者のみ可
+    if status_code == STATUS_CODE_APPROVED:
+        return create_user == login_user
+    # 顧客却下：担当者のみ可
+    if status_code == STATUS_CODE_REJECTED_OUT:
+        return create_user == login_user
+    # 顧客承諾：担当者のみ可
+    if status_code == STATUS_CODE_CONFIRMED:
+        return create_user == login_user
+    return False
+
+def save_details(form, formset, user):
+    '''登録・更新時の共通処理'''
+    with transaction.atomic():
+        order = form.save(commit=False)
+        order.update_user = user
+        order.tenant = user.tenant
+        if not order.pk:
+            order.create_user = user
+        order.save()
+
+        SalesOrderDetail.objects.filter(sales_order=order).delete()
+        for i, f in enumerate(formset.forms, 1):
+            if f.cleaned_data and f.cleaned_data.get('product'):
+                detail = f.save(commit=False)
+                detail.sales_order = order
+                detail.tenant = user.tenant
+                detail.line_no = i
+                if not detail.master_unit_price and detail.product:
+                    detail.master_unit_price = detail.product.unit_price
+                detail.save()
+    return order

@@ -8,9 +8,7 @@
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
-<form method="post" id="editForm"
-      action="{{ form_action }}"
-      data-save-url="{{ form_action }}"
+<form method="post" id="editForm" action="{{ form_action }}" data-save-url="{{ form_action }}"
       data-delete-url="{% if form.instance.pk %}{% url 'sales_order:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
 
@@ -76,6 +74,7 @@
         <div class="text-danger small">{{ form.remarks.errors }}</div>
       {% endif %}
     </div>
+    {# 参照ユーザー #}
     <div class="col-md-6">
       <label class="form-label">参照ユーザー</label>
       {% if form.reference_users.errors %}
@@ -87,7 +86,7 @@
         {% render_field form.reference_users class="form-select" %}
       {% endif %}
     </div>
-
+    {# 参照ユーザーグループ #}
     <div class="col-md-6">
       <label class="form-label">参照グループ</label>
       {% if form.reference_groups.errors %}
@@ -106,7 +105,7 @@
   {# ======================================= #}
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
-
+  {# 小計エリア #}
   <table class="table table-bordered mb-3 w-100">
     <thead class="table-light text-center fw-bold">
       <tr>
@@ -125,7 +124,6 @@
       </tr>
     </tbody>
   </table>
-
 
   {# 明細行追加ボタン #}
   {% if is_editable %}

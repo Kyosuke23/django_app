@@ -202,3 +202,4 @@ class PrivilegeRequiredMixin():
         if int(request.user.privilege) > int(PRIVILEGE_EDITOR):
             return HttpResponseForbidden('アクセス権限がありません')
         return super().dispatch(request, *args, **kwargs)
+    

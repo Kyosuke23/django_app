@@ -9,7 +9,6 @@ urlpatterns = [
     # -----------------
     path('', views.SalesOrderListView.as_view(), name='list'),
     path('<int:pk>/delete/', views.SalesOrderDeleteView.as_view(), name='delete'),
-    path("import/csv", views.ImportCSV.as_view(), name='import_csv'),
     path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     path('create/', views.SalesOrderCreateView.as_view(), name='create'),
