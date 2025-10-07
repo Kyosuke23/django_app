@@ -33,9 +33,8 @@ DATA_COLUMNS = [
 
 
 # -----------------------------
-# SalesOrder CRUD (一覧)
+# 一覧表示
 # -----------------------------
-
 class SalesOrderListView(generic.ListView):
     '''
     受注一覧画面
@@ -79,50 +78,8 @@ class SalesOrderListView(generic.ListView):
 
 
 # -----------------------------
-# SalesOrder CRUD
+# 削除処理
 # -----------------------------
-class SalesOrderCreateView(generic.CreateView):
-    model = SalesOrder
-    form_class = SalesOrderForm
-    template_name = 'sales_order/edit.html'
-    success_url = reverse_lazy('sales_order:list')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_update'] = False
-        formset = SalesOrderDetailFormSet(self.request.POST or None)
-        context['formset'] = fill_formset(formset)
-        context['form_action'] = reverse('sales_order:create')
-        context['modal_title'] = '受注新規登録'
-        return context
-
-    def form_valid(self, form):
-        form.instance.create_user = self.request.user
-        form.instance.update_user = self.request.user
-        form.instance.tenant = self.request.user.tenant
-        sales_order_message(self.request, '登録', form.instance.sales_order_no)
-        return super().form_valid(form)
-
-
-class SalesOrderUpdateView(generic.UpdateView):
-    model = SalesOrder
-    form_class = SalesOrderForm
-    template_name = 'sales_order/edit.html'
-    success_url = reverse_lazy('sales_order:list')
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['is_update'] = True
-        return context
-
-    def form_valid(self, form):
-        form.instance.update_user = self.request.user
-        form.instance.tenant = self.request.user.tenant
-        response = super().form_valid(form)
-        sales_order_message(self.request, '更新', self.object.sales_order_no)
-        return response
-
-
 class SalesOrderDeleteView(generic.View):
     '''
     受注削除（論理削除）
@@ -137,10 +94,13 @@ class SalesOrderDeleteView(generic.View):
 
 
 # -----------------------------
-# SalesOrder CRUD (モーダル)
+# 登録処理
 # -----------------------------
-class SalesOrderCreateModalView(SalesOrderCreateView):
+class SalesOrderCreateView(generic.CreateView):
+    model = SalesOrder
+    form_class = SalesOrderForm
     template_name = 'sales_order/form.html'
+    success_url = reverse_lazy('sales_order:list')
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -223,9 +183,14 @@ class SalesOrderCreateModalView(SalesOrderCreateView):
         sales_order_message(request, '登録', sales_order.sales_order_no)
         return JsonResponse({'success': True})
 
-
-class SalesOrderUpdateModalView(SalesOrderUpdateView):
+# -----------------------------
+# 更新処理
+# -----------------------------
+class SalesOrderUpdateView(generic.UpdateView):
+    model = SalesOrder
+    form_class = SalesOrderForm
     template_name = 'sales_order/form.html'
+    success_url = reverse_lazy('sales_order:list')
 
     # ----------------------------------------------------
     # GET（モーダル表示）
@@ -414,7 +379,9 @@ class SalesOrderUpdateModalView(SalesOrderUpdateView):
         sales_order_message(request, '更新', self.object.sales_order_no)
         return JsonResponse({'success': True})
     
-
+# -----------------------------
+# 顧客回答後の画面表示
+# -----------------------------
 class SalesOrderPublicThanksView(generic.View):
     """顧客回答後の完了画面"""
     template_name = "sales_order/public_thanks.html"
@@ -422,6 +389,9 @@ class SalesOrderPublicThanksView(generic.View):
     def get(self, request, *args, **kwargs):
         return render(request, self.template_name)
 
+# -----------------------------
+# 商品情報の取得処理
+# -----------------------------
 class ProductInfoView(generic.View):
     def get(self, request, *args, **kwargs):
         product_id = request.GET.get('product_id')
@@ -434,6 +404,9 @@ class ProductInfoView(generic.View):
         except Product.DoesNotExist:
             return JsonResponse({'error': '商品が見つかりません'}, status=404)
         
+# -----------------------------
+# 取引先情報の取得処理
+# -----------------------------
 class PartnerInfoView(generic.View):
     def get(self, request, *args, **kwargs):
         partner_id = request.GET.get('partner_id')
@@ -451,11 +424,14 @@ class PartnerInfoView(generic.View):
             })
         except Partner.DoesNotExist:
             return JsonResponse({'error': '取引先が見つかりません'}, status=404)
-        
+
+# -----------------------------
+# 顧客向け回答画面表示
+# -----------------------------   
 class SalesOrderPublicDetailView(generic.View):
-    """
-    顧客向け 公開受注詳細画面（署名付きURL専用・安全版）
-    """
+    '''
+    顧客向けの公開受注詳細画面
+    '''
     template_name = 'sales_order/public_detail.html'
     max_age_seconds = 60 * 60 * 24 * 3  # 3日間有効
 
