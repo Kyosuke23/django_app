@@ -31,7 +31,8 @@ class SalesOrderForm(forms.ModelForm):
     class Meta:
         model = SalesOrder
         fields = [
-            'delivery_date',
+            'delivery_due_date',
+            'delivery_place',
             'partner',
             'remarks',
             'rounding_method',
@@ -42,7 +43,8 @@ class SalesOrderForm(forms.ModelForm):
             'partner': forms.Select(attrs={'class': 'form-select'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'rounding_method': forms.Select(attrs={'class': 'form-select'}),
-            'delivery_date': forms.DateInput(attrs={'type': 'date'}),
+            'delivery_due_date': forms.DateInput(attrs={'type': 'date'}),
+            'delivery_place': forms.TextInput(attrs={'class': 'form-select'}),
         }
 
     def __init__(self, *args, **kwargs):

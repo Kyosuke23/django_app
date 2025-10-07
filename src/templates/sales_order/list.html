@@ -97,6 +97,7 @@
         <th scope="col">ステータス</th>
         <th scope="col">受注日</th>
         <th scope="col">納入日</th>
+        <th scope="col">納入場所</th>
         <th scope="col">取引先</th>
         <th scope="col">金額合計</th>
         <th scope="col">担当者</th>
@@ -110,7 +111,8 @@
         <td>{{ sales_order.sales_order_no }}</td>
         <td>{{ sales_order.get_status_code_display   }}</td>
         <td>{{ sales_order.sales_order_date }}</td>
-        <td>{{ sales_order.delivery_date }}</td>
+        <td>{{ sales_order.delivery_due_date }}</td>
+        <td>{{ sales_order.delivery_place }}</td>
         <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
         <td>¥{{ sales_order.grand_total|floatformat:0|intcomma }}</td>
         <td>
