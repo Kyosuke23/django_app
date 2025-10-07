@@ -126,6 +126,7 @@ class SalesOrderCreateView(generic.CreateView):
     def post(self, request, *args, **kwargs):
         form = SalesOrderForm(request.POST, prefix='header')
         formset = SalesOrderDetailFormSet(request.POST, prefix='details')
+        action_type = request.POST.get('action_type')
 
         # ▼ バリデーション
         if not (form.is_valid() and formset.is_valid()):
@@ -142,7 +143,7 @@ class SalesOrderCreateView(generic.CreateView):
             )
             return JsonResponse({'success': False, 'html': html})
 
-        order = save_details(form, formset, request.user)
+        order = save_details(form=form, formset=formset, user=request.user, action_type=action_type)
         sales_order_message(request, '登録', order.sales_order_no)
         return JsonResponse({'success': True})
 
@@ -175,6 +176,9 @@ class SalesOrderUpdateView(generic.UpdateView):
             for f in formset.forms:
                 for field in f.fields.values():
                     field.widget.attrs['disabled'] = True
+                    
+        # フィールド個別の操作制御
+        form = apply_field_permissions(form=form, user=request.user)
 
         html = render_to_string(
             self.template_name,
@@ -235,9 +239,10 @@ class SalesOrderUpdateView(generic.UpdateView):
         
         if action_type == STATUS_CODE_APPROVED:
             with transaction.atomic():
-                self.object.status_code = STATUS_CODE_APPROVED
+                # self.object.status_code = STATUS_CODE_APPROVED
+                self.object.manager_comment = request.POST.get('header-manager_comment')
                 self.object.update_user = user
-                self.object.save(update_fields=['status_code', 'update_user'])
+                self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
 
                 partner = getattr(self.object, 'partner', None)
                 if partner and partner.email:
@@ -301,7 +306,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                 return JsonResponse({'success': False, 'html': html})
             return super().form_invalid(form)
 
-        order = save_details(form, formset, request.user)
+        order = save_details(form=form, formset=formset, user=request.user, action_type=action_type)
         sales_order_message(request, '更新', order.sales_order_no)
         return JsonResponse({'success': True})
     

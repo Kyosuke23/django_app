@@ -308,8 +308,11 @@ $(function () {
         products.select2({ ...opt, placeholder: '商品を選択...' });
     });
 
-    $('#confirmForm button[data-action]').on('click', function() {
-        var action = $(this).data('action');
+    $(document).on('click', '#editForm button[data-action]', function (e) {
+        const action = $(this).data('action');
         $('#action_type').val(action);
+
+        const manager_comment = $('#id_header-manager_comment').val();
+        $('#manager_comment').val(manager_comment);
     });
 });

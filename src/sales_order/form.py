@@ -35,6 +35,8 @@ class SalesOrderForm(forms.ModelForm):
             'delivery_place',
             'partner',
             'remarks',
+            'manager_comment',
+            'customer_comment',
             'rounding_method',
             'reference_users',
             'reference_groups',
@@ -42,6 +44,8 @@ class SalesOrderForm(forms.ModelForm):
         widgets = {
             'partner': forms.Select(attrs={'class': 'form-select'}),
             'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'manager_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'customer_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'rounding_method': forms.Select(attrs={'class': 'form-select'}),
             'delivery_due_date': forms.DateInput(attrs={'type': 'date'}),
             'delivery_place': forms.TextInput(attrs={'class': 'form-select'}),

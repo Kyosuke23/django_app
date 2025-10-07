@@ -95,15 +95,17 @@ def get_submittable(user, form):
         return create_user == login_user
     return False
 
-def save_details(form, formset, user):
+def save_details(form, formset, user, action_type):
     '''登録・更新時の共通処理'''
     with transaction.atomic():
         order = form.save(commit=False)
+        order.status_code = action_type
         order.update_user = user
         order.tenant = user.tenant
         if not order.pk:
             order.create_user = user
         order.save()
+        form.save_m2m()  # 参照ユーザー・グループの保存
 
         SalesOrderDetail.objects.filter(sales_order=order).delete()
         for i, f in enumerate(formset.forms, 1):
@@ -116,3 +118,24 @@ def save_details(form, formset, user):
                     detail.master_unit_price = detail.product.unit_price
                 detail.save()
     return order
+
+def apply_field_permissions(form, user):
+    '''
+    備考・承認者コメント・顧客コメントの編集権限をステータスとユーザーで制御
+    '''
+    status = form.instance.status_code
+
+    # まず全て無効化
+    for field_name in ['remarks', 'manager_comment', 'customer_comment']:
+        if field_name in form.fields:
+            form.fields[field_name].widget.attrs['disabled'] = True
+
+    # DRAFT: 作成者のみ 備考 編集可
+    if status == STATUS_CODE_DRAFT and form.instance.create_user == user:
+        form.fields['remarks'].widget.attrs.pop('disabled', None)
+
+    # SUBMITTED: 承認権限者のみ 承認者コメント 編集可
+    elif status == STATUS_CODE_SUBMITTED and user in form.instance.reference_users.all():
+        form.fields['manager_comment'].widget.attrs.pop('disabled', None)
+        
+    return form
