@@ -46,6 +46,16 @@ $(function () {
         }
 
         // ----------------------------------------------------------
+        // ▼ 注文書発行（OUTPUT）
+        // ----------------------------------------------------------
+        if (actionType === 'OUTPUT') {
+            const orderId = form.data('order-id');
+            const pdfUrl = `/sales_order/${orderId}/order_sheet/`;
+            window.open(pdfUrl, '_blank'); // 新しいタブでPDF開く
+            return;
+        }
+
+        // ----------------------------------------------------------
         // ▼ 保存・提出・再編集(RETAKE)などの送信処理
         // ----------------------------------------------------------
         const formData = form.serializeArray();

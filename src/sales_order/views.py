@@ -3,14 +3,14 @@ from decimal import Decimal
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse
 from django.template.loader import render_to_string
 from .models import SalesOrder, SalesOrderDetail
 from partner_mst.models import Partner
 from product_mst.models import Product
 from .form import SalesOrderForm, SalesOrderDetailFormSet
 from config.common import Common
-from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView
+from config.base import CSVExportBaseView, ExcelExportBaseView
 from .services import *
 from django.db import transaction
 from .constants import *
@@ -21,6 +21,11 @@ from django.conf import settings
 from django.shortcuts import render
 from django.http import HttpResponseForbidden, Http404
 from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
+from django.shortcuts import get_object_or_404
+from django.http import HttpResponse
+from weasyprint import HTML
+import tempfile
+
 
 DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'remarks',
@@ -505,3 +510,26 @@ class ExportCSV(CSVExportBaseView):
     def row(self, detail):
         # 明細1件を1行に整形
         return [Common.format_for_csv(v) for v in get_order_detail_row(detail.sales_order, detail)]
+
+def order_sheet_pdf(request, pk):
+    order = get_object_or_404(SalesOrder, pk=pk)
+
+    context = {
+        'order': order,
+        'details': order.details.all(),
+        'partner': order.partner,
+        'company_name': request.user.tenant.tenant_name,
+        'title': f"注文書（{order.sales_order_no}）",
+    }
+
+    html_string = render_to_string('sales_order/pdf/order_sheet.html', context)
+    html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+
+    # 一時ファイルでPDF生成
+    with tempfile.NamedTemporaryFile(delete=True) as output:
+        html.write_pdf(target=output.name)
+        output.seek(0)
+        response = HttpResponse(output.read(), content_type='application/pdf')
+        filename = f"注文書_{order.sales_order_no}.pdf"
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response

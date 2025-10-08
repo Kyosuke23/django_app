@@ -17,4 +17,5 @@ urlpatterns = [
     path('partner/info/', views.PartnerInfoView.as_view(), name='partner_info'),
     path('public/thanks/', views.SalesOrderPublicThanksView.as_view(), name='public_thanks'),  # 下のURLと入れ替え不可
     path('public/<str:token>/', views.SalesOrderPublicDetailView.as_view(), name='public_detail'),
+    path('<int:pk>/order_sheet/', views.order_sheet_pdf, name='order_sheet_pdf'),
 ]

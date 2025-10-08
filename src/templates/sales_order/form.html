@@ -8,7 +8,7 @@
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
 
-<form method="post" id="editForm" action="{{ form_action }}" data-save-url="{{ form_action }}"
+<form method="post" id="editForm" action="{{ form_action }}" data-save-url="{{ form_action }}" data-order-id="{{ form.instance.pk }}"
       data-delete-url="{% if form.instance.pk %}{% url 'sales_order:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
 
@@ -147,7 +147,7 @@
         <td id="rounding-method">{{ form.rounding_method }}</td>
         <td id="subtotal">¥{{ form.instance.subtotal|floatformat:0|intcomma }}</td>
         <td id="tax-total">¥{{ form.instance.tax_total|floatformat:0|intcomma }}</td>
-        <td id="grand-total" class="bg-warning">¥{{ form.instance.grand_total|floatformat:0|intcomma }}</td>
+        <td id="grand-total" class="bg-warning bg-opacity-25">¥{{ form.instance.grand_total|floatformat:0|intcomma }}</td>
       </tr>
     </tbody>
   </table>
