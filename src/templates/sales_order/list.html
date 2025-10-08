@@ -111,7 +111,7 @@
         <td>{{ sales_order.sales_order_no }}</td>
         <td>{{ sales_order.get_status_code_display   }}</td>
         <td>{{ sales_order.sales_order_date }}</td>
-        <td>{{ sales_order.delivery_due_date }}</td>
+        <td>{{ sales_order.delivery_due_date|default_if_none:'未定' }}</td>
         <td>{{ sales_order.delivery_place }}</td>
         <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
         <td>¥{{ sales_order.grand_total|floatformat:0|intcomma }}</td>

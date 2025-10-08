@@ -93,6 +93,9 @@ def get_submittable(user, form):
     # 顧客承諾：担当者のみ可
     if status_code == STATUS_CODE_CONFIRMED:
         return create_user == login_user
+    # 注文書承認待ち：承認依頼先の人のみ可
+    if status_code == STATUS_CODE_ORDER_SUBMITTED:
+        return login_user in reference_users
     return False
 
 def save_details(form, formset, user, action_type):

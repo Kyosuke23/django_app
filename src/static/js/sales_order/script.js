@@ -45,23 +45,34 @@ $(function () {
             return;
         }
 
+        // サーバに送信するデータの取得
+        const formData = form.serializeArray();
+        formData.push({ name: 'action_type', value: actionType });
+        formData.push({ name: 'manager_comment', value: manager_comment });
+
         // ----------------------------------------------------------
-        // ▼ 注文書発行（OUTPUT）
+        // ▼ 注文書確認（OUTPUT）
         // ----------------------------------------------------------
         if (actionType === 'OUTPUT') {
             const orderId = form.data('order-id');
-            const pdfUrl = `/sales_order/${orderId}/order_sheet/`;
-            window.open(pdfUrl, '_blank'); // 新しいタブでPDF開く
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    window.open(`/sales_order/${orderId}/order_sheet/`, '_blank');
+                },
+                error: function (xhr) {
+                    alert('保存に失敗しました。内容を確認してください。');
+                    console.error(xhr.responseText);
+                }
+            });
             return;
         }
 
         // ----------------------------------------------------------
         // ▼ 保存・提出・再編集(RETAKE)などの送信処理
         // ----------------------------------------------------------
-        const formData = form.serializeArray();
-        formData.push({ name: 'action_type', value: actionType });
-        formData.push({ name: 'manager_comment', value: manager_comment });
-
         $.ajax({
             url: saveUrl,
             type: 'POST',

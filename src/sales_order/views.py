@@ -210,7 +210,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
         
-        #  ステータス：顧客承認済 OR 却下
+        #  アクション：顧客承認済 OR 却下
         if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT]:
             self.object.status_code = action_type
             self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
@@ -221,6 +221,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
         is_submittable = get_submittable(user=request.user, form=form)  # ボタン操作の可否判定
         form = apply_field_permissions(form=form, user=request.user)  # フィールド個別の操作制御
+        create_user = getattr(self.object, 'create_user', None)
         
         # 再作成時は登録値を引き継いで受注ステータスを仮保存に戻す
         if action_type == STATUS_CODE_RETAKE:
@@ -233,7 +234,6 @@ class SalesOrderUpdateView(generic.UpdateView):
             form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
             formset = get_sales_order_detail_formset(instance=self.object)
             status_code = getattr(self.object, 'status_code', None)
-            create_user = getattr(self.object, 'create_user', None)
                        
             # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
             if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
@@ -258,10 +258,10 @@ class SalesOrderUpdateView(generic.UpdateView):
             # モーダルを再描画
             return JsonResponse({'success': True, 'html': html})
         
-        # ステータス：社内承認済
+        # アクション：社内承認
         if action_type == STATUS_CODE_APPROVED:
             with transaction.atomic():
-                self.object.status_code = STATUS_CODE_APPROVED
+                self.object.status_code = action_type
                 self.object.manager_comment = request.POST.get('manager_comment', '').strip()
                 self.object.update_user = request.user
                 self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
@@ -298,6 +298,26 @@ class SalesOrderUpdateView(generic.UpdateView):
 
                 sales_order_message(request, '承認', self.object.sales_order_no)
                 return JsonResponse({'success': True})
+            
+        # アクション：注文書確認
+        if action_type == STATUS_CODE_OUTPUT:
+            # 担当者の確認時のみ更新処理を行う
+            if create_user == request.user:
+                self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
+                self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
+                self.object.update_user = request.user
+                self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user'])
+            return JsonResponse({'success': True})
+            
+        # アクション：注文書提出
+        if action_type == STATUS_CODE_ORDER_SUBMITTED:
+            self.object.status_code = action_type
+            self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
+            self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
+            self.object.update_user = request.user
+            self.object.save(update_fields=['status_code', 'delivery_due_date', 'delivery_place', 'update_user'])
+            sales_order_message(request, '更新', self.object.sales_order_no)
+            return JsonResponse({'success': True})
 
         # 仮保存 or 提出時以外は受注ステータスの更新のみとする
         if action_type not in [STATUS_CODE_DRAFT, STATUS_CODE_SUBMITTED]:
@@ -524,22 +544,6 @@ class OrderSheetPdfView(generic.DetailView):
     # -------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        return self.render_pdf()
-
-    # -------------------------------------------
-    # POST処理：納入予定日・納入場所を更新してPDF生成
-    # -------------------------------------------
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-
-        # 保存処理
-        self.object.delivery_due_date = request.POST.get('delivery_due_date')
-        self.object.delivery_place = request.POST.get('delivery_place').strip()
-        self.object.update_user = request.user
-        self.object.updated_at = timezone.now()
-        self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user', 'updated_at'])
-
-        # PDF生成へ
         return self.render_pdf()
 
     # -------------------------------------------

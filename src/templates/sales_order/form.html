@@ -154,7 +154,7 @@
   </table>
 
   {# 明細行追加ボタン #}
-  {% if is_submittable %}
+  {% if form.instance.status_code == 'DRAFT' %}
   <div class="text-start mt-2 mb-2">
     <button type="button" id="add-row-btn" class="btn btn-outline-primary btn-sm">
       <svg class="icon text-primary" width="16" height="16">
@@ -259,46 +259,58 @@
     </template>
   </div>
   {# フッターボタン #}
-  <div class="d-flex justify-content-end gap-2 mt-3">
+  <div class="d-flex justify-content-between gap-2 mt-3">
     {% if is_submittable %}
-      {# 受注ステータス：仮作成　#}
-      {% if form.instance.status_code == 'DRAFT' %}
-        <button type="submit" class="btn btn-primary" data-action="DRAFT">下書き保存</button>
-        <button type="submit" class="btn btn-success" data-action="SUBMITTED">提出</button>
-        {% if is_update %}
+      {% if form.instance.status_code in 'CONFIRMED ORDER_SUBMITTED' %}
+        <div>
+          <button type="submit" class="btn btn-primary" data-action="OUTPUT">注文書確認</button>
+        </div>
+      {% endif %}
+      <div class="d-flex gap-2">
+        {# 受注ステータス：仮作成　#}
+        {% if form.instance.status_code == 'DRAFT' %}
+          <button type="submit" class="btn btn-primary" data-action="DRAFT">下書き保存</button>
+          <button type="submit" class="btn btn-success" data-action="SUBMITTED">提出</button>
+          {% if is_update %}
+            <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
+            </form>
+          {% endif %}
+        {% endif %}
+        {# 受注ステータス：社内承認待ち #}
+        {% if form.instance.status_code == 'SUBMITTED' %}
+          <button type="submit" class="btn btn-success" data-action="APPROVED">承認</button>
+          <button type="submit" class="btn btn-danger" data-action="REJECTED_IN">却下</button>
+        {% endif %}
+        {# 受注ステータス：社内却下 #}
+        {% if form.instance.status_code == 'REJECTED_IN' %}
+          <input type="hidden" name="action_type" id="actionTypeField" value="">
+          <button type="submit" class="btn btn-primary" data-action="RETAKE">再編集</button>
           <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
           </form>
         {% endif %}
-      {% endif %}
-      {# 受注ステータス：社内承認待ち #}
-      {% if form.instance.status_code == 'SUBMITTED' %}
-        <button type="submit" class="btn btn-primary" data-action="APPROVED">承認</button>
-        <button type="submit" class="btn btn-danger" data-action="REJECTED_IN">却下</button>
-      {% endif %}
-      {# 受注ステータス：社内却下 #}
-      {% if form.instance.status_code == 'REJECTED_IN' %}
-        <input type="hidden" name="action_type" id="actionTypeField" value="">
-        <button type="submit" class="btn btn-primary" data-action="RETAKE">再編集</button>
-        <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
-        </form>
-      {% endif %}
-      {# 受注ステータス：顧客承認済 #}
-      {% if form.instance.status_code == 'CONFIRMED' %}
-        <button type="submit" class="btn btn-primary" data-action="OUTPUT">注文書発行</button>
-        <button type="submit" class="btn btn-warning" data-action="CANCEL">キャンセル</button>
-      {% endif %}
-      {# 受注ステータス：顧客却下 #}
-      {% if form.instance.status_code == 'REJECTED_OUT' %}
-        <button type="submit" class="btn btn-primary" data-action="RETAKE">再編集</button>
-        <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
-          {% csrf_token %}
-          <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
-        </form>
-      {% endif %}
+        {# 受注ステータス：顧客承認済 #}
+        {% if form.instance.status_code == 'CONFIRMED' %}
+          <button type="submit" class="btn btn-success" data-action="ORDER_SUBMITTED">注文書提出</button>
+          <button type="submit" class="btn btn-warning" data-action="CANCEL">キャンセル</button>
+        {% endif %}
+        {# 受注ステータス：顧客却下 #}
+        {% if form.instance.status_code == 'REJECTED_OUT' %}
+          <button type="submit" class="btn btn-primary" data-action="RETAKE">再編集</button>
+          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
+          </form>
+        {% endif %}
+        {# 受注ステータス：注文書承認待ち #}
+        {% if form.instance.status_code == 'ORDER_SUBMITTED' %}
+          <button type="submit" class="btn btn-success" data-action="ORDER_APPROVED">承認</button>
+          <button type="submit" class="btn btn-danger" data-action="ORDER_REJECTED_IN">却下</button>
+        {% endif %}
+      </div>
     {% else %}
       <div class="alert alert-secondary text-center w-100 mb-0">
         この受注は編集できません。
