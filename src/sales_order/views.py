@@ -110,7 +110,11 @@ class SalesOrderCreateView(generic.CreateView):
     def get(self, request, *args, **kwargs):
         self.object = None
         form = SalesOrderForm(prefix='header', user=request.user)
-        formset = fill_formset(get_sales_order_detail_formset())        
+        formset = fill_formset(get_sales_order_detail_formset())   
+        
+        # フィールド個別の操作制御
+        form = apply_field_permissions(form=form, user=request.user)
+     
         html = render_to_string(
             self.template_name,
             {
@@ -216,6 +220,8 @@ class SalesOrderUpdateView(generic.UpdateView):
         form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
         user = request.user
+        is_submittable = get_submittable(user=request.user, form=form)  # ボタン操作の可否判定
+        form = apply_field_permissions(form=form, user=request.user)  # フィールド個別の操作制御
         
         # 再作成時は登録値を引き継いで受注ステータスを仮保存に戻す
         if action_type == STATUS_CODE_RETAKE:
@@ -229,10 +235,7 @@ class SalesOrderUpdateView(generic.UpdateView):
             formset = get_sales_order_detail_formset(instance=self.object)
             status_code = getattr(self.object, 'status_code', None)
             create_user = getattr(self.object, 'create_user', None)
-            
-            # ボタン操作可否判定
-            is_submittable = get_submittable(user=request.user, form=form)
-            
+                       
             # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
             if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
                 for field in form.fields.values():
@@ -241,9 +244,6 @@ class SalesOrderUpdateView(generic.UpdateView):
                     for field in f.fields.values():
                         field.widget.attrs['disabled'] = True
                         
-            # フィールド個別の操作制御
-            form = apply_field_permissions(form=form, user=request.user)
-        
             html = render_to_string(
                 self.template_name,
                 {
@@ -317,10 +317,9 @@ class SalesOrderUpdateView(generic.UpdateView):
                     {
                         'form': form,
                         'formset': formset,
-                        'form_action': reverse(
-                            'sales_order:update',
-                            kwargs={'pk': obj.pk} if obj else {}
-                        ),
+                        'form_action': reverse('sales_order:update', kwargs={'pk': obj.pk} if obj else {}),
+                        'is_update': True,
+                        'is_submittable': is_submittable,
                         'modal_title': modal_title,
                     },
                     self.request

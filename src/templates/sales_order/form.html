@@ -38,6 +38,16 @@
       <label class="form-label">受注日</label>
       <p class="form-control-plaintext">{{ form.instance.sales_order_date|default_if_none:'' }}</p>
     </div>
+    {# 納入予定日 #}
+    <div class="col-md-3 mb-2">
+      <label class="form-label">納入予定日</label>
+      {% render_field form.delivery_due_date class="form-control" %}
+    </div>
+    {# 納入場所 #}
+    <div class="col-md-9">
+      <label class="form-label">納入場所</label>
+      {% render_field form.delivery_place class="form-control" %}
+    </div>
     {# 取引先 #}
     <div class="col-md-12 mb-2">
       <label for="{{ form.partner.id_for_label }}" class="form-label">取引先</label>
@@ -65,16 +75,6 @@
           {% endif %}
         </div>
       </div>
-    </div>
-    {# 納入予定日 #}
-    <div class="col-md-3 mb-2">
-      <label class="form-label">納入予定日</label>
-      {% render_field form.delivery_due_date class="form-control" %}
-    </div>
-    {# 納入場所 #}
-    <div class="col-md-9">
-      <label class="form-label">納入場所</label>
-      {% render_field form.delivery_place class="form-control" %}
     </div>
     {# 備考 #}
     <div class="col-md-4 mb-2">
@@ -130,6 +130,7 @@
   {# ======================================= #}
   {# 受注明細 #}
   {# ======================================= #}
+  <hr>
   <h5 class="mt-4 mb-2">受注明細</h5>
   {{ formset.management_form }}
   {# 小計エリア #}

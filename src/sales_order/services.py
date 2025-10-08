@@ -129,12 +129,16 @@ def apply_field_permissions(form, user):
     for field_name in ['remarks', 'manager_comment', 'customer_comment']:
         if field_name in form.fields:
             form.fields[field_name].widget.attrs['disabled'] = True
-
-    # DRAFT: 作成者のみ 備考 編集可
+            
+    # 新規作成：備考の編集可
+    if not form.instance.create_user:
+        form.fields['remarks'].widget.attrs.pop('disabled', None)
+        
+    # DRAFT: 作成者のみ備考の編集可
     if status == STATUS_CODE_DRAFT and form.instance.create_user == user:
         form.fields['remarks'].widget.attrs.pop('disabled', None)
 
-    # SUBMITTED: 承認権限者のみ 承認者コメント 編集可
+    # SUBMITTED: 承認権限者のみ承認者コメントの編集可
     elif status == STATUS_CODE_SUBMITTED and user in form.instance.reference_users.all():
         form.fields['manager_comment'].widget.attrs.pop('disabled', None)
         
