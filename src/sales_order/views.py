@@ -211,7 +211,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         action_type = request.POST.get('action_type')
         
         #  アクション：承諾 OR 却下
-        if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT, STATUS_CODE_ORDER_CONFIRMED, STATUS_CODE_ORDER_REJECTED_OUT]:
+        if action_type in [STATUS_CODE_QUATATION_CONFIRMED, STATUS_CODE_QUATATION_REJECTED_OUT, STATUS_CODE_ORDER_CONFIRMED, STATUS_CODE_ORDER_REJECTED_OUT]:
             self.object.status_code = action_type
             self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
             self.object.save(update_fields=['status_code', 'customer_comment'])
@@ -263,7 +263,7 @@ class SalesOrderUpdateView(generic.UpdateView):
             return JsonResponse({'success': True, 'html': html})
         
         # アクション：社内承認
-        if action_type == STATUS_CODE_APPROVED:
+        if action_type == STATUS_CODE_QUATATION_APPROVED:
             with transaction.atomic():
                 self.object.status_code = action_type
                 self.object.manager_comment = request.POST.get('manager_comment', '').strip()
@@ -367,7 +367,7 @@ class SalesOrderUpdateView(generic.UpdateView):
             pass
 
         # 仮保存 or 提出時以外は受注ステータスの更新のみとする
-        if action_type not in [STATUS_CODE_DRAFT, STATUS_CODE_SUBMITTED]:
+        if action_type not in [STATUS_CODE_DRAFT, STATUS_CODE_QUATATION_SUBMITTED]:
             self.object.status_code = action_type
             self.object.update_user = request.user
             self.object.save(update_fields=['status_code', 'update_user'])

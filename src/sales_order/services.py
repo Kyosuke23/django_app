@@ -79,19 +79,19 @@ def get_submittable(user, form):
     if status_code == STATUS_CODE_DRAFT:
         return create_user == login_user
     # 社内承認待ち：承認依頼先の人のみ可
-    if status_code == STATUS_CODE_SUBMITTED:
+    if status_code == STATUS_CODE_QUATATION_SUBMITTED:
         return login_user in reference_users
     # 社内却下：担当者のみ可
-    if status_code == STATUS_CODE_REJECTED_IN:
+    if status_code == STATUS_CODE_QUATATION_REJECTED_IN:
         return create_user == login_user
     # 社内承認済：担当者のみ可
-    if status_code == STATUS_CODE_APPROVED:
+    if status_code == STATUS_CODE_QUATATION_APPROVED:
         return create_user == login_user
     # 顧客却下：担当者のみ可
-    if status_code == STATUS_CODE_REJECTED_OUT:
+    if status_code == STATUS_CODE_QUATATION_REJECTED_OUT:
         return create_user == login_user
     # 顧客承諾：担当者のみ可
-    if status_code == STATUS_CODE_CONFIRMED:
+    if status_code == STATUS_CODE_QUATATION_CONFIRMED:
         return create_user == login_user
     # 注文書承認待ち：承認依頼先の人のみ可
     if status_code == STATUS_CODE_ORDER_SUBMITTED:
@@ -145,11 +145,11 @@ def apply_field_permissions(form, user):
         form.fields['remarks'].widget.attrs.pop('disabled', None)
 
     # SUBMITTED: 承認権限者のみ承認者コメントの編集可
-    if status == STATUS_CODE_SUBMITTED and user in form.instance.reference_users.all():
+    if status == STATUS_CODE_QUATATION_SUBMITTED and user in form.instance.reference_users.all():
         form.fields['manager_comment'].widget.attrs.pop('disabled', None)
         
     # CONFIRM: 担当者のみ納入日と納入場所の編集可
-    if status == STATUS_CODE_CONFIRMED and form.instance.create_user == user:
+    if status == STATUS_CODE_QUATATION_CONFIRMED and form.instance.create_user == user:
         form.fields['delivery_due_date'].widget.attrs.pop('disabled', None)
         form.fields['delivery_place'].widget.attrs.pop('disabled', None)
         
