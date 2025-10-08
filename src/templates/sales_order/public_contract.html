@@ -1,0 +1,92 @@
+{% extends "layout/base.html" %}
+{% load static %}
+{% block content %}
+<!doctype html>
+<html lang="ja" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>注文書確認</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .container {
+      max-width: 700px;
+      margin-top: 60px;
+    }
+    .card {
+      border-radius: 1rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    textarea {
+      resize: vertical;
+    }
+    .contract-notice {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      padding: 12px 16px;
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card p-4">
+    <form method="post" id="confirmForm" action="{% url 'sales_order:update' pk=order_id %}">
+      {% csrf_token %}
+      {% if signed_token %}
+        <input type="hidden" name="token" value="{{ signed_token }}">
+      {% endif %}
+
+      <h2 class="h5 mb-3 text-center fw-bold">注文書 確認・承認ページ</h2>
+
+      <div class="alert alert-info">
+        以下の注文書について、最終確認をお願いします。<br>
+        内容をご確認のうえ、<strong>「承認」または「却下」</strong>を選択してください。
+      </div>
+
+      <!-- 契約に関する重要メッセージ -->
+      <div class="contract-notice mb-4">
+        <strong>ご注意：</strong> 「承認」ボタンを押すと、本注文書の内容に同意したものとみなされ、
+        <strong>正式な契約が成立</strong>します。<br>
+        内容に誤りや修正点がある場合は、「却下」ボタンを押しコメント欄にご記入ください。
+      </div>
+
+      <!-- 注文書確認ボタン -->
+      <div class="d-grid gap-2 mb-4">
+        <button type="submit" class="btn btn-outline-primary" data-action="OUTPUT_OUT">注文書確認</button>
+      </div>
+
+      <!-- コメント入力欄 -->
+      <div class="mb-4">
+        <label for="customer_comment" class="form-label fw-semibold">コメント（任意）</label>
+        <textarea id="customer_comment" name="customer_comment" rows="3" class="form-control"
+          placeholder="修正点や補足があればご記入ください。"></textarea>
+      </div>
+      <input type="hidden" name="customer_comment" id="customer_comment">
+
+      <!-- 承認・却下ボタン -->
+      <div class="d-flex justify-content-between">
+          <button type="submit" class="btn btn-success" data-action="ORDER_CONFIRMED">承認</button>
+          <button type="submit" class="btn btn-danger" data-action="ORDER_REJECTED_OUT">却下</button>
+          <input type="hidden" name="action_type" id="action_type">
+          <input type="hidden" name="order_id" id="order_id" value="{{ order_id }}">
+      </div>
+
+      <div class="text-center text-muted mt-4 small">
+        ※本リンクの有効期限: {{ link_expires_at|date:"Y-m-d H:i" }}<br>
+        ※このページは自動送信メールからアクセスされています。
+      </div>
+    </form>
+  </div>
+</div>
+
+{# 個別JS読み込み #}
+<script type="text/javascript" src="{% static 'js/sales_order/script.js' %}"></script>
+</body>
+</html>
+{% endblock %}

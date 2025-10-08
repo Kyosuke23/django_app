@@ -210,12 +210,16 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
         
-        #  アクション：顧客承認済 OR 却下
-        if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT]:
+        #  アクション：承諾 OR 却下
+        if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT, STATUS_CODE_ORDER_CONFIRMED, STATUS_CODE_ORDER_REJECTED_OUT]:
             self.object.status_code = action_type
             self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
             self.object.save(update_fields=['status_code', 'customer_comment'])
             return redirect('sales_order:public_thanks')
+        
+        # アクション：注文書確認（顧客）
+        if action_type == STATUS_CODE_OUTPUT_OUT:
+            return JsonResponse({'success': True})
         
         form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
@@ -274,7 +278,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                             'sales_order_id': self.object.id,
                             'partner_email': partner.email,
                         })
-                        url = request.build_absolute_uri(reverse('sales_order:public_detail', kwargs={'token': token}))
+                        url = request.build_absolute_uri(reverse('sales_order:public_confirm', kwargs={'token': token}))
                         print(url)
                         self.object.subject = f"【承認通知】受注番号 {self.object.sales_order_no}"
                         context = {
@@ -299,8 +303,8 @@ class SalesOrderUpdateView(generic.UpdateView):
                 sales_order_message(request, '承認', self.object.sales_order_no)
                 return JsonResponse({'success': True})
             
-        # アクション：注文書確認
-        if action_type == STATUS_CODE_OUTPUT:
+        # アクション：注文書確認（社内）
+        if action_type == STATUS_CODE_OUTPUT_IN:
             # 担当者の確認時のみ更新処理を行う
             if create_user == request.user:
                 self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
@@ -318,6 +322,49 @@ class SalesOrderUpdateView(generic.UpdateView):
             self.object.save(update_fields=['status_code', 'delivery_due_date', 'delivery_place', 'update_user'])
             sales_order_message(request, '更新', self.object.sales_order_no)
             return JsonResponse({'success': True})
+        
+        # アクション：注文書承認
+        if action_type == STATUS_CODE_ORDER_APPROVED:
+            with transaction.atomic():
+                self.object.status_code = action_type
+                self.object.update_user = request.user
+                self.object.save(update_fields=['status_code', 'update_user'])
+                partner = getattr(self.object, 'partner', None)
+                if partner and partner.email:
+                    try:
+                        signer = TimestampSigner()
+                        token = signer.sign_object({
+                            'sales_order_id': self.object.id,
+                            'partner_email': partner.email,
+                        })
+                        url = request.build_absolute_uri(reverse('sales_order:public_contract', kwargs={'token': token}))
+                        self.object.subject = f"【承認通知】受注番号 {self.object.sales_order_no}"
+                        context = {
+                            'partner': partner,
+                            'order': self.object,
+                            'url': url,
+                            'now': timezone.now(),
+                        }
+                        message = render_to_string('sales_order/mails/order_approved.txt', context)
+                        print(message)
+                        print(url)
+                        # send_mail(
+                        #     subject,
+                        #     message.strip(),
+                        #     getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@example.com'),
+                        #     [partner.email],
+                        #     fail_silently=False,
+                        # )
+                    except Exception as e:
+                        sales_order_message(request, '承認', self.object.sales_order_no)
+                        return JsonResponse({'success': False})
+
+                sales_order_message(request, '承認', self.object.sales_order_no)
+                return JsonResponse({'success': True})
+            
+        # アクション：注文書承諾（本契約）
+        if action_type == STATUS_CODE_ORDER_APPROVED:
+            pass
 
         # 仮保存 or 提出時以外は受注ステータスの更新のみとする
         if action_type not in [STATUS_CODE_DRAFT, STATUS_CODE_SUBMITTED]:
@@ -402,11 +449,11 @@ class PartnerInfoView(generic.View):
 # -----------------------------
 # 顧客向け回答画面表示
 # -----------------------------   
-class SalesOrderPublicDetailView(generic.View):
+class SalesOrderPublicConfirmView(generic.View):
     '''
     顧客向けの公開受注詳細画面
     '''
-    template_name = 'sales_order/public_detail.html'
+    template_name = 'sales_order/public_confirm.html'
     max_age_seconds = 60 * 60 * 24 * 3  # 3日間有効
 
     def get(self, request, token, *args, **kwargs):
@@ -444,7 +491,6 @@ class SalesOrderPublicDetailView(generic.View):
         # ------------------------------------------------------------
         # 明細・金額集計
         # ------------------------------------------------------------
-        # details = order.details.all() 
         subtotal = Decimal('0')
         tax_total = Decimal('0')
 
@@ -485,6 +531,60 @@ class SalesOrderPublicDetailView(generic.View):
 
         return render(request, self.template_name, context)
 
+# -----------------------------
+# 注文書承認画面（顧客向け）
+# -----------------------------   
+class SalesOrderPublicContractView(generic.View):
+    '''
+    顧客向けの公開受注詳細画面
+    '''
+    template_name = 'sales_order/public_contract.html'
+    max_age_seconds = 60 * 60 * 24 * 3  # 3日間有効
+
+    def get(self, request, token, *args, **kwargs):
+        signer = TimestampSigner()
+
+        # ------------------------------------------------------------
+        # トークン検証
+        # ------------------------------------------------------------
+        try:
+            data = signer.unsign_object(token, max_age=self.max_age_seconds)
+            order_id = data.get('sales_order_id')
+            partner_email = data.get('partner_email')
+        except SignatureExpired:
+            return HttpResponseForbidden("リンクの有効期限が切れています。")
+        except BadSignature:
+            return HttpResponseForbidden("リンクが不正または改ざんされています。")
+        except Exception:
+            return HttpResponseForbidden("リンクが無効です。")
+        
+        # ------------------------------------------------------------
+        # 対象受注データの取得
+        # ------------------------------------------------------------
+        order = SalesOrder.objects.select_related('partner').filter(pk=order_id).first()
+        if not order:
+            raise Http404("受注データが見つかりません。")
+        
+        # ------------------------------------------------------------
+        # アクセス認可チェック（メールアドレス照合）
+        # ------------------------------------------------------------
+        if not order.partner or order.partner.email.lower() != partner_email.lower():
+            return HttpResponseForbidden("アクセス権限がありません。")
+        
+        # ------------------------------------------------------------
+        # アクセスログ更新（任意）
+        # ------------------------------------------------------------
+        if hasattr(order, "public_accessed_at") and not order.public_accessed_at:
+            order.public_accessed_at = timezone.now()
+            order.save(update_fields=["public_accessed_at"])
+
+        # ------------------------------------------------------------
+        # コンテキストをテンプレートに渡す
+        # ------------------------------------------------------------
+        context = {'order_id': order.pk,}
+        
+        return render(request, self.template_name, context)
+    
 # -----------------------------
 # Export / Import
 # -----------------------------
@@ -540,11 +640,19 @@ class OrderSheetPdfView(generic.DetailView):
     context_object_name = 'order'
 
     # -------------------------------------------
-    # GET処理（既存の注文書表示のみ）
+    # GET処理
     # -------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
+
+    # -------------------------------------------
+    # POST処理
+    # -------------------------------------------    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return self.render_pdf()
+
 
     # -------------------------------------------
     # PDF生成処理
@@ -554,7 +662,7 @@ class OrderSheetPdfView(generic.DetailView):
             'order': self.object,
             'details': self.object.details.all(),
             'partner': self.object.partner,
-            'company_name': self.request.user.tenant.tenant_name,
+            # 'company_name': self.request.user.tenant.tenant_name,
             'title': f"注文書（{self.object.sales_order_no}）",
         }
 

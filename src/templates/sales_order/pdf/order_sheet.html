@@ -74,9 +74,11 @@ h1 {
   line-height: 30mm;
 }
 
+.upper-block,
 .content-block,
 .detail-table-wrapper,
-.bottom-block {
+.bottom-block,
+.footer {
   width: 100%;
   max-width: 180mm;
   margin: 0 auto;
@@ -180,6 +182,10 @@ thead { display: table-header-group; }
   box-sizing: border-box;
 }
 
+.summary table th {
+  background-color: #f3f3f3; /* 備考欄と同じ */
+}
+
 /* フッタ */
 .footer {
   clear: both;
@@ -192,95 +198,91 @@ thead { display: table-header-group; }
 }
 </style>
 </head>
-
 <body>
-
-<h1>注　文　書</h1>
-
-<div class="header-block">
-  <div class="partner-info">
-    <strong>{{ partner.partner_name }}</strong> 御中<br>
-    {% if partner.postal_code %}〒{{ partner.postal_code|format_postal }}<br>{% endif %}
-    {% if partner.state %}{{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}<br>{% endif %}
-    {% if partner.contact_name %}担当者: {{ partner.contact_name }} 様<br>{% endif %}
-    {% if partner.tel_number %}TEL: {{ partner.tel_number|format_tel }}<br>{% endif %}
-    {% if partner.email %}Email: {{ partner.email }}{% endif %}
-  </div>
-
-  <div class="company-info">
-    <strong>{{ company_name }}</strong><br>
-    発行日：{{ order.updated_at|date:"Y年m月d日" }}<br>
-    注文番号：{{ order.sales_order_no }}<br>
-    担当者：{{ order.create_user }}<br>
-    <div class="company-seal">角印</div>
-  </div>
-</div>
-
-<div class="content-block">
-  <div class="delivery-info">
-    <div class="delivery-row">
-      <span class="label">納入予定日：</span>
-      <span class="value">{{ order.delivery_due_date|date:"Y年m月d日" }}</span>
-    </div>
-    <div class="delivery-row">
-      <span class="label">納入場所：</span>
-      <span class="value">{{ order.delivery_place|default:"―" }}</span>
+  <h1>注　文　書</h1>
+  <div class="header-block">
+    <div class="upper-block">
+      <div class="partner-info">
+        <strong>{{ partner.partner_name }}</strong> 御中<br>
+        {% if partner.postal_code %}〒{{ partner.postal_code|format_postal }}<br>{% endif %}
+        {% if partner.state %}{{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}<br>{% endif %}
+        {% if partner.contact_name %}担当者: {{ partner.contact_name }} 様<br>{% endif %}
+        {% if partner.tel_number %}TEL: {{ partner.tel_number|format_tel }}<br>{% endif %}
+        {% if partner.email %}Email: {{ partner.email }}{% endif %}
+      </div>
+      <div class="company-info">
+        <strong>{{ company_name }}</strong><br>
+        発行日：{{ order.updated_at|date:"Y年m月d日" }}<br>
+        注文番号：{{ order.sales_order_no }}<br>
+        担当者：{{ order.create_user }}<br>
+        <div class="company-seal">角印</div>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="detail-table-wrapper">
-  <table class="detail-table">
-    <thead>
-      <tr>
-        <th style="width: 5%;">No.</th>
-        <th style="width: 35%;">商品名</th>
-        <th style="width: 10%;">数量</th>
-        <th style="width: 10%;">単位</th>
-        <th style="width: 15%;">単価</th>
-        <th style="width: 10%;">税率</th>
-        <th style="width: 15%;">金額</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for d in details %}
-      <tr>
-        <td class="text-center">{{ forloop.counter }}</td>
-        <td>{{ d.product.product_name }}</td>
-        <td class="text-end">{{ d.quantity|floatformat:2 }}</td>
-        <td class="text-center">{{ d.product.unit }}</td>
-        <td class="text-end">¥{{ d.billing_unit_price|floatformat:0|intcomma }}</td>
-        <td class="text-center">{% if d.is_tax_exempt %}非課税{% else %}{{ d.tax_rate|floatformat:2 }}%{% endif %}</td>
-        <td class="text-end">¥{{ d.amount|floatformat:0|intcomma }}</td>
-      </tr>
-      {% empty %}
-      <tr><td colspan="7" class="text-center text-muted">明細データがありません</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<div class="bottom-block">
-  <div class="remarks">
-    <strong>備考：</strong>
-    {% if order.remarks %}
-      {{ order.remarks|linebreaksbr }}
-    {% else %}
-      （特記事項なし）
-    {% endif %}
+  <div class="content-block">
+    <div class="delivery-info">
+      <div class="delivery-row">
+        <span class="label">納入予定日：</span>
+        <span class="value">{{ order.delivery_due_date|date:"Y年m月d日" }}</span>
+      </div>
+      <div class="delivery-row">
+        <span class="label">納入場所：</span>
+        <span class="value">{{ order.delivery_place|default:"―" }}</span>
+      </div>
+    </div>
   </div>
-  <div class="summary">
-    <table>
-      <tr><th class="text-end">小計</th><td class="text-end">¥{{ order.subtotal|floatformat:0|intcomma }}</td></tr>
-      <tr><th class="text-end">消費税</th><td class="text-end">¥{{ order.tax_total|floatformat:0|intcomma }}</td></tr>
-      <tr><th class="text-end">合計金額</th><td class="text-end"><strong>¥{{ order.grand_total|floatformat:0|intcomma }}</strong></td></tr>
+
+  <div class="detail-table-wrapper">
+    <table class="detail-table">
+      <thead>
+        <tr>
+          <th style="width: 5%;">No.</th>
+          <th style="width: 35%;">商品名</th>
+          <th style="width: 10%;">数量</th>
+          <th style="width: 10%;">単位</th>
+          <th style="width: 15%;">単価</th>
+          <th style="width: 10%;">税率</th>
+          <th style="width: 15%;">金額</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in details %}
+        <tr>
+          <td class="text-center">{{ forloop.counter }}</td>
+          <td>{{ d.product.product_name }}</td>
+          <td class="text-end">{{ d.quantity|floatformat:2 }}</td>
+          <td class="text-center">{{ d.product.unit }}</td>
+          <td class="text-end">¥{{ d.billing_unit_price|floatformat:0|intcomma }}</td>
+          <td class="text-center">{% if d.is_tax_exempt %}非課税{% else %}{{ d.tax_rate|floatformat:2 }}%{% endif %}</td>
+          <td class="text-end">¥{{ d.amount|floatformat:0|intcomma }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted">明細データがありません</td></tr>
+        {% endfor %}
+      </tbody>
     </table>
   </div>
-</div>
 
-<div class="footer">
-  この注文書は {{ company_name }} により自動発行されました。
-</div>
-
+  <div class="bottom-block">
+    <div class="remarks">
+      <strong>備考：</strong>
+      {% if order.remarks %}
+        {{ order.remarks|linebreaksbr }}
+      {% else %}
+        （特記事項なし）
+      {% endif %}
+    </div>
+    <div class="summary">
+      <table>
+        <tr><th class="text-end">小計</th><td class="text-end">¥{{ order.subtotal|floatformat:0|intcomma }}</td></tr>
+        <tr><th class="text-end">消費税</th><td class="text-end">¥{{ order.tax_total|floatformat:0|intcomma }}</td></tr>
+        <tr><th class="text-end">合計金額</th><td class="text-end"><strong>¥{{ order.grand_total|floatformat:0|intcomma }}</strong></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer">
+    この注文書は {{ company_name }} により自動発行されました。
+  </div>
 </body>
 </html>

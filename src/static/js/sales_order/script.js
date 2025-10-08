@@ -51,26 +51,6 @@ $(function () {
         formData.push({ name: 'manager_comment', value: manager_comment });
 
         // ----------------------------------------------------------
-        // ▼ 注文書確認（OUTPUT）
-        // ----------------------------------------------------------
-        if (actionType === 'OUTPUT') {
-            const orderId = form.data('order-id');
-            $.ajax({
-                url: form.attr('action'),
-                type: 'POST',
-                data: formData,
-                success: function (response) {
-                    window.open(`/sales_order/${orderId}/order_sheet/`, '_blank');
-                },
-                error: function (xhr) {
-                    alert('保存に失敗しました。内容を確認してください。');
-                    console.error(xhr.responseText);
-                }
-            });
-            return;
-        }
-
-        // ----------------------------------------------------------
         // ▼ 保存・提出・再編集(RETAKE)などの送信処理
         // ----------------------------------------------------------
         $.ajax({
@@ -81,11 +61,11 @@ $(function () {
                 if (response.success) {
                     // success時に html があれば → モーダル再描画（閉じない）
                     if (response.html) {
-                    $("#modalBody").html(response.html);
+                        $("#modalBody").html(response.html);
                     } else {
-                    // html がなければ → 通常の更新完了（モーダル閉じるなど）
-                    $("#modal").modal("hide");
-                    location.reload();
+                        // html がなければ → 通常の更新完了（モーダル閉じるなど）
+                        $("#modal").modal("hide");
+                        location.reload();
                     }
                 } else if (response.html) {
                     // バリデーションエラーなど: モーダル内容更新
@@ -332,10 +312,35 @@ $(function () {
     });
 
     $(document).on('click', '#confirmForm button[data-action]', function (e) {
-        const action = $(this).data('action');
-        $('#action_type').val(action);
 
-        const comment = $('#customer_comment').val();
+        const form = $('#confirmForm');
+        const formData = form.serializeArray();
+        const actionType = $(this).data('action');
+        const comment = $('#id_header-customer_comment').val();
+        formData.push({ name: 'action_type', value: actionType });
+        formData.push({ name: 'customer_comment', value: comment });
+
+        // サーバ処理用のパラメータを準備
+        $('#action_type').val(actionType);
         $('#customer_comment').val(comment);
+
+        // 注文書のPDF出力
+        if (actionType === 'OUTPUT_IN' || actionType === 'OUTPUT_OUT') {
+            e.preventDefault(); // 注文書発行の時だけsubmit中止
+            const orderId = $('#order_id').val();
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    window.open(`/sales_order/${orderId}/order_sheet/`, '_blank');
+                },
+                error: function (xhr) {
+                    alert('注文書の取得に失敗しました。');
+                    console.error(xhr.responseText);
+                }
+            });
+            return;
+        }
     });
 });
