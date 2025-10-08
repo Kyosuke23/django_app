@@ -50,6 +50,24 @@ $(function () {
         formData.push({ name: 'action_type', value: actionType });
         formData.push({ name: 'manager_comment', value: manager_comment });
 
+        // 注文書のPDF出力
+        if (actionType === 'OUTPUT_IN') {
+            const orderId = form.data('order-id');
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: formData,
+                success: function (response) {
+                    window.open(`/sales_order/${orderId}/order_sheet/`, '_blank');
+                },
+                error: function (xhr) {
+                    alert('注文書の取得に失敗しました。');
+                    console.error(xhr.responseText);
+                }
+            });
+            return;
+        }
+
         // ----------------------------------------------------------
         // ▼ 保存・提出・再編集(RETAKE)などの送信処理
         // ----------------------------------------------------------
@@ -325,7 +343,7 @@ $(function () {
         $('#customer_comment').val(comment);
 
         // 注文書のPDF出力
-        if (actionType === 'OUTPUT_IN' || actionType === 'OUTPUT_OUT') {
+        if (actionType === 'OUTPUT_OUT') {
             e.preventDefault(); // 注文書発行の時だけsubmit中止
             const orderId = $('#order_id').val();
             $.ajax({
