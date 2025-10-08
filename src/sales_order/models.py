@@ -40,7 +40,7 @@ class SalesOrder(BaseModel):
     ]
     sales_order_no = models.CharField(max_length=20, verbose_name='受注番号')
     status_code = models.CharField(
-        max_length=20,
+        max_length=50,
         choices=STATUS_CHOICES,
         default='DRAFT'
     )

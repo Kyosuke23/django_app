@@ -210,193 +210,285 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
         
-        #  アクション：承諾 OR 却下
-        if action_type in [STATUS_CODE_QUATATION_CONFIRMED, STATUS_CODE_QUATATION_REJECTED_OUT, STATUS_CODE_ORDER_CONFIRMED, STATUS_CODE_ORDER_REJECTED_OUT]:
-            self.object.status_code = action_type
-            self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
-            self.object.save(update_fields=['status_code', 'customer_comment'])
-            return redirect('sales_order:public_thanks')
+        # アクション別ハンドラをディスパッチ
+        handler_map = {
+            ACTION_CODE_OUTPUT_QUATATION_IN: self.handle_output_quatation_in,
+            ACTION_CODE_OUTPUT_QUATATION_OUT: self.handle_output_quatation_out,
+            ACTION_CODE_OUTPUT_ORDER_IN: self.handle_output_order_in,
+            ACTION_CODE_OUTPUT_ORDER_OUT: self.handle_output_order_out,
+            STATUS_CODE_RETAKE: self.handle_retake,
+            STATUS_CODE_DRAFT: self.handle_default,
+            STATUS_CODE_QUATATION_SUBMITTED: self.handle_default,
+            STATUS_CODE_QUATATION_APPROVED: self.handle_quatation_approved,
+            STATUS_CODE_QUATATION_CONFIRMED: self.handle_customer_reply,
+            STATUS_CODE_QUATATION_REJECTED_OUT: self.handle_customer_reply,
+            STATUS_CODE_ORDER_SUBMITTED: self.handle_order_submitted,
+            STATUS_CODE_ORDER_APPROVED: self.handle_order_approved,
+            STATUS_CODE_ORDER_CONFIRMED: self.handle_customer_reply,
+            STATUS_CODE_ORDER_REJECTED_OUT: self.handle_customer_reply,
+        }
+
+        handler = handler_map.get(action_type, self.handle_default)
+        return handler(request)
         
-        # アクション：見積書 OR 発注書確認（顧客）
-        if action_type in [ACTION_CODE_OUTPUT_QUATATION_OUT, ACTION_CODE_OUTPUT_ORDER_OUT]:
-            return JsonResponse({'success': True})
+    # ============================================================
+    # 個別ハンドラ群
+    # ============================================================
+    def handle_retake(self, request):
+        '''
+        再作成
+        - ステータスを仮保存に戻して再描画
+        '''
+        # データ更新
+        self.object.status_code = STATUS_CODE_DRAFT
+        self.object.update_user = request.user
+        self.object.save(update_fields=['status_code', 'update_user'])
         
-        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
-        formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
-        is_submittable = get_submittable(user=request.user, form=form)  # ボタン操作の可否判定
-        form = apply_field_permissions(form=form, user=request.user)  # フィールド個別の操作制御
-        create_user = getattr(self.object, 'create_user', None)
+        # モーダルを再描画
+        return self.render_form(request)
+
+    def handle_quatation_approved(self, request):
+        '''
+        見積承認
+        - 承認者コメントを保存し、顧客にメール通知
+        - 次は顧客による承認
+        '''
+        with transaction.atomic():
+            # データ更新
+            self.object.status_code = STATUS_CODE_QUATATION_APPROVED
+            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.update_user = request.user
+            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+
+            partner = getattr(self.object, 'partner', None)
+            if partner and partner.email:
+                try:
+                    signer = TimestampSigner()
+                    token = signer.sign_object({
+                        'sales_order_id': self.object.id,
+                        'partner_email': partner.email,
+                    })
+                    url = request.build_absolute_uri(reverse('sales_order:public_confirm', kwargs={'token': token}))
+                    print(message)
+                    print(url)
+                    self.object.subject = f"【見積書確認依頼】受注番号 {self.object.sales_order_no}"
+                    context = {
+                        'partner': partner,
+                        'order': self.object,
+                        'url': url,
+                        'now': timezone.now(),
+                    }
+                    message = render_to_string('sales_order/mails/mail_approved.txt', context)
+
+                    # send_mail(
+                    #     subject,
+                    #     message.strip(),
+                    #     getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@example.com'),
+                    #     [partner.email],
+                    #     fail_silently=False,
+                    # )
+                except Exception as e:
+                    # 処理後メッセージ
+                    sales_order_message(request, '承認', self.object.sales_order_no)
+                    
+                    # モーダルを閉じて一覧画面へ
+                    return JsonResponse({'success': False})
+
+        # 処理後メッセージ
+        sales_order_message(request, '承認', self.object.sales_order_no)
         
-        # 再作成時は登録値を引き継いで受注ステータスを仮保存に戻す
-        if action_type == STATUS_CODE_RETAKE:
-            # 保存処理
-            self.object.status_code = STATUS_CODE_DRAFT
+        # モーダルを閉じて一覧画面へ
+        return JsonResponse({'success': True})
+
+    def handle_order_submitted(self, request):
+        '''
+        注文書提出
+        - 次は承認者による承認
+        '''
+        self.object.status_code = STATUS_CODE_ORDER_SUBMITTED
+        self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
+        self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
+        self.object.update_user = request.user
+        self.object.save(update_fields=['status_code', 'delivery_due_date', 'delivery_place', 'update_user'])
+        sales_order_message(request, '更新', self.object.sales_order_no)
+        return JsonResponse({'success': True})
+
+    def handle_order_approved(self, request):
+        '''
+        注文書承認
+        - 顧客にメール通知
+        - 次は顧客による正式承認待ち
+        '''
+        with transaction.atomic():
+            self.object.status_code = STATUS_CODE_ORDER_APPROVED
             self.object.update_user = request.user
             self.object.save(update_fields=['status_code', 'update_user'])
 
-            # 最新の状態を再描画
-            form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
-            formset = get_sales_order_detail_formset(instance=self.object)
-            status_code = getattr(self.object, 'status_code', None)
-                       
-            # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
-            if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
-                for field in form.fields.values():
-                    field.widget.attrs['disabled'] = True
-                for f in formset.forms:
-                    for field in f.fields.values():
-                        field.widget.attrs['disabled'] = True
-                        
+            partner = getattr(self.object, 'partner', None)
+            if partner and partner.email:
+                try:
+                    signer = TimestampSigner()
+                    token = signer.sign_object({
+                        'sales_order_id': self.object.id,
+                        'partner_email': partner.email,
+                    })
+                    url = request.build_absolute_uri(reverse('sales_order:public_contract', kwargs={'token': token}))
+                    self.object.subject = f"【発注書確認依頼】受注番号 {self.object.sales_order_no}"
+                    context = {
+                        'partner': partner,
+                        'order': self.object,
+                        'url': url,
+                        'now': timezone.now(),
+                    }
+                    message = render_to_string('sales_order/mails/order_approved.txt', context)
+                    print(message)
+                    print(url)
+                    # send_mail(
+                    #     subject,
+                    #     message.strip(),
+                    #     getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@example.com'),
+                    #     [partner.email],
+                    #     fail_silently=False,
+                    # )
+                except Exception as e:
+                    sales_order_message(request, '承認', self.object.sales_order_no)
+                    return JsonResponse({'success': False})
+
+            sales_order_message(request, '承認', self.object.sales_order_no)
+            return JsonResponse({'success': True})
+
+    def handle_output_quatation_in(self, request):
+        '''
+        見積書確認（社内）
+        - 社内からの帳票発行
+        - 納入予定日・納入場所の更新のみ許可
+        '''
+        if getattr(self.object, 'create_user', None) == request.user:
+            self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
+            self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
+            self.object.update_user = request.user
+            self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user'])
+        return JsonResponse({'success': True})
+
+    def handle_output_quatation_out(self, request):
+        '''
+        見積書確認（顧客）
+        - 顧客による帳票発行
+        - サーバサイドでは特に何もしない
+        '''
+        return JsonResponse({'success': True})
+
+    def handle_output_order_in(self, request):
+        '''
+        注文書確認（社内）
+        - 社内からの帳票発行
+        - 納入予定日・納入場所の更新のみ許可
+        '''
+        if getattr(self.object, 'create_user', None) == request.user:
+            self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
+            self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
+            self.object.update_user = request.user
+            self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user'])
+        return JsonResponse({'success': True})
+
+    def handle_output_order_out(self, request):
+        '''
+        注文書確認（顧客）
+        - 顧客による帳票発行
+        - サーバサイドでは特に何もしない
+        '''
+        return JsonResponse({'success': True})
+
+    def handle_customer_reply(self, request):
+        '''
+        顧客による回答後ののページ表示
+        '''
+        action_type = request.POST.get('action_type')
+        self.object.status_code = action_type
+        self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
+        self.object.save(update_fields=['status_code', 'customer_comment'])
+        return redirect('sales_order:public_thanks')
+
+    def handle_default(self, request):
+        '''
+        仮保存・見積書提出処理
+        '''
+        action_type = request.POST.get('action_type')
+        form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
+        formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
+        is_submittable = get_submittable(user=request.user, form=form)
+        form = apply_field_permissions(form=form, user=request.user)
+
+        # バリデーション
+        if not (form.is_valid() and formset.is_valid()):
             html = render_to_string(
                 self.template_name,
                 {
                     'form': form,
                     'formset': formset,
                     'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
-                    'modal_title': f'受注更新: {self.object.sales_order_no}',
                     'is_update': True,
                     'is_submittable': is_submittable,
+                    'modal_title': f'受注更新: {self.object.sales_order_no}',
                 },
                 request,
             )
-            # モーダルを再描画
-            return JsonResponse({'success': True, 'html': html})
-        
-        # アクション：社内承認
-        if action_type == STATUS_CODE_QUATATION_APPROVED:
-            with transaction.atomic():
-                self.object.status_code = action_type
-                self.object.manager_comment = request.POST.get('manager_comment', '').strip()
-                self.object.update_user = request.user
-                self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
-
-                partner = getattr(self.object, 'partner', None)
-                if partner and partner.email:
-                    try:
-                        signer = TimestampSigner()
-                        token = signer.sign_object({
-                            'sales_order_id': self.object.id,
-                            'partner_email': partner.email,
-                        })
-                        url = request.build_absolute_uri(reverse('sales_order:public_confirm', kwargs={'token': token}))
-                        print(url)
-                        self.object.subject = f"【承認通知】受注番号 {self.object.sales_order_no}"
-                        context = {
-                            'partner': partner,
-                            'order': self.object,
-                            'url': url,
-                            'now': timezone.now(),
-                        }
-                        message = render_to_string('sales_order/mails/mail_approved.txt', context)
-
-                        # send_mail(
-                        #     subject,
-                        #     message.strip(),
-                        #     getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@example.com'),
-                        #     [partner.email],
-                        #     fail_silently=False,
-                        # )
-                    except Exception as e:
-                        sales_order_message(request, '承認', self.object.sales_order_no)
-                        return JsonResponse({'success': False})
-
-                sales_order_message(request, '承認', self.object.sales_order_no)
-                return JsonResponse({'success': True})
-            
-        # アクション：注文書確認（社内）
-        if action_type == ACTION_CODE_OUTPUT_QUATATION_IN:
-            # 担当者の確認時のみ更新処理を行う
-            if create_user == request.user:
-                self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
-                self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
-                self.object.update_user = request.user
-                self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user'])
-            return JsonResponse({'success': True})
-            
-        # アクション：注文書提出
-        if action_type == STATUS_CODE_ORDER_SUBMITTED:
-            self.object.status_code = action_type
-            self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
-            self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()
-            self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'delivery_due_date', 'delivery_place', 'update_user'])
-            sales_order_message(request, '更新', self.object.sales_order_no)
-            return JsonResponse({'success': True})
-        
-        # アクション：注文書承認
-        if action_type == STATUS_CODE_ORDER_APPROVED:
-            with transaction.atomic():
-                self.object.status_code = action_type
-                self.object.update_user = request.user
-                self.object.save(update_fields=['status_code', 'update_user'])
-                partner = getattr(self.object, 'partner', None)
-                if partner and partner.email:
-                    try:
-                        signer = TimestampSigner()
-                        token = signer.sign_object({
-                            'sales_order_id': self.object.id,
-                            'partner_email': partner.email,
-                        })
-                        url = request.build_absolute_uri(reverse('sales_order:public_contract', kwargs={'token': token}))
-                        self.object.subject = f"【承認通知】受注番号 {self.object.sales_order_no}"
-                        context = {
-                            'partner': partner,
-                            'order': self.object,
-                            'url': url,
-                            'now': timezone.now(),
-                        }
-                        message = render_to_string('sales_order/mails/order_approved.txt', context)
-                        print(message)
-                        print(url)
-                        # send_mail(
-                        #     subject,
-                        #     message.strip(),
-                        #     getattr(settings, 'DEFAULT_FROM_EMAIL', 'no-reply@example.com'),
-                        #     [partner.email],
-                        #     fail_silently=False,
-                        # )
-                    except Exception as e:
-                        sales_order_message(request, '承認', self.object.sales_order_no)
-                        return JsonResponse({'success': False})
-
-                sales_order_message(request, '承認', self.object.sales_order_no)
-                return JsonResponse({'success': True})
-            
-        # アクション：注文書承諾（本契約）
-        if action_type == STATUS_CODE_ORDER_APPROVED:
-            pass
-
-        # 仮保存 or 提出時以外は受注ステータスの更新のみとする
-        if action_type not in [STATUS_CODE_DRAFT, STATUS_CODE_QUATATION_SUBMITTED]:
-            self.object.status_code = action_type
-            self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'update_user'])
-            sales_order_message(request, '更新', self.object.sales_order_no)
-            return JsonResponse({'success': True})
-
-        # バリデーション
-        if not (form.is_valid() and formset.is_valid()):
-            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
-                obj = getattr(self, 'object', None)
-                modal_title = f'受注更新: {obj.sales_order_no}' if obj else '受注更新'
-                html = render_to_string(
-                    self.template_name,
-                    {
-                        'form': form,
-                        'formset': formset,
-                        'form_action': reverse('sales_order:update', kwargs={'pk': obj.pk} if obj else {}),
-                        'is_update': True,
-                        'is_submittable': is_submittable,
-                        'modal_title': modal_title,
-                    },
-                    self.request
-                )
-                return JsonResponse({'success': False, 'html': html})
-            return super().form_invalid(form)
+            return JsonResponse({'success': False, 'html': html})
 
         order = save_details(form=form, formset=formset, user=request.user, action_type=action_type)
         sales_order_message(request, '更新', order.sales_order_no)
         return JsonResponse({'success': True})
+
+    # ============================================================
+    # 共通ユーティリティ
+    # ============================================================
+
+    def disable_fields(self, form, formset):
+        '''フォームとフォームセットの全フィールドを非活性化'''
+        for field in form.fields.values():
+            field.widget.attrs['disabled'] = True
+        for f in formset.forms:
+            for field in f.fields.values():
+                field.widget.attrs['disabled'] = True
+
+    def render_form(self, request):
+        '''最新状態のフォーム再描画'''
+        form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
+        formset = get_sales_order_detail_formset(instance=self.object)
+        is_submittable = get_submittable(user=request.user, form=form)
+        html = render_to_string(
+            self.template_name,
+            {
+                'form': form,
+                'formset': formset,
+                'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
+                'modal_title': f'受注更新: {self.object.sales_order_no}',
+                'is_update': True,
+                'is_submittable': is_submittable,
+            },
+            request,
+        )
+        return JsonResponse({'success': True, 'html': html})
+
+    def send_approval_mail(self, request, partner, template, route):
+        '''承認通知メール送信'''
+        signer = TimestampSigner()
+        token = signer.sign_object({
+            'sales_order_id': self.object.id,
+            'partner_email': partner.email,
+        })
+        url = request.build_absolute_uri(reverse(route, kwargs={'token': token}))
+        print('=====================')
+        print(url)
+        print('=====================')
+        context = {
+            'partner': partner,
+            'order': self.object,
+            'url': url,
+            'now': timezone.now(),
+        }
+        message = render_to_string(template, context)
+        print(f"[MAIL DEBUG]\n{message}\n{url}")  # TODO: logger.infoに変更予定
     
 # -----------------------------
 # 顧客回答後の画面表示

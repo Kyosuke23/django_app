@@ -42,19 +42,19 @@
         <input type="hidden" name="token" value="{{ signed_token }}">
       {% endif %}
 
-      <h2 class="h5 mb-3 text-center fw-bold">見積書 確認・承認ページ</h2>
+      <h2 class="h5 mb-3 text-center fw-bold">【見積書】確認・承認ページ</h2>
 
       <div class="alert alert-info">
-        以下の見積書について、確認をお願いします。<br>
+        以下の見積書について、ご確認のほどよろしくお願い致します。<br>
         内容をご確認のうえ、<strong>「承認」または「却下」</strong>を選択してください。
       </div>
 
-      <!-- 見積書確認ボタン -->
+      {# 見積書確認ボタン #}
       <div class="d-grid gap-2 mb-4">
         <button type="submit" class="btn btn-outline-primary" data-action="OUTPUT_QUATATION_OUT">見積書確認</button>
       </div>
 
-      <!-- コメント入力欄 -->
+      {# コメント入力欄 #}
       <div class="mb-4">
         <label for="customer_comment" class="form-label fw-semibold">コメント（任意）</label>
         <textarea id="customer_comment" name="customer_comment" rows="3" class="form-control"
@@ -62,16 +62,15 @@
       </div>
       <input type="hidden" name="customer_comment" id="customer_comment">
 
-      <!-- 承認・却下ボタン -->
+      {# 承認・却下ボタン #}
       <div class="d-flex justify-content-between">
-          <button type="submit" class="btn btn-success" data-action="CONFIRMED">承認</button>
-          <button type="submit" class="btn btn-danger" data-action="REJECTED_OUT">却下</button>
+          <button type="submit" class="btn btn-success" data-action="QUATATION_CONFIRMED">承認</button>
+          <button type="submit" class="btn btn-danger" data-action="QUATATION_REJECTED_OUT">却下</button>
           <input type="hidden" name="action_type" id="action_type">
           <input type="hidden" name="order_id" id="order_id" value="{{ order_id }}">
       </div>
 
       <div class="text-center text-muted mt-4 small">
-        ※本リンクの有効期限: {{ link_expires_at|date:"Y-m-d H:i" }}<br>
         ※このページは自動送信メールからアクセスされています。
       </div>
     </form>

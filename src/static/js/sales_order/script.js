@@ -8,7 +8,7 @@ $(function () {
     });
 
     // =====================================================
-    // 保存／削除ボタンの動的アクション切り替え
+    // CRUD処理
     // =====================================================
     $(document).on('click', '#editForm button[type=submit]', function (e) {
         e.preventDefault();
@@ -21,8 +21,8 @@ $(function () {
         const manager_comment = $('#id_header-manager_comment').val();
 
         // ----------------------------------------------------------
-        // ▼ 削除処理
-        // ----------------------------------------------------------
+        // 削除処理
+        // --------------------------------------------------------
         if (actionType === 'delete') {
             if (!confirm('本当に削除しますか？')) {
             return;
@@ -50,7 +50,9 @@ $(function () {
         formData.push({ name: 'action_type', value: actionType });
         formData.push({ name: 'manager_comment', value: manager_comment });
 
-        // 注文書のPDF出力
+        // ----------------------------------------------------------
+        // 帳票の発行処理（社内）
+        // ----------------------------------------------------------
         if (actionType === 'OUTPUT_QUATATION_IN' || actionType === 'OUTPUT_ORDER_IN') {
             const orderId = form.data('order-id');
             $.ajax({
@@ -69,8 +71,8 @@ $(function () {
         }
 
         // ----------------------------------------------------------
-        // ▼ 保存・提出・再編集(RETAKE)などの送信処理
-        // ----------------------------------------------------------
+        // 登録・更新処理
+        // -------------------------------------------------------
         $.ajax({
             url: saveUrl,
             type: 'POST',
@@ -97,7 +99,6 @@ $(function () {
             }
         });
     });
-
 
     // =====================================================
     // 消費税率・金額再計算
@@ -173,6 +174,9 @@ $(function () {
         $('#grand-total').text('¥' + grandTotal.toLocaleString());
     };
 
+    // =====================================================
+    // 数量など変更時の単価反映
+    // =====================================================
     $(document).on(
         'input change',
         'input[name$="quantity"], input[name$="unit_price"], select[name$="tax_rate"], input[name$="is_tax_exempt"], input[name$="DELETE"]',
@@ -272,7 +276,7 @@ $(function () {
     });
 
     // =====================================================
-    // 行削除
+    // 明細行削除
     // =====================================================
     $(document).on('click', '.delete-row-btn', function () {
         const $row = $(this).closest('tr');
@@ -329,6 +333,10 @@ $(function () {
         products.select2({ ...opt, placeholder: '商品を選択...' });
     });
 
+
+    // =====================================================
+    // 顧客向けページ専用の処理
+    // =====================================================
     $(document).on('click', '#confirmForm button[data-action]', function (e) {
 
         const form = $('#confirmForm');
