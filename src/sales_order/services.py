@@ -139,7 +139,12 @@ def apply_field_permissions(form, user):
         form.fields['remarks'].widget.attrs.pop('disabled', None)
 
     # SUBMITTED: 承認権限者のみ承認者コメントの編集可
-    elif status == STATUS_CODE_SUBMITTED and user in form.instance.reference_users.all():
+    if status == STATUS_CODE_SUBMITTED and user in form.instance.reference_users.all():
         form.fields['manager_comment'].widget.attrs.pop('disabled', None)
+        
+    # CONFIRM: 担当者のみ納入日と納入場所の編集可
+    if status == STATUS_CODE_CONFIRMED and form.instance.create_user == user:
+        form.fields['delivery_due_date'].widget.attrs.pop('disabled', None)
+        form.fields['delivery_place'].widget.attrs.pop('disabled', None)
         
     return form

@@ -210,7 +210,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
         
-        #  顧客による承認 / 却下
+        #  ステータス：顧客承認済 OR 却下
         if action_type in [STATUS_CODE_CONFIRMED, STATUS_CODE_REJECTED_OUT]:
             self.object.status_code = action_type
             self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
@@ -219,7 +219,6 @@ class SalesOrderUpdateView(generic.UpdateView):
         
         form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
         formset = SalesOrderDetailFormSet(request.POST, instance=self.object, prefix='details')
-        user = request.user
         is_submittable = get_submittable(user=request.user, form=form)  # ボタン操作の可否判定
         form = apply_field_permissions(form=form, user=request.user)  # フィールド個別の操作制御
         
@@ -259,11 +258,12 @@ class SalesOrderUpdateView(generic.UpdateView):
             # モーダルを再描画
             return JsonResponse({'success': True, 'html': html})
         
+        # ステータス：社内承認済
         if action_type == STATUS_CODE_APPROVED:
             with transaction.atomic():
                 self.object.status_code = STATUS_CODE_APPROVED
                 self.object.manager_comment = request.POST.get('manager_comment', '').strip()
-                self.object.update_user = user
+                self.object.update_user = request.user
                 self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
 
                 partner = getattr(self.object, 'partner', None)
@@ -510,25 +510,59 @@ class ExportCSV(CSVExportBaseView):
         # 明細1件を1行に整形
         return [Common.format_for_csv(v) for v in get_order_detail_row(detail.sales_order, detail)]
 
-def order_sheet_pdf(request, pk):
-    order = get_object_or_404(SalesOrder, pk=pk)
+class OrderSheetPdfView(generic.DetailView):
+    '''
+    注文書の発行処理
+    - 納入予定日・納入場所のみ更新許可
+    '''
+    model = SalesOrder
+    template_name = 'sales_order/pdf/order_sheet.html'
+    context_object_name = 'order'
 
-    context = {
-        'order': order,
-        'details': order.details.all(),
-        'partner': order.partner,
-        'company_name': request.user.tenant.tenant_name,
-        'title': f"注文書（{order.sales_order_no}）",
-    }
+    # -------------------------------------------
+    # GET処理（既存の注文書表示のみ）
+    # -------------------------------------------
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return self.render_pdf()
 
-    html_string = render_to_string('sales_order/pdf/order_sheet.html', context)
-    html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+    # -------------------------------------------
+    # POST処理：納入予定日・納入場所を更新してPDF生成
+    # -------------------------------------------
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
 
-    # 一時ファイルでPDF生成
-    with tempfile.NamedTemporaryFile(delete=True) as output:
-        html.write_pdf(target=output.name)
-        output.seek(0)
-        response = HttpResponse(output.read(), content_type='application/pdf')
-        filename = f"注文書_{order.sales_order_no}.pdf"
+        # 保存処理
+        self.object.delivery_due_date = request.POST.get('delivery_due_date')
+        self.object.delivery_place = request.POST.get('delivery_place').strip()
+        self.object.update_user = request.user
+        self.object.updated_at = timezone.now()
+        self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user', 'updated_at'])
+
+        # PDF生成へ
+        return self.render_pdf()
+
+    # -------------------------------------------
+    # PDF生成処理
+    # -------------------------------------------
+    def render_pdf(self):
+        context = {
+            'order': self.object,
+            'details': self.object.details.all(),
+            'partner': self.object.partner,
+            'company_name': self.request.user.tenant.tenant_name,
+            'title': f"注文書（{self.object.sales_order_no}）",
+        }
+
+        html_string = render_to_string(self.template_name, context)
+        html = HTML(string=html_string, base_url=self.request.build_absolute_uri('/'))
+
+        with tempfile.NamedTemporaryFile(delete=True) as output:
+            html.write_pdf(target=output.name)
+            output.seek(0)
+            pdf_data = output.read()
+
+        filename = f"注文書_{self.object.sales_order_no}.pdf"
+        response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response

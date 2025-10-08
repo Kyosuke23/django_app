@@ -9,25 +9,17 @@
 <title>{{ title }}</title>
 
 <style>
-/* ===============================
-   日本語フォント定義（商用利用可）
-   =============================== */
 @font-face {
   font-family: 'NotoSansJP';
   src: url("{% static 'fonts/NotoSansJP-Regular.ttf' %}") format('truetype');
   font-weight: 400;
-  font-style: normal;
 }
 @font-face {
   font-family: 'NotoSansJP';
   src: url("{% static 'fonts/NotoSansJP-Bold.ttf' %}") format('truetype');
   font-weight: 700;
-  font-style: normal;
 }
 
-/* ===============================
-   ページ設定
-   =============================== */
 @page {
   size: A4;
   margin: 25mm 20mm 25mm 20mm;
@@ -53,9 +45,6 @@ h1 {
   padding-bottom: 4px;
 }
 
-/* ===============================
-   レイアウト構成
-   =============================== */
 .header-block {
   width: 100%;
   margin-bottom: 8mm;
@@ -69,13 +58,9 @@ h1 {
   line-height: 1.6;
 }
 
-.partner-info strong {
-  font-size: 12pt;
-}
+.partner-info strong { font-size: 12pt; }
 
-.company-info {
-  text-align: right;
-}
+.company-info { text-align: right; }
 
 .company-seal {
   border: 1px solid #999;
@@ -89,23 +74,55 @@ h1 {
   line-height: 30mm;
 }
 
-/* ===============================
-   明細テーブル
-   =============================== */
-table {
+.content-block,
+.detail-table-wrapper,
+.bottom-block {
   width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 8mm;
-  font-size: 10pt;
+  max-width: 180mm;
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
-th, td {
+/* 納入情報 */
+.delivery-info {
+  background-color: #f5f5f5;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10mm;
+  font-size: 11pt;
+  font-weight: 600;
+}
+
+.delivery-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+.delivery-row .label { width: 30mm; color: #000; }
+.delivery-row .value {
+  flex: 1;
+  color: #111;
+  border-bottom: 1px dotted #777;
+  padding-left: 4px;
+}
+
+/* 明細テーブル */
+table.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10pt;
+  border: 1px solid #888;
+}
+
+table.detail-table th, table.detail-table td {
   border: 1px solid #888;
   padding: 5px 8px;
   vertical-align: middle;
 }
 
-th {
+table.detail-table th {
   background-color: #f3f3f3;
   text-align: center;
   font-weight: 700;
@@ -117,24 +134,26 @@ td.text-center { text-align: center; }
 thead { display: table-header-group; }
 
 /* ===============================
-   備考＋小計 横並びレイアウト
+   備考＋小計
    =============================== */
 .bottom-block {
-  width: 100%;
-  display: table;
-  table-layout: fixed;
-  margin-top: 6mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 5mm; /* 余白少し縮小 */
+  max-width: 180mm;
+  margin: 6mm auto 0 auto;
+  box-sizing: border-box;
 }
 
 .remarks {
-  display: table-cell;
-  width: 65%;
-  vertical-align: top;
+  flex: 0 0 55%;
   border: 1px solid #999;
   border-radius: 4px;
   padding: 6px 8px;
   background: #f3f3f3;
   font-size: 9.5pt;
+  box-sizing: border-box;
 }
 
 .remarks strong {
@@ -143,31 +162,25 @@ thead { display: table-header-group; }
 }
 
 .summary {
-  display: table-cell;
-  width: 35%;
-  vertical-align: top;
-  padding-left: 6mm;
+  flex: 0 0 40%;
+  box-sizing: border-box;
 }
 
 .summary table {
   width: 100%;
-  font-size: 10pt;
   border-collapse: collapse;
+  font-size: 10pt;
+  table-layout: fixed;
 }
 
-.summary td {
+.summary td, .summary th {
   border: 1px solid #888;
   padding: 4px 8px;
+  width: 50%;
+  box-sizing: border-box;
 }
 
-.summary tr:last-child td {
-  background-color: #f3f3f3;
-  font-weight: 700;
-}
-
-/* ===============================
-   フッタ
-   =============================== */
+/* フッタ */
 .footer {
   clear: both;
   text-align: right;
@@ -203,39 +216,50 @@ thead { display: table-header-group; }
   </div>
 </div>
 
-<!-- 明細テーブル -->
-<table>
-  <thead>
-    <tr>
-      <th style="width: 5%;">No.</th>
-      <th style="width: 35%;">商品名</th>
-      <th style="width: 10%;">数量</th>
-      <th style="width: 10%;">単位</th>
-      <th style="width: 15%;">単価</th>
-      <th style="width: 10%;">税率</th>
-      <th style="width: 15%;">金額</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for d in details %}
-    <tr>
-      <td class="text-center">{{ forloop.counter }}</td>
-      <td>{{ d.product.product_name }}</td>
-      <td class="text-end">{{ d.quantity|floatformat:2 }}</td>
-      <td class="text-center">{{ d.product.unit }}</td>
-      <td class="text-end">¥{{ d.billing_unit_price|floatformat:0|intcomma }}</td>
-      <td class="text-center">
-        {% if d.is_tax_exempt %}非課税{% else %}{{ d.tax_rate|floatformat:2 }}%{% endif %}
-      </td>
-      <td class="text-end">¥{{ d.amount|floatformat:0|intcomma }}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="7" class="text-center text-muted">明細データがありません</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="content-block">
+  <div class="delivery-info">
+    <div class="delivery-row">
+      <span class="label">納入予定日：</span>
+      <span class="value">{{ order.delivery_due_date|date:"Y年m月d日" }}</span>
+    </div>
+    <div class="delivery-row">
+      <span class="label">納入場所：</span>
+      <span class="value">{{ order.delivery_place|default:"―" }}</span>
+    </div>
+  </div>
+</div>
 
-<!-- 備考＋小計 横並び -->
+<div class="detail-table-wrapper">
+  <table class="detail-table">
+    <thead>
+      <tr>
+        <th style="width: 5%;">No.</th>
+        <th style="width: 35%;">商品名</th>
+        <th style="width: 10%;">数量</th>
+        <th style="width: 10%;">単位</th>
+        <th style="width: 15%;">単価</th>
+        <th style="width: 10%;">税率</th>
+        <th style="width: 15%;">金額</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in details %}
+      <tr>
+        <td class="text-center">{{ forloop.counter }}</td>
+        <td>{{ d.product.product_name }}</td>
+        <td class="text-end">{{ d.quantity|floatformat:2 }}</td>
+        <td class="text-center">{{ d.product.unit }}</td>
+        <td class="text-end">¥{{ d.billing_unit_price|floatformat:0|intcomma }}</td>
+        <td class="text-center">{% if d.is_tax_exempt %}非課税{% else %}{{ d.tax_rate|floatformat:2 }}%{% endif %}</td>
+        <td class="text-end">¥{{ d.amount|floatformat:0|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center text-muted">明細データがありません</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
 <div class="bottom-block">
   <div class="remarks">
     <strong>備考：</strong>
@@ -245,20 +269,17 @@ thead { display: table-header-group; }
       （特記事項なし）
     {% endif %}
   </div>
-
   <div class="summary">
     <table>
-      <tr><td class="text-end">小計</td><td class="text-end">¥{{ order.subtotal|floatformat:0|intcomma }}</td></tr>
-      <tr><td class="text-end">消費税</td><td class="text-end">¥{{ order.tax_total|floatformat:0|intcomma }}</td></tr>
-      <tr><td class="text-end">合計金額</td><td class="text-end">¥{{ order.grand_total|floatformat:0|intcomma }}</td></tr>
+      <tr><th class="text-end">小計</th><td class="text-end">¥{{ order.subtotal|floatformat:0|intcomma }}</td></tr>
+      <tr><th class="text-end">消費税</th><td class="text-end">¥{{ order.tax_total|floatformat:0|intcomma }}</td></tr>
+      <tr><th class="text-end">合計金額</th><td class="text-end"><strong>¥{{ order.grand_total|floatformat:0|intcomma }}</strong></td></tr>
     </table>
   </div>
 </div>
 
-<!-- フッタ -->
 <div class="footer">
-  納入予定日：{{ order.delivery_due_date|date:"Y年m月d日" }}　
-  納入場所：{{ order.delivery_place|default:"―" }}
+  この注文書は {{ company_name }} により自動発行されました。
 </div>
 
 </body>
