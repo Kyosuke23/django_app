@@ -1,0 +1,288 @@
+{% load humanize %}
+{% load static %}
+{% load formatters %}
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>{{ title }}</title>
+
+<style>
+@font-face {
+  font-family: 'NotoSansJP';
+  src: url("{% static 'fonts/NotoSansJP-Regular.ttf' %}") format('truetype');
+  font-weight: 400;
+}
+@font-face {
+  font-family: 'NotoSansJP';
+  src: url("{% static 'fonts/NotoSansJP-Bold.ttf' %}") format('truetype');
+  font-weight: 700;
+}
+
+@page {
+  size: A4;
+  margin: 25mm 20mm 25mm 20mm;
+  @bottom-right {
+    content: "Page " counter(page) " / " counter(pages);
+    font-size: 9pt;
+    color: #666;
+  }
+}
+
+body {
+  font-family: 'NotoSansJP', sans-serif;
+  font-size: 10.5pt;
+  color: #222;
+  line-height: 1.5;
+}
+
+h1 {
+  text-align: center;
+  font-size: 18pt;
+  margin-bottom: 10mm;
+  border-bottom: 2px solid #000;
+  padding-bottom: 4px;
+}
+
+.header-block {
+  width: 100%;
+  margin-bottom: 8mm;
+}
+
+.partner-info, .company-info {
+  width: 48%;
+  display: inline-block;
+  vertical-align: top;
+  font-size: 10pt;
+  line-height: 1.6;
+}
+
+.partner-info strong { font-size: 12pt; }
+
+.company-info { text-align: right; }
+
+.company-seal {
+  border: 1px solid #999;
+  width: 30mm;
+  height: 30mm;
+  float: right;
+  margin-top: 3mm;
+  text-align: center;
+  font-size: 9pt;
+  color: #999;
+  line-height: 30mm;
+}
+
+.upper-block,
+.content-block,
+.detail-table-wrapper,
+.bottom-block,
+.footer {
+  width: 100%;
+  max-width: 180mm;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* 納入情報 */
+.delivery-info {
+  background-color: #f5f5f5;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10mm;
+  font-size: 11pt;
+  font-weight: 600;
+}
+
+.delivery-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: baseline;
+  margin-bottom: 3px;
+}
+.delivery-row .label { width: 30mm; color: #000; }
+.delivery-row .value {
+  flex: 1;
+  color: #111;
+  border-bottom: 1px dotted #777;
+  padding-left: 4px;
+}
+
+/* 明細テーブル */
+table.detail-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10pt;
+  border: 1px solid #888;
+}
+
+table.detail-table th, table.detail-table td {
+  border: 1px solid #888;
+  padding: 5px 8px;
+  vertical-align: middle;
+}
+
+table.detail-table th {
+  background-color: #f3f3f3;
+  text-align: center;
+  font-weight: 700;
+}
+
+td.text-end { text-align: right; }
+td.text-center { text-align: center; }
+
+thead { display: table-header-group; }
+
+/* ===============================
+   備考＋小計
+   =============================== */
+.bottom-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 5mm; /* 余白少し縮小 */
+  max-width: 180mm;
+  margin: 6mm auto 0 auto;
+  box-sizing: border-box;
+}
+
+.remarks {
+  flex: 0 0 55%;
+  border: 1px solid #999;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #f3f3f3;
+  font-size: 9.5pt;
+  box-sizing: border-box;
+}
+
+.remarks strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.summary {
+  flex: 0 0 40%;
+  box-sizing: border-box;
+}
+
+.summary table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10pt;
+  table-layout: fixed;
+}
+
+.summary td, .summary th {
+  border: 1px solid #888;
+  padding: 4px 8px;
+  width: 50%;
+  box-sizing: border-box;
+}
+
+.summary table th {
+  background-color: #f3f3f3; /* 備考欄と同じ */
+}
+
+/* フッタ */
+.footer {
+  clear: both;
+  text-align: right;
+  font-size: 9pt;
+  color: #666;
+  border-top: 1px solid #aaa;
+  padding-top: 5px;
+  margin-top: 10mm;
+}
+</style>
+</head>
+<body>
+  <h1>見　積　書</h1>
+  <div class="header-block">
+    <div class="upper-block">
+      <div class="partner-info">
+        <strong>{{ partner.partner_name }}</strong> 御中<br>
+        {% if partner.postal_code %}〒{{ partner.postal_code|format_postal }}<br>{% endif %}
+        {% if partner.state %}{{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}<br>{% endif %}
+        {% if partner.contact_name %}担当者: {{ partner.contact_name }} 様<br>{% endif %}
+        {% if partner.tel_number %}TEL: {{ partner.tel_number|format_tel }}<br>{% endif %}
+        {% if partner.email %}Email: {{ partner.email }}{% endif %}
+      </div>
+      <div class="company-info">
+        <strong>{{ company_name }}</strong><br>
+        発行日：{{ order.updated_at|date:"Y年m月d日" }}<br>
+        注文番号：{{ order.sales_order_no }}<br>
+        担当者：{{ order.create_user }}<br>
+        <div class="company-seal">角印</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-block">
+    <div class="delivery-info">
+      <div class="delivery-row">
+        <span class="label">納入予定日：</span>
+        <span class="value">{{ order.delivery_due_date|date:"Y年m月d日" }}</span>
+      </div>
+      <div class="delivery-row">
+        <span class="label">納入場所：</span>
+        <span class="value">{{ order.delivery_place|default:"―" }}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-table-wrapper">
+    <table class="detail-table">
+      <thead>
+        <tr>
+          <th style="width: 5%;">No.</th>
+          <th style="width: 35%;">商品名</th>
+          <th style="width: 10%;">数量</th>
+          <th style="width: 10%;">単位</th>
+          <th style="width: 15%;">単価</th>
+          <th style="width: 10%;">税率</th>
+          <th style="width: 15%;">金額</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in details %}
+        <tr>
+          <td class="text-center">{{ forloop.counter }}</td>
+          <td>{{ d.product.product_name }}</td>
+          <td class="text-end">{{ d.quantity|floatformat:2 }}</td>
+          <td class="text-center">{{ d.product.unit }}</td>
+          <td class="text-end">¥{{ d.billing_unit_price|floatformat:0|intcomma }}</td>
+          <td class="text-center">{% if d.is_tax_exempt %}非課税{% else %}{{ d.tax_rate|floatformat:2 }}%{% endif %}</td>
+          <td class="text-end">¥{{ d.amount|floatformat:0|intcomma }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center text-muted">明細データがありません</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="bottom-block">
+    <div class="remarks">
+      <strong>備考：</strong>
+      {% if order.remarks %}
+        {{ order.remarks|linebreaksbr }}
+      {% else %}
+        （特記事項なし）
+      {% endif %}
+    </div>
+    <div class="summary">
+      <table>
+        <tr><th class="text-end">小計</th><td class="text-end">¥{{ order.subtotal|floatformat:0|intcomma }}</td></tr>
+        <tr><th class="text-end">消費税</th><td class="text-end">¥{{ order.tax_total|floatformat:0|intcomma }}</td></tr>
+        <tr><th class="text-end">合計金額</th><td class="text-end"><strong>¥{{ order.grand_total|floatformat:0|intcomma }}</strong></td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="footer">
+    この見積書は {{ company_name }} により自動発行されました。
+  </div>
+</body>
+</html>

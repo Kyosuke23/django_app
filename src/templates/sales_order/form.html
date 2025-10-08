@@ -261,9 +261,14 @@
   {# フッターボタン #}
   <div class="d-flex justify-content-between gap-2 mt-3">
     {% if is_submittable %}
-      {% if form.instance.status_code in 'CONFIRMED ORDER_SUBMITTED' %}
+      {% if form.instance.status_code in 'DRAFT SUBMITTED' %}
         <div>
-          <button type="submit" class="btn btn-primary" data-action="OUTPUT_IN">注文書確認</button>
+          <button type="submit" class="btn btn-primary" data-action="OUTPUT_QUATATION_IN">見積書確認</button>
+        </div>
+      {% endif %}
+      {% if form.instance.status_code == 'ORDER_SUBMITTED' %}
+        <div>
+          <button type="submit" class="btn btn-primary" data-action="OUTPUT_ORDER_IN">注文書確認</button>
         </div>
       {% endif %}
       <div class="d-flex gap-2">

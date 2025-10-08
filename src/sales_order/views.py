@@ -217,8 +217,8 @@ class SalesOrderUpdateView(generic.UpdateView):
             self.object.save(update_fields=['status_code', 'customer_comment'])
             return redirect('sales_order:public_thanks')
         
-        # アクション：注文書確認（顧客）
-        if action_type == STATUS_CODE_OUTPUT_OUT:
+        # アクション：見積書 OR 発注書確認（顧客）
+        if action_type in [ACTION_CODE_OUTPUT_QUATATION_OUT, ACTION_CODE_OUTPUT_ORDER_OUT]:
             return JsonResponse({'success': True})
         
         form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
@@ -304,7 +304,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                 return JsonResponse({'success': True})
             
         # アクション：注文書確認（社内）
-        if action_type == STATUS_CODE_OUTPUT_IN:
+        if action_type == ACTION_CODE_OUTPUT_QUATATION_IN:
             # 担当者の確認時のみ更新処理を行う
             if create_user == request.user:
                 self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
@@ -447,11 +447,11 @@ class PartnerInfoView(generic.View):
             return JsonResponse({'error': '取引先が見つかりません'}, status=404)
 
 # -----------------------------
-# 顧客向け回答画面表示
+# 見積書確認画面
 # -----------------------------   
 class SalesOrderPublicConfirmView(generic.View):
     '''
-    顧客向けの公開受注詳細画面
+    見積書確認画面
     '''
     template_name = 'sales_order/public_confirm.html'
     max_age_seconds = 60 * 60 * 24 * 3  # 3日間有効
@@ -472,7 +472,7 @@ class SalesOrderPublicConfirmView(generic.View):
             return HttpResponseForbidden("リンクが不正または改ざんされています。")
         except Exception:
             return HttpResponseForbidden("リンクが無効です。")
-
+        
         # ------------------------------------------------------------
         # 対象受注データの取得
         # ------------------------------------------------------------
@@ -480,36 +480,12 @@ class SalesOrderPublicConfirmView(generic.View):
         if not order:
             raise Http404("受注データが見つかりません。")
         
-        details = (SalesOrderDetail.objects.filter(sales_order=order).select_related('product').order_by('line_no'))
-
         # ------------------------------------------------------------
         # アクセス認可チェック（メールアドレス照合）
         # ------------------------------------------------------------
         if not order.partner or order.partner.email.lower() != partner_email.lower():
             return HttpResponseForbidden("アクセス権限がありません。")
-
-        # ------------------------------------------------------------
-        # 明細・金額集計
-        # ------------------------------------------------------------
-        subtotal = Decimal('0')
-        tax_total = Decimal('0')
-
-        for d in details:
-            qty = d.quantity or Decimal('0')
-            unit_price = d.master_unit_price or Decimal('0')
-            d.amount_d = qty * unit_price
-
-            subtotal += d.amount_d
-
-            if getattr(d, 'tax_exempt', False):
-                tax = Decimal('0')
-            else:
-                tax_rate = getattr(d, 'tax_rate', Decimal('0')) or Decimal('0')
-                tax = d.amount_d * tax_rate
-            tax_total += tax
-
-        total = subtotal + tax_total
-
+        
         # ------------------------------------------------------------
         # アクセスログ更新（任意）
         # ------------------------------------------------------------
@@ -520,23 +496,16 @@ class SalesOrderPublicConfirmView(generic.View):
         # ------------------------------------------------------------
         # コンテキストをテンプレートに渡す
         # ------------------------------------------------------------
-        context = {
-            "order": order,
-            "details": details,
-            "subtotal": subtotal,
-            "tax_total": tax_total,
-            "total": total,
-            "is_public": True,
-        }
-
+        context = {'order_id': order.pk,}
+        
         return render(request, self.template_name, context)
 
 # -----------------------------
-# 注文書承認画面（顧客向け）
+# 注文書確認画面
 # -----------------------------   
 class SalesOrderPublicContractView(generic.View):
     '''
-    顧客向けの公開受注詳細画面
+    注文書確認画面
     '''
     template_name = 'sales_order/public_contract.html'
     max_age_seconds = 60 * 60 * 24 * 3  # 3日間有効
@@ -633,7 +602,6 @@ class ExportCSV(CSVExportBaseView):
 class OrderSheetPdfView(generic.DetailView):
     '''
     注文書の発行処理
-    - 納入予定日・納入場所のみ更新許可
     '''
     model = SalesOrder
     template_name = 'sales_order/pdf/order_sheet.html'
@@ -675,6 +643,54 @@ class OrderSheetPdfView(generic.DetailView):
             pdf_data = output.read()
 
         filename = f"注文書_{self.object.sales_order_no}.pdf"
+        response = HttpResponse(pdf_data, content_type='application/pdf')
+        response['Content-Disposition'] = f'inline; filename="{filename}"'
+        return response
+    
+class QuatationSheetPdfView(generic.DetailView):
+    '''
+    見積書の発行処理
+    '''
+    model = SalesOrder
+    template_name = 'sales_order/pdf/quatation_sheet.html'
+    context_object_name = 'order'
+
+    # -------------------------------------------
+    # GET処理
+    # -------------------------------------------
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return self.render_pdf()
+
+    # -------------------------------------------
+    # POST処理
+    # -------------------------------------------    
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        return self.render_pdf()
+
+
+    # -------------------------------------------
+    # PDF生成処理
+    # -------------------------------------------
+    def render_pdf(self):
+        context = {
+            'order': self.object,
+            'details': self.object.details.all(),
+            'partner': self.object.partner,
+            # 'company_name': self.request.user.tenant.tenant_name,
+            'title': f"見積書（{self.object.sales_order_no}）",
+        }
+
+        html_string = render_to_string(self.template_name, context)
+        html = HTML(string=html_string, base_url=self.request.build_absolute_uri('/'))
+
+        with tempfile.NamedTemporaryFile(delete=True) as output:
+            html.write_pdf(target=output.name)
+            output.seek(0)
+            pdf_data = output.read()
+
+        filename = f"見積書_{self.object.sales_order_no}.pdf"
         response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
