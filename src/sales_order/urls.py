@@ -25,6 +25,6 @@ urlpatterns = [
     path('public/thanks/', views.SalesOrderPublicThanksView.as_view(), name='public_thanks'),
     
     # --- 帳票発行処理 ---
-    path('<int:pk>/quatation_sheet/', views.QuatationSheetPdfView.as_view(), name='quatation_sheet_pdf'),
+    path('<int:pk>/quotation_sheet/', views.QuatationSheetPdfView.as_view(), name='quotation_sheet_pdf'),
     path('<int:pk>/order_sheet/', views.OrderSheetPdfView.as_view(), name='order_sheet_pdf'),
 ]

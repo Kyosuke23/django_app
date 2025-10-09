@@ -53,7 +53,7 @@ $(function () {
         // ----------------------------------------------------------
         // 帳票の発行処理（社内）
         // ----------------------------------------------------------
-        if (actionType === 'OUTPUT_QUATATION_IN' || actionType === 'OUTPUT_ORDER_IN') {
+        if (actionType === 'OUTPUT_QUOTATION_IN' || actionType === 'OUTPUT_ORDER_IN') {
             const orderId = form.data('order-id');
             $.ajax({
                 url: form.attr('action'),
@@ -351,10 +351,10 @@ $(function () {
         $('#customer_comment').val(comment);
 
         // 見積書のPDF出力
-        if (actionType === 'OUTPUT_QUATATION_OUT' || actionType === 'OUTPUT_ORDER_OUT') {
+        if (actionType === 'OUTPUT_QUOTATION_OUT' || actionType === 'OUTPUT_ORDER_OUT') {
             e.preventDefault(); // 見積書発行の時だけsubmit中止
             const orderId = $('#order_id').val();
-            let template_name = 'quatation_sheet';
+            let template_name = 'quotation_sheet';
             if (actionType === 'OUTPUT_ORDER_OUT') template_name = 'order_sheet';
             $.ajax({
                 url: form.attr('action'),

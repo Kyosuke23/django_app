@@ -51,7 +51,7 @@
 
       {# 見積書確認ボタン #}
       <div class="d-grid gap-2 mb-4">
-        <button type="submit" class="btn btn-outline-primary" data-action="OUTPUT_QUATATION_OUT">見積書確認</button>
+        <button type="submit" class="btn btn-outline-primary" data-action="OUTPUT_QUOTATION_OUT">見積書確認</button>
       </div>
 
       {# コメント入力欄 #}
@@ -64,8 +64,8 @@
 
       {# 承認・却下ボタン #}
       <div class="d-flex justify-content-between">
-          <button type="submit" class="btn btn-success" data-action="QUATATION_CONFIRMED">承認</button>
-          <button type="submit" class="btn btn-danger" data-action="QUATATION_REJECTED_OUT">却下</button>
+          <button type="submit" class="btn btn-success" data-action="QUOTATION_CONFIRMED">承認</button>
+          <button type="submit" class="btn btn-danger" data-action="QUOTATION_REJECTED_OUT">却下</button>
           <input type="hidden" name="action_type" id="action_type">
           <input type="hidden" name="order_id" id="order_id" value="{{ order_id }}">
       </div>

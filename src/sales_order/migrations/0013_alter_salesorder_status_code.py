@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='salesorder',
             name='status_code',
-            field=models.CharField(choices=[('DRAFT', '見積書：仮作成'), ('QUATATION_SUBMITTED', '見積書：承認中'), ('QUATATION_APPROVED', '見積書：社内承認済'), ('QUATATION_CONFIRMED', '見積書：顧客承認済'), ('QUATATION_REJECTED_IN', '見積書：社内却下'), ('QUATATION_REJECTED_OUT', '見積書：顧客却下'), ('ORDER_SUBMITTED', '注文書：社内承認中'), ('ORDER_APPROVED', '注文書：社内承認済'), ('ORDER_CONFIRMED', '契約済'), ('ORDER_REJECTED_IN', '注文書：社内却下'), ('ORDER_REJECTED_OUT', '注文書：顧客却下'), ('CANCELED', 'キャンセル')], default='DRAFT', max_length=50),
+            field=models.CharField(choices=[('DRAFT', '見積書：仮作成'), ('QUOTATION_SUBMITTED', '見積書：承認中'), ('QUOTATION_APPROVED', '見積書：社内承認済'), ('QUOTATION_CONFIRMED', '見積書：顧客承認済'), ('QUOTATION_REJECTED_IN', '見積書：社内却下'), ('QUOTATION_REJECTED_OUT', '見積書：顧客却下'), ('ORDER_SUBMITTED', '注文書：社内承認中'), ('ORDER_APPROVED', '注文書：社内承認済'), ('ORDER_CONFIRMED', '契約済'), ('ORDER_REJECTED_IN', '注文書：社内却下'), ('ORDER_REJECTED_OUT', '注文書：顧客却下'), ('CANCELED', 'キャンセル')], default='DRAFT', max_length=50),
         ),
     ]
