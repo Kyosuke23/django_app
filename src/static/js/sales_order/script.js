@@ -342,14 +342,10 @@ $(function () {
         const form = $('#confirmForm');
         const formData = form.serializeArray();
         const actionType = $(this).data('action');
-        const comment = $('#id_header-customer_comment').val();
-        formData.push({ name: 'action_type', value: actionType });
-        formData.push({ name: 'customer_comment', value: comment });
 
         // サーバ処理用のパラメータを準備
         $('#action_type').val(actionType);
-        $('#customer_comment').val(comment);
-
+        
         // 見積書のPDF出力
         if (actionType === 'OUTPUT_QUOTATION_OUT' || actionType === 'OUTPUT_ORDER_OUT') {
             e.preventDefault(); // 見積書発行の時だけsubmit中止

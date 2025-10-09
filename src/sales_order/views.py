@@ -1,5 +1,4 @@
 from django.shortcuts import redirect
-from decimal import Decimal
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
@@ -181,10 +180,18 @@ class SalesOrderUpdateView(generic.UpdateView):
         # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
         if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
             for field in form.fields.values():
-                field.widget.attrs['disabled'] = True
+                widget_type = field.widget.__class__.__name__
+                if widget_type in ['Select', 'SelectMultiple', 'CheckboxInput', 'RadioSelect']:
+                    field.widget.attrs['disabled'] = True
+                else:
+                    field.widget.attrs['readonly'] = True
             for f in formset.forms:
                 for field in f.fields.values():
-                    field.widget.attrs['disabled'] = True
+                    widget_type = field.widget.__class__.__name__
+                    if widget_type in ['Select', 'SelectMultiple', 'CheckboxInput', 'RadioSelect']:
+                        field.widget.attrs['disabled'] = True
+                    else:
+                        field.widget.attrs['readonly'] = True
                     
         # フィールド個別の操作制御
         form = apply_field_permissions(form=form, user=request.user)
@@ -222,13 +229,13 @@ class SalesOrderUpdateView(generic.UpdateView):
             STATUS_CODE_QUOTATION_SUBMITTED: self.handle_default,
             STATUS_CODE_QUOTATION_APPROVED: self.handle_quotation_approved,
             STATUS_CODE_QUOTATION_REJECTED_IN: self.handle_quotation_rejected_in,
-            STATUS_CODE_QUOTATION_CONFIRMED: self.handle_customer_reply,
-            STATUS_CODE_QUOTATION_REJECTED_OUT: self.handle_customer_reply,
+            STATUS_CODE_QUOTATION_CONFIRMED: self.handle_customer_reply_quotation,
+            STATUS_CODE_QUOTATION_REJECTED_OUT: self.handle_customer_reply_quotation,
             STATUS_CODE_ORDER_SUBMITTED: self.handle_order_submitted,
             STATUS_CODE_ORDER_APPROVED: self.handle_order_approved,
-            STATUS_CODE_ORDER_CONFIRMED: self.handle_customer_reply,
+            STATUS_CODE_ORDER_CONFIRMED: self.handle_customer_reply_order,
             STATUS_CODE_ORDER_REJECTED_IN: self.handle_order_rejected_in,
-            STATUS_CODE_ORDER_REJECTED_OUT: self.handle_customer_reply,
+            STATUS_CODE_ORDER_REJECTED_OUT: self.handle_customer_reply_order,
         }
 
         handler = handler_map.get(action_type, self.handle_default)
@@ -252,7 +259,7 @@ class SalesOrderUpdateView(generic.UpdateView):
     
     def handle_order_retake(self, request):
         '''
-        見積書再作成
+        注文書再作成
         - ステータスを見積書：顧客承認済みに戻して再描画
         '''
         # データ更新
@@ -265,16 +272,16 @@ class SalesOrderUpdateView(generic.UpdateView):
 
     def handle_quotation_approved(self, request):
         '''
-        見積承認
+        見積承認（社内）
         - 承認者コメントを保存し、顧客にメール通知
         - 次は顧客による承認
         '''
         with transaction.atomic():
             # データ更新
             self.object.status_code = STATUS_CODE_QUOTATION_APPROVED
-            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.quotation_manager_comment = request.POST.get('header-quotation_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+            self.object.save(update_fields=['status_code', 'quotation_manager_comment', 'update_user'])
 
             partner = getattr(self.object, 'partner', None)
             if partner and partner.email:
@@ -324,9 +331,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         with transaction.atomic():
             # データ更新
             self.object.status_code = STATUS_CODE_QUOTATION_REJECTED_IN
-            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.quotation_manager_comment = request.POST.get('header-quotation_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+            self.object.save(update_fields=['status_code', 'quotation_manager_comment', 'update_user'])
 
         # 処理後メッセージ
         sales_order_message(request, '却下', self.object.sales_order_no)
@@ -355,8 +362,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         '''
         with transaction.atomic():
             self.object.status_code = STATUS_CODE_ORDER_APPROVED
+            self.object.order_manager_comment = request.POST.get('header-order_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'update_user'])
+            self.object.save(update_fields=['status_code', 'order_manager_comment', 'update_user'])
 
             partner = getattr(self.object, 'partner', None)
             if partner and partner.email:
@@ -443,9 +451,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         with transaction.atomic():
             # データ更新
             self.object.status_code = STATUS_CODE_ORDER_REJECTED_IN
-            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.order_manager_comment = request.POST.get('header-order_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+            self.object.save(update_fields=['status_code', 'order_manager_comment', 'update_user'])
 
         # 処理後メッセージ
         sales_order_message(request, '却下', self.object.sales_order_no)
@@ -453,19 +461,29 @@ class SalesOrderUpdateView(generic.UpdateView):
         # モーダルを閉じて一覧画面へ
         return JsonResponse({'success': True})
 
-    def handle_customer_reply(self, request):
+    def handle_customer_reply_quotation(self, request):
         '''
-        顧客による回答後ののページ表示
+        顧客による見積書回答後ののページ表示
         '''
         action_type = request.POST.get('action_type')
         self.object.status_code = action_type
-        self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
-        self.object.save(update_fields=['status_code', 'customer_comment'])
+        self.object.quotation_customer_comment = request.POST.get('quotation_customer_comment', '').strip()
+        self.object.save(update_fields=['status_code', 'quotation_customer_comment'])
+        return redirect('sales_order:public_thanks')
+    
+    def handle_customer_reply_order(self, request):
+        '''
+        顧客による注文書回答後ののページ表示
+        '''
+        action_type = request.POST.get('action_type')
+        self.object.status_code = action_type
+        self.object.order_customer_comment = request.POST.get('order_customer_comment', '').strip()
+        self.object.save(update_fields=['status_code', 'order_customer_comment'])
         return redirect('sales_order:public_thanks')
 
     def handle_default(self, request):
         '''
-        仮保存・見積書提出処理
+        仮保存・見積書提出
         '''
         action_type = request.POST.get('action_type')
         form = SalesOrderForm(request.POST, instance=self.object, prefix='header', action_type=action_type, user=request.user)
@@ -496,15 +514,6 @@ class SalesOrderUpdateView(generic.UpdateView):
     # ============================================================
     # 共通ユーティリティ
     # ============================================================
-
-    def disable_fields(self, form, formset):
-        '''フォームとフォームセットの全フィールドを非活性化'''
-        for field in form.fields.values():
-            field.widget.attrs['disabled'] = True
-        for f in formset.forms:
-            for field in f.fields.values():
-                field.widget.attrs['disabled'] = True
-
     def render_form(self, request):
         '''最新状態のフォーム再描画'''
         # フォームの情報を取得
@@ -515,8 +524,10 @@ class SalesOrderUpdateView(generic.UpdateView):
         is_submittable = get_submittable(user=request.user, form=form)
         
         # コメント欄の活性制御
-        form.fields['manager_comment'].widget.attrs['disabled'] = True
-        form.fields['customer_comment'].widget.attrs['disabled'] = True
+        form.fields['quotation_manager_comment'].widget.attrs['readonly'] = True
+        form.fields['order_manager_comment'].widget.attrs['readonly'] = True
+        form.fields['quotation_customer_comment'].widget.attrs['readonly'] = True
+        form.fields['order_customer_comment'].widget.attrs['readonly'] = True
         
         html = render_to_string(
             self.template_name,

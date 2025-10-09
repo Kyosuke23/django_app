@@ -136,3 +136,15 @@ input[disabled], select[disabled], textarea[disabled] {
 select.select2-hidden-initial {
   visibility: hidden;
 }
+
+/* readonlyフィールドをグレー背景に */
+input[readonly],
+textarea[readonly] {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+  cursor: not-allowed;
+}
+
+textarea.internal-comment {
+  background-color: #f8f9fa;
+}

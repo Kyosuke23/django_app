@@ -78,14 +78,11 @@ def get_submittable(user, form):
     # 仮作成 = 担当者のみ可
     if status_code == STATUS_CODE_DRAFT:
         return create_user == login_user
-    # 社内承認待ち = 承認依頼先の人のみ可
+    # 見積書：提出済 = 承認依頼先の人のみ可
     if status_code == STATUS_CODE_QUOTATION_SUBMITTED:
         return login_user in reference_users
     # 見積書：社内却下 = 担当者のみ可
     if status_code == STATUS_CODE_QUOTATION_REJECTED_IN:
-        return create_user == login_user
-    # 見積書：社内承認済 = 担当者のみ可
-    if status_code == STATUS_CODE_QUOTATION_APPROVED:
         return create_user == login_user
     # 見積書：顧客却下 = 担当者のみ可
     if status_code == STATUS_CODE_QUOTATION_REJECTED_OUT:
@@ -93,7 +90,7 @@ def get_submittable(user, form):
     # 見積書：顧客承諾 = 担当者のみ可
     if status_code == STATUS_CODE_QUOTATION_CONFIRMED:
         return create_user == login_user
-    # 注文書：承認待ち = 承認依頼先の人のみ可
+    # 注文書：提出済 = 承認依頼先の人のみ可
     if status_code == STATUS_CODE_ORDER_SUBMITTED:
         return login_user in reference_users
     # 注文書：社内却下 = 担当者のみ可
@@ -112,6 +109,10 @@ def save_details(form, formset, user, action_type):
     with transaction.atomic():
         order = form.save(commit=False)
         order.status_code = action_type
+        order.quotation_manager_comment = form.data.get('header-quotation_manager_comment', '').strip()
+        order.quotation_customer_comment = form.data.get('header-quotation_customer_comment', '').strip()
+        order.order_manager_comment = form.data.get('header-order_manager_comment', '').strip()
+        order.order_customer_comment = form.data.get('header-order_customer_comment', '').strip()
         order.update_user = user
         order.tenant = user.tenant
         if not order.pk:
@@ -138,25 +139,29 @@ def apply_field_permissions(form, user):
     status = form.instance.status_code
 
     # まず全て無効化
-    for field_name in ['remarks', 'manager_comment', 'customer_comment']:
+    for field_name in ['remarks', 'quotation_manager_comment', 'quotation_customer_comment', 'order_manager_comment', 'order_customer_comment']:
         if field_name in form.fields:
-            form.fields[field_name].widget.attrs['disabled'] = True
+            form.fields[field_name].widget.attrs['readonly'] = True
             
-    # 新規作成：備考の編集可
+    # 新規作成 = 備考の編集可
     if not form.instance.create_user:
-        form.fields['remarks'].widget.attrs.pop('disabled', None)
+        form.fields['remarks'].widget.attrs.pop('readonly', None)
         
-    # DRAFT: 作成者のみ備考の編集可
+    # 仮保存 = 作成者のみ備考の編集可
     if status == STATUS_CODE_DRAFT and form.instance.create_user == user:
-        form.fields['remarks'].widget.attrs.pop('disabled', None)
+        form.fields['remarks'].widget.attrs.pop('readonly', None)
 
-    # SUBMITTED: 承認権限者のみ承認者コメントの編集可
+    # 見積書：提出済 = 承認権限者のみ見積書コメント（承認者）の編集可
     if status == STATUS_CODE_QUOTATION_SUBMITTED and user in form.instance.reference_users.all():
-        form.fields['manager_comment'].widget.attrs.pop('disabled', None)
+        form.fields['quotation_manager_comment'].widget.attrs.pop('readonly', None)
         
-    # CONFIRM: 担当者のみ納入日と納入場所の編集可
+    # 注文書：提出済 = 承認権限者のみ注文書コメント（承認者）の編集可
+    if status == STATUS_CODE_ORDER_SUBMITTED and user in form.instance.reference_users.all():
+        form.fields['order_manager_comment'].widget.attrs.pop('readonly', None)
+        
+    # 見積書：顧客承諾済 = 担当者のみ納入日と納入場所の編集可
     if status == STATUS_CODE_QUOTATION_CONFIRMED and form.instance.create_user == user:
-        form.fields['delivery_due_date'].widget.attrs.pop('disabled', None)
-        form.fields['delivery_place'].widget.attrs.pop('disabled', None)
+        form.fields['delivery_due_date'].widget.attrs.pop('readonly', None)
+        form.fields['delivery_place'].widget.attrs.pop('readonly', None)
         
     return form
