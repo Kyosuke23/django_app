@@ -138,23 +138,27 @@ def apply_field_permissions(form, user):
     status = form.instance.status_code
 
     # まず全て無効化
-    for field_name in ['remarks', 'manager_comment', 'customer_comment']:
+    for field_name in ['remarks', 'quotation_manager_comment', 'quotation_customer_comment', 'order_manager_comment', 'order_customer_comment']:
         if field_name in form.fields:
             form.fields[field_name].widget.attrs['disabled'] = True
             
-    # 新規作成：備考の編集可
+    # 新規作成 = 備考の編集可
     if not form.instance.create_user:
         form.fields['remarks'].widget.attrs.pop('disabled', None)
         
-    # DRAFT: 作成者のみ備考の編集可
+    # 仮保存 = 作成者のみ備考の編集可
     if status == STATUS_CODE_DRAFT and form.instance.create_user == user:
         form.fields['remarks'].widget.attrs.pop('disabled', None)
 
-    # SUBMITTED: 承認権限者のみ承認者コメントの編集可
+    # 見積書：提出済 = 承認権限者のみ見積書コメント（承認者）の編集可
     if status == STATUS_CODE_QUOTATION_SUBMITTED and user in form.instance.reference_users.all():
-        form.fields['manager_comment'].widget.attrs.pop('disabled', None)
+        form.fields['quotation_manager_comment'].widget.attrs.pop('disabled', None)
         
-    # CONFIRM: 担当者のみ納入日と納入場所の編集可
+    # 注文書：提出済 = 承認権限者のみ注文書コメント（承認者）の編集可
+    if status == STATUS_CODE_QUOTATION_SUBMITTED and user in form.instance.reference_users.all():
+        form.fields['quotation_manager_comment'].widget.attrs.pop('disabled', None)
+        
+    # 見積書：顧客承諾済 = 担当者のみ納入日と納入場所の編集可
     if status == STATUS_CODE_QUOTATION_CONFIRMED and form.instance.create_user == user:
         form.fields['delivery_due_date'].widget.attrs.pop('disabled', None)
         form.fields['delivery_place'].widget.attrs.pop('disabled', None)

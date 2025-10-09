@@ -1,5 +1,4 @@
 from django.shortcuts import redirect
-from decimal import Decimal
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from django.db.models import Q
@@ -272,9 +271,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         with transaction.atomic():
             # データ更新
             self.object.status_code = STATUS_CODE_QUOTATION_APPROVED
-            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.quotation_manager_comment = request.POST.get('quotation_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+            self.object.save(update_fields=['status_code', 'quotation_manager_comment', 'update_user'])
 
             partner = getattr(self.object, 'partner', None)
             if partner and partner.email:
@@ -324,9 +323,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         with transaction.atomic():
             # データ更新
             self.object.status_code = STATUS_CODE_QUOTATION_REJECTED_IN
-            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.quotation_manager_comment = request.POST.get('quotation_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+            self.object.save(update_fields=['status_code', 'quotation_manager_comment', 'update_user'])
 
         # 処理後メッセージ
         sales_order_message(request, '却下', self.object.sales_order_no)
@@ -443,9 +442,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         with transaction.atomic():
             # データ更新
             self.object.status_code = STATUS_CODE_ORDER_REJECTED_IN
-            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.order_manager_comment = request.POST.get('order_manager_comment', '').strip()
             self.object.update_user = request.user
-            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+            self.object.save(update_fields=['status_code', 'order_manager_comment', 'update_user'])
 
         # 処理後メッセージ
         sales_order_message(request, '却下', self.object.sales_order_no)
@@ -459,8 +458,8 @@ class SalesOrderUpdateView(generic.UpdateView):
         '''
         action_type = request.POST.get('action_type')
         self.object.status_code = action_type
-        self.object.customer_comment = request.POST.get('header-customer_comment', '').strip()
-        self.object.save(update_fields=['status_code', 'customer_comment'])
+        self.object.order_customer_comment = request.POST.get('header-order_customer_comment', '').strip()
+        self.object.save(update_fields=['status_code', 'order_customer_comment'])
         return redirect('sales_order:public_thanks')
 
     def handle_default(self, request):
@@ -515,8 +514,10 @@ class SalesOrderUpdateView(generic.UpdateView):
         is_submittable = get_submittable(user=request.user, form=form)
         
         # コメント欄の活性制御
-        form.fields['manager_comment'].widget.attrs['disabled'] = True
-        form.fields['customer_comment'].widget.attrs['disabled'] = True
+        form.fields['quotation_manager_comment'].widget.attrs['disabled'] = True
+        form.fields['order_manager_comment'].widget.attrs['disabled'] = True
+        form.fields['quotation_customer_comment'].widget.attrs['disabled'] = True
+        form.fields['order_customer_comment'].widget.attrs['disabled'] = True
         
         html = render_to_string(
             self.template_name,

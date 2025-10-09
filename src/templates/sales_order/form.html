@@ -77,28 +77,45 @@
       </div>
     </div>
     {# 備考 #}
-    <div class="col-md-4 mb-2">
+    <div class="col-md-12 mb-2">
       <label for="{{ form.remarks.id_for_label }}" class="form-label">備考</label>
       {% render_field form.remarks class="form-control" rows="3" %}
       {% if form.remarks.errors %}
         <div class="text-danger small">{{ form.remarks.errors }}</div>
       {% endif %}
     </div>
-    {# 承認者コメント #}
-    <div class="col-md-4 mb-2">
-      <label for="{{ form.manager_comment.id_for_label }}" class="form-label">承認者コメント</label>
-      <input type="hidden" name="header-manager_comment" id="manager_comment" value="">
-      {% render_field form.manager_comment class="form-control" rows="3" %}
-      {% if form.manager_comment.errors %}
-        <div class="text-danger small">{{ form.manager_comment.errors }}</div>
+    {# 承認者：見積書コメント #}
+    <div class="col-md-3 mb-2">
+      <label for="{{ form.quotation_manager_comment.id_for_label }}" class="form-label">見積書コメント（承認者）</label>
+      <input type="hidden" name="header-quotation_manager_comment" id="quotation_manager_comment" value="">
+      {% render_field form.quotation_manager_comment class="form-control" rows="3" %}
+      {% if form.quotation_manager_comment.errors %}
+        <div class="text-danger small">{{ form.quotation_manager_comment.errors }}</div>
       {% endif %}
     </div>
-    {# 顧客コメント #}
-    <div class="col-md-4 mb-2">
-      <label for="{{ form.customer_comment.id_for_label }}" class="form-label">顧客コメント</label>
-      {% render_field form.customer_comment class="form-control" rows="3" %}
-      {% if form.customer_comment.errors %}
-        <div class="text-danger small">{{ form.customer_comment.errors }}</div>
+    {# 承認者：注文書コメント #}
+    <div class="col-md-3 mb-2">
+      <label for="{{ form.order_manager_comment.id_for_label }}" class="form-label">注文コメント（承認者）</label>
+      <input type="hidden" name="header-order_manager_comment" id="order_manager_comment" value="">
+      {% render_field form.order_manager_comment class="form-control" rows="3" %}
+      {% if form.order_manager_comment.errors %}
+        <div class="text-danger small">{{ form.order_manager_comment.errors }}</div>
+      {% endif %}
+    </div>
+    {# 顧客：見積書コメント #}
+    <div class="col-md-3 mb-2">
+      <label for="{{ form.quotation_customer_comment.id_for_label }}" class="form-label">見積コメント（顧客）</label>
+      {% render_field form.quotation_customer_comment class="form-control" rows="3" %}
+      {% if form.quotation_customer_comment.errors %}
+        <div class="text-danger small">{{ form.quotation_customer_comment.errors }}</div>
+      {% endif %}
+    </div>
+    
+    <div class="col-md-3 mb-2">
+      <label for="{{ form.order_customer_comment.id_for_label }}" class="form-label">見積コメント（顧客）</label>
+      {% render_field form.order_customer_comment class="form-control" rows="3" %}
+      {% if form.order_customer_comment.errors %}
+        <div class="text-danger small">{{ form.order_customer_comment.errors }}</div>
       {% endif %}
     </div>
     {# 参照ユーザー #}
