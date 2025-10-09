@@ -24,6 +24,17 @@ DATA_COLUMNS = [
 
 FILENAME_PREFIX = 'user_mst'
 
+
+SORTABLE_FIELDS = {
+    'username',
+    'email',
+    'gender',
+    'tel_number',
+    'employment_status',
+    'employment_end_date',
+    'privilege',
+}
+
 # -----------------------------
 # User CRUD
 # -----------------------------
@@ -39,15 +50,27 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
     def get_queryset(self):
         query_set = CustomUser.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
         query_set = filter_data(self.request, query_set)
-        return query_set.order_by('username')
+        return query_set
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['search_keyword'] = self.request.GET.get('search_keyword') or ''
-        context['search_privilege'] = self.request.GET.get('search_privilege') or ''
-        context['search_employment_status'] = self.request.GET.get('search_employment_status') or ''
-        context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
-        context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
+        g = self.request.GET
+        context.update({
+            'sort': g.get('sort', 'id'),
+            'order': g.get('order', 'asc'),
+            'search_keyword': g.get('search_keyword', ''),
+            'search_privilege': g.get('search_privilege', ''),
+            'search_employment_status': g.get('search_employment_status', ''),
+            'sortable_columns': [
+                {'label': 'ユーザー名', 'field': 'username'},
+                {'label': 'メールアドレス', 'field': 'email'},
+                {'label': '性別', 'field': 'gender'},
+                {'label': '電話番号', 'field': 'tel_number'},
+                {'label': '雇用状態', 'field': 'employment_status'},
+                {'label': '退職日', 'field': 'employment_end_date'},
+                {'label': '権限', 'field': 'privilege'},
+            ],
+        })
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -300,16 +323,27 @@ def get_row(rec):
     ]
 
 def filter_data(request, query_set):
-    keyword = request.GET.get('search_keyword') or ''
-    privilege = request.GET.get('search_privilege') or ''
-    employment_status = request.GET.get('search_employment_status') or ''
-    if keyword:
-        query_set = query_set.filter(Q(username__icontains=keyword) | Q(email__icontains=keyword))
-    if privilege:
-        query_set = query_set.filter(privilege=privilege)
-    if employment_status:
-        query_set = query_set.filter(employment_status=employment_status)
-    return query_set
+        g = request.GET
+
+        # --- 検索処理 ---
+        if g.get('search_keyword'):
+            kw = g['search_keyword']
+            query_set = query_set.filter(Q(username__icontains=kw) | Q(email__icontains=kw))
+        if g.get('search_privilege'):
+            query_set = query_set.filter(privilege=g['search_privilege'])
+        if g.get('search_employment_status'):
+            query_set = query_set.filter(employment_status=g['search_employment_status'])
+
+        # --- ソート処理 ---
+        sort = g.get('sort', 'id')
+        order = g.get('order', 'asc')
+
+        if sort not in SORTABLE_FIELDS:
+            sort = 'id'
+        if order == 'desc':
+            sort = f'-{sort}'
+        
+        return query_set.order_by(sort)
 
 def set_message(request, action, username):
     messages.success(request, f'ユーザー「{username}」を{action}しました。')
