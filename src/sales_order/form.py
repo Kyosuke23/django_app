@@ -45,7 +45,7 @@ class SalesOrderForm(forms.ModelForm):
         ]
         widgets = {
             'partner': forms.Select(attrs={'class': 'form-select'}),
-            'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'remarks': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
             'quotation_manager_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'order_manager_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
             'quotation_customer_comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
