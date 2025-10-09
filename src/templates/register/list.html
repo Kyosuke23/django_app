@@ -2,13 +2,13 @@
 {% load django_bootstrap5 %}
 {% load static %}
 {% load humanize %}
+{% load common_tags %}
 {% block content %}
 
 {# ページタイトル & 操作用ボタン #}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
   <h1 class="h2">ユーザーマスタ管理画面</h1>
 
-  {# インポート/エクスポート/削除用のボタンエリア #}
   <div class="d-flex gap-2">
     <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
     <button type="button" class="btn btn-outline-secondary export-btn"
@@ -22,7 +22,7 @@
   </div>
 </div>
 
-{# メッセージ #}
+{# メッセージ表示 #}
 {% include 'layout/message.html' %}
 
 {# 検索フォーム #}
@@ -62,13 +62,14 @@
         検索
       </button>
     </div>
+
     {% if user.privilege <= PRIVILEGE_MANAGER %}
     <div class="col d-flex justify-content-end">
       <a class="btn btn-outline-primary"
-        href="#"
-        data-bs-toggle="modal"
-        data-bs-target="#userModal"
-        data-url="{% url 'register:create' %}">
+         href="#"
+         data-bs-toggle="modal"
+         data-bs-target="#userModal"
+         data-url="{% url 'register:create' %}">
         + 新規登録
       </a>
     </div>
@@ -76,11 +77,12 @@
   </div>
 </form>
 
+{# 件数 #}
 <p class="mt-2">
   {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
 </p>
 
-{# 一括削除フォーム（チェックボックス用） #}
+{# 一覧テーブル #}
 <form id="bulk-delete-form" method="post" action="{% url 'register:bulk_delete' %}">
   {% csrf_token %}
   <div class="result-table overflow-auto table-responsive">
@@ -88,24 +90,33 @@
       <thead class="table-dark sticky-top">
         <tr>
           {% if user.privilege <= PRIVILEGE_MANAGER %}
-            <th class="text-center"><input type="checkbox" id="check-all"></th>
+          <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
 
+          {# --- ソート可能カラム --- #}
           {% for col in sortable_columns %}
             <th class="sortable {% if sort == col.field %}text-primary fw-bold{% endif %}">
-              <a class="text-decoration-none {% if sort == col.field %}text-primary{% else %}text-white{% endif %}"
-                href="?{% if search_keyword %}search_keyword={{ search_keyword|urlencode }}&{% endif %}{% if search_privilege %}search_privilege={{ search_privilege }}&{% endif %}{% if search_employment_status %}search_employment_status={{ search_employment_status }}&{% endif %}sort={{ col.field }}&order={% if sort == col.field and order == 'asc' %}desc{% else %}asc{% endif %}">
+              {% if sort == col.field and order == 'asc' %}
+                {% querystring sort=col.field order='desc' as sort_url %}
+              {% else %}
+                {% querystring sort=col.field order='asc' as sort_url %}
+              {% endif %}
+
+              <a href="{{ sort_url }}"
+                 class="text-decoration-none {% if sort == col.field %}text-primary{% else %}text-white{% endif %}">
                 <span>{{ col.label }}</span>
                 {% if sort == col.field %}
                   {% if order == 'asc' %}
-                    <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="昇順">
-                      <path d="M2 10l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                      <path d="M2 10l6-6 6 6"
+                            fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   {% else %}
-                    <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="降順">
-                      <path d="M2 6l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round"/>
+                    <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                      <path d="M2 6l6 6 6-6"
+                            fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   {% endif %}
                 {% endif %}
@@ -114,17 +125,16 @@
           {% endfor %}
 
           {% if user.privilege <= PRIVILEGE_MANAGER %}
-            <th>操作</th>
+          <th>操作</th>
           {% endif %}
         </tr>
       </thead>
+
       <tbody>
         {% for u in users %}
         <tr class="align-middle">
           {% if user.privilege <= PRIVILEGE_MANAGER %}
-          <td class="text-center">
-            <input type="checkbox" name="ids" value="{{ u.id }}" class="check-item">
-          </td>
+          <td class="text-center"><input type="checkbox" name="ids" value="{{ u.id }}" class="check-item"></td>
           {% endif %}
           <td>{{ u.username|default_if_none:'' }}</td>
           <td>{{ u.email|default_if_none:'' }}</td>
@@ -136,10 +146,10 @@
           <td>
             {% if user.privilege <= PRIVILEGE_MANAGER %}
             <a href="#"
-              class="btn btn-sm btn-outline-secondary"
-              data-bs-toggle="modal"
-              data-bs-target="#userModal"
-              data-url="{% url 'register:update' u.id %}">
+               class="btn btn-sm btn-outline-secondary"
+               data-bs-toggle="modal"
+               data-bs-target="#userModal"
+               data-url="{% url 'register:update' u.id %}">
               編集
             </a>
             {% endif %}
@@ -151,8 +161,7 @@
   </div>
 </form>
 
-
-<!-- モーダル -->
+{# モーダル #}
 <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -161,19 +170,19 @@
   </div>
 </div>
 
-{# ページネーション + 一括削除ボタン #}
+{# ページネーションと一括削除 #}
 <div class="d-flex justify-content-between align-items-center mt-3">
   <div>
     {% include 'layout/pagination.html' %}
   </div>
   {% if user.privilege <= PRIVILEGE_MANAGER %}
   <div class="text-end">
-    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'register:bulk_delete' %}">
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger"
+            data-url="{% url 'register:bulk_delete' %}">
       一括削除
     </button>
   </div>
   {% endif %}
 </div>
-
 <script type="text/javascript" src="{% static 'js/register/script.js' %}"></script>
 {% endblock %}

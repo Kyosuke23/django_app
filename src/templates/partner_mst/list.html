@@ -2,45 +2,39 @@
 {% load django_bootstrap5 %}
 {% load static %}
 {% load humanize %}
+{% load common_tags %}
 {% block content %}
-{% load formatters %}
+
+{# ページタイトル & 操作用ボタン #}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+  <h1 class="h2">取引先マスタ管理画面</h1>
+
+  <div class="d-flex gap-2">
+    <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+    <button type="button" id="import-btn" class="btn btn-outline-secondary" data-action="{% url 'partner_mst:import_csv' %}">
+      IMPORT
+    </button>
+    <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_csv' %}">
+      CSV
+    </button>
+    <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_excel' %}">
+      Excel
+    </button>
+  </div>
+</div>
+
+{% include 'layout/message.html' %}
+
 {# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'partner_mst:list' %}">
-  {# ページタイトル & 操作用ボタン #}
-  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">取引先マスタ管理画面</h1>
-
-    {# インポート/エクスポート/一括削除用のボタンエリア #}
-    <div class="d-flex gap-2">
-      <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
-      <button type="button" id="import-btn" class="btn btn-outline-secondary" data-action="{% url 'partner_mst:import_csv' %}">
-        IMPORT
-      </button>
-      <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_csv' %}">
-        CSV
-      </button>
-      <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_excel' %}">
-        Excel
-      </button>
-    </div>
-  </div>
-
-  {# メッセージ #}
-  {% include 'layout/message.html' %}
-
   {% csrf_token %}
   <div class="row mb-3 align-items-center">
-
-    {# 基本検索：取引先名称 #}
     <div class="col col-md-3">
-      <label for="search_partner_name" class="form-label visually-hidden">取引先名称</label>
       <input id="search_partner_name" type="text" name="search_partner_name" class="form-control"
              value="{{ search_partner_name }}" placeholder="取引先名称">
     </div>
 
-    {# 基本検索：取引先区分 #}
     <div class="col col-md-1">
-      <label for="search_partner_type" class="form-label visually-hidden">取引先区分</label>
       <select id="search_partner_type" class="form-control" name="search_partner_type">
         <option value="">-- 全カテゴリ --</option>
         {% for val,label in partner_types %}
@@ -51,17 +45,13 @@
       </select>
     </div>
 
-    {# 基本検索：担当者名 #}
     <div class="col col-md-2">
-      <label for="search_contact_name" class="form-label visually-hidden">担当者名</label>
       <input id="search_contact_name" type="text" name="search_contact_name" class="form-control"
              value="{{ search_contact_name }}" placeholder="担当者名">
     </div>
 
-    {# 検索ボタン #}
     <div class="col">
-      <button type="submit" class="btn btn-primary search_form_btn"
-              data-action="{% url 'partner_mst:list' %}">
+      <button type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'partner_mst:list' %}">
         検索
       </button>
       <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#detailSearch"
@@ -70,21 +60,19 @@
       </button>
     </div>
 
-    {# 登録ボタン #}
     {% if user.privilege <= PRIVILEGE_EDITOR %}
     <div class="col d-flex justify-content-end">
       <a class="btn btn-outline-primary"
-        href="#"
-        data-bs-toggle="modal"
-        data-bs-target="#partnerModal"
-        data-url="{% url 'partner_mst:create' %}">
+         href="#"
+         data-bs-toggle="modal"
+         data-bs-target="#partnerModal"
+         data-url="{% url 'partner_mst:create' %}">
         + 新規登録
       </a>
     </div>
     {% endif %}
   </div>
 
-  {# 詳細検索エリア（折りたたみ） #}
   <div class="collapse border rounded p-3 mb-2 bg-light" id="detailSearch">
     <div class="row g-2">
       <div class="col-md-4">
@@ -103,45 +91,55 @@
   </div>
 </form>
 
-{# 件数表示 #}
 <p class="mt-2">
   {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
 </p>
 
-{# 検索結果表示 #}
-<div class="result-table overflow-auto table-responsive">
-  <form id="bulk-delete-form" method="post" action="{% url 'partner_mst:bulk_delete' %}">
-    {% csrf_token %}
+{# 一覧テーブル #}
+<form id="bulk-delete-form" method="post" action="{% url 'partner_mst:bulk_delete' %}">
+  {% csrf_token %}
+  <div class="result-table overflow-auto table-responsive">
     <table class="table table-hover table-striped text-nowrap">
       <thead class="table-dark sticky-top">
         <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-            <th class="text-center"><input type="checkbox" id="check-all"></th>
+          <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
+
           {% for col in sortable_columns %}
             <th class="sortable {% if sort == col.field %}text-primary fw-bold{% endif %}">
-              <a class="text-decoration-none {% if sort == col.field %}text-primary{% else %}text-white{% endif %}"
-                href="?{% if search_partner_name %}search_partner_name={{ search_partner_name|urlencode }}&{% endif %}{% if search_partner_type %}search_partner_type={{ search_partner_type }}&{% endif %}{% if search_contact_name %}search_contact_name={{ search_contact_name|urlencode }}&{% endif %}{% if search_email %}search_email={{ search_email|urlencode }}&{% endif %}{% if search_tel_number %}search_tel_number={{ search_tel_number|urlencode }}&{% endif %}{% if search_address %}search_address={{ search_address|urlencode }}&{% endif %}sort={{ col.field }}&order={% if sort == col.field and order == 'asc' %}desc{% else %}asc{% endif %}">
+              {% if sort == col.field and order == 'asc' %}
+                {% querystring sort=col.field order='desc' as sort_url %}
+              {% else %}
+                {% querystring sort=col.field order='asc' as sort_url %}
+              {% endif %}
+
+              <a href="{{ sort_url }}"
+                 class="text-decoration-none {% if sort == col.field %}text-primary{% else %}text-white{% endif %}">
                 <span>{{ col.label }}</span>
-                  {% if sort == col.field %}
-                    {% if order == 'asc' %}
-                      <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="昇順">
-                        <path d="M2 10l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                    {% else %}
-                      <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="降順">
-                        <path d="M2 6l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                    {% endif %}
+                {% if sort == col.field %}
+                  {% if order == 'asc' %}
+                    <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                      <path d="M2 10l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  {% else %}
+                    <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16">
+                      <path d="M2 6l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
                   {% endif %}
+                {% endif %}
               </a>
             </th>
           {% endfor %}
+
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-            <th>操作</th>
+          <th>操作</th>
           {% endif %}
         </tr>
       </thead>
+
       <tbody>
         {% for partner in partners %}
         <tr class="align-middle">
@@ -163,10 +161,10 @@
           <td>
             {% if user.privilege <= PRIVILEGE_EDITOR %}
             <a href="#"
-              class="btn btn-sm btn-outline-secondary"
-              data-bs-toggle="modal"
-              data-bs-target="#partnerModal"
-              data-url="{% url 'partner_mst:update' partner.id %}">
+               class="btn btn-sm btn-outline-secondary"
+               data-bs-toggle="modal"
+               data-bs-target="#partnerModal"
+               data-url="{% url 'partner_mst:update' partner.id %}">
               編集
             </a>
             {% endif %}
@@ -175,33 +173,39 @@
         {% endfor %}
       </tbody>
     </table>
-  </form>
+  </div>
+</form>
 
-  <!-- モーダル -->
-  <div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-body">
-          <!-- Ajaxでここにフォームをロード -->
-        </div>
-      </div>
+{# モーダル #}
+<div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-body"><!-- Ajaxでフォームをロード --></div>
     </div>
   </div>
 </div>
 
-{# ページネーション + 一括削除ボタン #}
+{# ページネーションと一括削除 #}
 <div class="d-flex justify-content-between align-items-center mt-3">
   <div>
     {% include 'layout/pagination.html' %}
   </div>
   {% if user.privilege <= PRIVILEGE_EDITOR %}
   <div class="text-end">
-    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'product_mst:bulk_delete' %}">
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'partner_mst:bulk_delete' %}">
       一括削除
     </button>
   </div>
   {% endif %}
 </div>
+
+<style>
+  .sort-icon {
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.15em;
+  }
+</style>
 
 <script type="text/javascript" src="{% static 'js/partner_mst/script.js' %}"></script>
 {% endblock %}
