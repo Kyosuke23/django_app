@@ -180,10 +180,18 @@ class SalesOrderUpdateView(generic.UpdateView):
         # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
         if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
             for field in form.fields.values():
-                field.widget.attrs['readonly'] = True
+                widget_type = field.widget.__class__.__name__
+                if widget_type in ['Select', 'SelectMultiple', 'CheckboxInput', 'RadioSelect']:
+                    field.widget.attrs['disabled'] = True
+                else:
+                    field.widget.attrs['readonly'] = True
             for f in formset.forms:
                 for field in f.fields.values():
-                    field.widget.attrs['readonly'] = True
+                    widget_type = field.widget.__class__.__name__
+                    if widget_type in ['Select', 'SelectMultiple', 'CheckboxInput', 'RadioSelect']:
+                        field.widget.attrs['disabled'] = True
+                    else:
+                        field.widget.attrs['readonly'] = True
                     
         # フィールド個別の操作制御
         form = apply_field_permissions(form=form, user=request.user)
@@ -506,15 +514,6 @@ class SalesOrderUpdateView(generic.UpdateView):
     # ============================================================
     # 共通ユーティリティ
     # ============================================================
-
-    def disable_fields(self, form, formset):
-        '''フォームとフォームセットの全フィールドを非活性化'''
-        for field in form.fields.values():
-            field.widget.attrs['readonly'] = True
-        for f in formset.forms:
-            for field in f.fields.values():
-                field.widget.attrs['readonly'] = True
-
     def render_form(self, request):
         '''最新状態のフォーム再描画'''
         # フォームの情報を取得
