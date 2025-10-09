@@ -334,7 +334,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                     })
                     url = request.build_absolute_uri(reverse('sales_order:public_contract', kwargs={'token': token}))
                     self.object.subject = f"【発注書確認依頼】受注番号 {self.object.sales_order_no}"
-                    context = {
+                    context = { 
                         'partner': partner,
                         'order': self.object,
                         'url': url,
@@ -384,6 +384,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         - 社内からの帳票発行
         - 納入予定日・納入場所の更新のみ許可
         '''
+
         if getattr(self.object, 'create_user', None) == request.user:
             self.object.delivery_due_date = request.POST.get('header-delivery_due_date')
             self.object.delivery_place = request.POST.get('header-delivery_place', '').strip()

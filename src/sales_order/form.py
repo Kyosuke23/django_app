@@ -85,11 +85,19 @@ class SalesOrderForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        partner = cleaned_data.get('partner')
+        action_type = self.action_type
 
         # ステータスが仮作成以外かつ取引先未選択
+        partner = cleaned_data.get('partner')
         if self.action_type != STATUS_CODE_DRAFT and not partner:
             self.add_error('partner', '取引先を選択してください。')
+        
+        # 参照ユーザーとグループがどちらもNull（新規登録または仮保存時は許可）
+        reference_users = cleaned_data.get('reference_users')
+        reference_groups = cleaned_data.get('reference_groups')
+        if not reference_users and not reference_groups and not (action_type == STATUS_CODE_DRAFT or not action_type):
+            self.add_error('reference_users', '参照ユーザーまたは参照グループのいずれかを指定してください。')
+            self.add_error('reference_groups', '参照ユーザーまたは参照グループのいずれかを指定してください。')
 
         return cleaned_data
 
