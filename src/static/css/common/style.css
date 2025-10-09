@@ -144,3 +144,7 @@ textarea[readonly] {
   color: #495057 !important;
   cursor: not-allowed;
 }
+
+textarea.internal-comment {
+  background-color: #f8f9fa;
+}
