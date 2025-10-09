@@ -75,27 +75,33 @@ def get_submittable(user, form):
     # 新規作成：作成者未設定は新規作成とし、可
     if not create_user:
         return True
-    # 仮作成：担当者のみ可
+    # 仮作成 = 担当者のみ可
     if status_code == STATUS_CODE_DRAFT:
         return create_user == login_user
-    # 社内承認待ち：承認依頼先の人のみ可
+    # 社内承認待ち = 承認依頼先の人のみ可
     if status_code == STATUS_CODE_QUATATION_SUBMITTED:
         return login_user in reference_users
-    # 社内却下：担当者のみ可
+    # 見積書：社内却下 = 担当者のみ可
     if status_code == STATUS_CODE_QUATATION_REJECTED_IN:
         return create_user == login_user
-    # 社内承認済：担当者のみ可
+    # 見積書：社内承認済 = 担当者のみ可
     if status_code == STATUS_CODE_QUATATION_APPROVED:
         return create_user == login_user
-    # 顧客却下：担当者のみ可
+    # 見積書：顧客却下 = 担当者のみ可
     if status_code == STATUS_CODE_QUATATION_REJECTED_OUT:
         return create_user == login_user
-    # 顧客承諾：担当者のみ可
+    # 見積書：顧客承諾 = 担当者のみ可
     if status_code == STATUS_CODE_QUATATION_CONFIRMED:
         return create_user == login_user
-    # 注文書承認待ち：承認依頼先の人のみ可
+    # 注文書：承認待ち = 承認依頼先の人のみ可
     if status_code == STATUS_CODE_ORDER_SUBMITTED:
         return login_user in reference_users
+    # 注文書：社内却下 = 担当者のみ可
+    if status_code == STATUS_CODE_ORDER_REJECTED_IN:
+        return create_user == login_user
+    # 注文書：顧客却下 = 担当者のみ可
+    if status_code == STATUS_CODE_ORDER_REJECTED_OUT:
+        return create_user == login_user
     # キャンセル：担当者のみ可
     if status_code == STATUS_CODE_CANCELED:
         return create_user == login_user

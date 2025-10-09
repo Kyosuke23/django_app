@@ -216,15 +216,18 @@ class SalesOrderUpdateView(generic.UpdateView):
             ACTION_CODE_OUTPUT_QUATATION_OUT: self.handle_output_quatation_out,
             ACTION_CODE_OUTPUT_ORDER_IN: self.handle_output_order_in,
             ACTION_CODE_OUTPUT_ORDER_OUT: self.handle_output_order_out,
-            STATUS_CODE_RETAKE: self.handle_retake,
+            STATUS_CODE_QUATATION_RETAKE: self.handle_quatation_retake,
+            STATUS_CODE_ORDER_RETAKE: self.handle_order_retake,
             STATUS_CODE_DRAFT: self.handle_default,
             STATUS_CODE_QUATATION_SUBMITTED: self.handle_default,
             STATUS_CODE_QUATATION_APPROVED: self.handle_quatation_approved,
+            STATUS_CODE_QUATATION_REJECTED_IN: self.handle_quatation_rejected_in,
             STATUS_CODE_QUATATION_CONFIRMED: self.handle_customer_reply,
             STATUS_CODE_QUATATION_REJECTED_OUT: self.handle_customer_reply,
             STATUS_CODE_ORDER_SUBMITTED: self.handle_order_submitted,
             STATUS_CODE_ORDER_APPROVED: self.handle_order_approved,
             STATUS_CODE_ORDER_CONFIRMED: self.handle_customer_reply,
+            STATUS_CODE_ORDER_REJECTED_IN: self.handle_order_rejected_in,
             STATUS_CODE_ORDER_REJECTED_OUT: self.handle_customer_reply,
         }
 
@@ -234,13 +237,26 @@ class SalesOrderUpdateView(generic.UpdateView):
     # ============================================================
     # 個別ハンドラ群
     # ============================================================
-    def handle_retake(self, request):
+    def handle_quatation_retake(self, request):
         '''
-        再作成
+        見積書再作成
         - ステータスを仮保存に戻して再描画
         '''
         # データ更新
         self.object.status_code = STATUS_CODE_DRAFT
+        self.object.update_user = request.user
+        self.object.save(update_fields=['status_code', 'update_user'])
+        
+        # モーダルを再描画
+        return self.render_form(request)
+    
+    def handle_order_retake(self, request):
+        '''
+        見積書再作成
+        - ステータスを見積書：顧客承認済みに戻して再描画
+        '''
+        # データ更新
+        self.object.status_code = STATUS_CODE_QUATATION_CONFIRMED
         self.object.update_user = request.user
         self.object.save(update_fields=['status_code', 'update_user'])
         
@@ -269,8 +285,6 @@ class SalesOrderUpdateView(generic.UpdateView):
                         'partner_email': partner.email,
                     })
                     url = request.build_absolute_uri(reverse('sales_order:public_confirm', kwargs={'token': token}))
-                    print(message)
-                    print(url)
                     self.object.subject = f"【見積書確認依頼】受注番号 {self.object.sales_order_no}"
                     context = {
                         'partner': partner,
@@ -279,6 +293,8 @@ class SalesOrderUpdateView(generic.UpdateView):
                         'now': timezone.now(),
                     }
                     message = render_to_string('sales_order/mails/mail_approved.txt', context)
+                    print(message)
+                    print(url)
 
                     # send_mail(
                     #     subject,
@@ -296,6 +312,24 @@ class SalesOrderUpdateView(generic.UpdateView):
 
         # 処理後メッセージ
         sales_order_message(request, '承認', self.object.sales_order_no)
+        
+        # モーダルを閉じて一覧画面へ
+        return JsonResponse({'success': True})
+
+    def handle_quatation_rejected_in(self, request):
+        '''
+        見積却下（社内）
+        - 承認者コメントを保存し、ステータス更新
+        '''
+        with transaction.atomic():
+            # データ更新
+            self.object.status_code = STATUS_CODE_QUATATION_REJECTED_IN
+            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.update_user = request.user
+            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+
+        # 処理後メッセージ
+        sales_order_message(request, '却下', self.object.sales_order_no)
         
         # モーダルを閉じて一覧画面へ
         return JsonResponse({'success': True})
@@ -369,6 +403,7 @@ class SalesOrderUpdateView(generic.UpdateView):
             self.object.update_user = request.user
             self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user'])
         return JsonResponse({'success': True})
+    
 
     def handle_output_quatation_out(self, request):
         '''
@@ -398,6 +433,24 @@ class SalesOrderUpdateView(generic.UpdateView):
         - 顧客による帳票発行
         - サーバサイドでは特に何もしない
         '''
+        return JsonResponse({'success': True})
+    
+    def handle_order_rejected_in(self, request):
+        '''
+        注文書却下（社内）
+        - 承認者コメントを保存し、ステータス更新
+        '''
+        with transaction.atomic():
+            # データ更新
+            self.object.status_code = STATUS_CODE_ORDER_REJECTED_IN
+            self.object.manager_comment = request.POST.get('manager_comment', '').strip()
+            self.object.update_user = request.user
+            self.object.save(update_fields=['status_code', 'manager_comment', 'update_user'])
+
+        # 処理後メッセージ
+        sales_order_message(request, '却下', self.object.sales_order_no)
+        
+        # モーダルを閉じて一覧画面へ
         return JsonResponse({'success': True})
 
     def handle_customer_reply(self, request):
@@ -454,9 +507,17 @@ class SalesOrderUpdateView(generic.UpdateView):
 
     def render_form(self, request):
         '''最新状態のフォーム再描画'''
+        # フォームの情報を取得
         form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
         formset = get_sales_order_detail_formset(instance=self.object)
+        
+        # ボタン操作の活性制御
         is_submittable = get_submittable(user=request.user, form=form)
+        
+        # コメント欄の活性制御
+        form.fields['manager_comment'].widget.attrs['disabled'] = True
+        form.fields['customer_comment'].widget.attrs['disabled'] = True
+        
         html = render_to_string(
             self.template_name,
             {
