@@ -21,6 +21,14 @@ DATA_COLUMNS = [
 ]
 FILENAME_PREFIX = 'product_mst'
 
+SORTABLE_FIELDS = {
+    'product_name',
+    'product_category__product_category_name',
+    'unit_price',
+    'unit',
+    'description',
+}
+
 
 # -----------------------------
 # Product CRUD
@@ -40,7 +48,7 @@ class ProductListView(generic.ListView):
         '''検索条件を反映したクエリセットを返す'''
         query_set = Product.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
         query_set = filter_data(request=self.request, query_set=query_set)
-        return query_set.order_by('product_name')
+        return query_set
     
     def get_context_data(self, **kwargs):
         '''
@@ -50,10 +58,22 @@ class ProductListView(generic.ListView):
         - ページネーション情報を追加
         '''
         context = super().get_context_data(**kwargs)
-        context['search_product_name'] = self.request.GET.get('search_product_name') or ''
-        context['search_product_category'] = self.request.GET.get('search_product_category') or ''
-        context['search_unit_price_min'] = self.request.GET.get('search_unit_price_min') or ''
-        context['search_unit_price_max'] = self.request.GET.get('search_unit_price_max') or ''
+        g = self.request.GET
+        context.update({
+            'sort': g.get('sort', 'id'),
+            'order': g.get('order', 'asc'),
+            'search_product_name': g.get('search_product_name', ''),
+            'search_product_category': g.get('search_product_category', ''),
+            'search_unit_price_min': g.get('search_unit_price_min', ''),
+            'search_unit_price_max': g.get('search_unit_price_max', ''),
+            'sortable_columns': [
+                {'label': '商品名称', 'field': 'product_name'},
+                {'label': '商品カテゴリ', 'field': 'product_category__product_category_name'},
+                {'label': '単価', 'field': 'unit_price'},
+                {'label': '単位', 'field': 'unit'},
+                {'label': '説明文', 'field': 'description'},
+            ],
+        })
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -343,10 +363,17 @@ def get_row(rec):
 def filter_data(request, query_set):
     ''' 検索条件付与 '''
     # リクエストから検索フォームの入力値を取得
-    product_name = request.GET.get('search_product_name') or ''
-    category = request.GET.get('search_product_category') or ''
-    unit_price_min = request.GET.get('search_unit_price_min') or ''
-    unit_price_max = request.GET.get('search_unit_price_max') or ''
+    g = request.GET
+    product_name = g.get('search_product_name') or ''
+    category = g.get('search_product_category') or ''
+    unit_price_min = g.get('search_unit_price_min') or ''
+    unit_price_max = g.get('search_unit_price_max') or ''
+    
+    # バリデーション
+    if unit_price_min and unit_price_max and int(unit_price_min) > int(unit_price_max):
+        messages.error(request, '価格(下限)は価格(上限)以下を指定してください')
+        query_set = query_set.none()
+        return query_set
     
     # フィルタ実行
     if product_name:
@@ -357,11 +384,15 @@ def filter_data(request, query_set):
         query_set = query_set.filter(unit_price__gte=unit_price_min)
     if unit_price_max:
         query_set = query_set.filter(unit_price__lte=unit_price_max)
-    
-    # バリデーション
-    if unit_price_min and unit_price_max and int(unit_price_min) > int(unit_price_max):
-        messages.error(request, '価格(下限)は価格(上限)以下を指定してください')
-        query_set = query_set.none()
+        
+    # ソート
+    sort = g.get('sort', 'id')
+    order = g.get('order', 'asc')
+    if sort not in SORTABLE_FIELDS:
+        sort = 'id'
+    if order == 'desc':
+        sort = f'-{sort}'
+    query_set = query_set.order_by(sort)
 
     # クエリセットの返却
     return query_set

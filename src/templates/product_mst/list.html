@@ -120,21 +120,40 @@
   {% csrf_token %}
   <div class="result-table overflow-auto table-responsive">
     <table class="table table-hover table-striped text-nowrap">
-      <thead class="table-dark sticky-top">
-        <tr>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
-          <th class="text-center" scope="col">
-            <input type="checkbox" id="check-all">
-          </th>
+<thead class="table-dark sticky-top">
+  <tr>
+    {% if user.privilege <= PRIVILEGE_MANAGER %}
+      <th class="text-center"><input type="checkbox" id="check-all"></th>
+    {% endif %}
+
+    {% for col in sortable_columns %}
+      <th class="sortable {% if sort == col.field %}text-primary fw-bold{% endif %}">
+        <a class="text-decoration-none {% if sort == col.field %}text-primary{% else %}text-white{% endif %}"
+          href="?{% if search_product_name %}search_product_name={{ search_product_name|urlencode }}&{% endif %}{% if search_product_category %}search_product_category={{ search_product_category }}&{% endif %}{% if search_unit_price_min %}search_unit_price_min={{ search_unit_price_min }}&{% endif %}{% if search_unit_price_max %}search_unit_price_max={{ search_unit_price_max }}&{% endif %}sort={{ col.field }}&order={% if sort == col.field and order == 'asc' %}desc{% else %}asc{% endif %}">
+          <span>{{ col.label }}</span>
+          {% if sort == col.field %}
+            {% if order == 'asc' %}
+              <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="昇順">
+                <path d="M2 10l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            {% else %}
+              <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="降順">
+                <path d="M2 6l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            {% endif %}
           {% endif %}
-          <th scope="col">商品名称</th>
-          <th scope="col">商品カテゴリ</th>
-          <th scope="col">単価</th>
-          <th scope="col">単位</th>
-          <th scope="col">説明文</th>
-          <th scope="col">操作</th>
-        </tr>
-      </thead>
+        </a>
+      </th>
+    {% endfor %}
+
+    {% if user.privilege <= PRIVILEGE_MANAGER %}
+      <th>操作</th>
+    {% endif %}
+  </tr>
+</thead>
+
       <tbody>
         {% for product in products %}
         <tr class="align-middle">
