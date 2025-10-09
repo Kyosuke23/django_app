@@ -20,6 +20,12 @@ DATA_COLUMNS = [
 
 FILENAME_PREFIX = 'partner_mst'
 
+# ソート許可フィールド（安全のためホワイトリスト）
+ALLOWED_SORTS = {
+    'partner_name', 'partner_name_kana', 'partner_type',
+    'contact_name', 'email', 'tel_number', 'address'
+}
+
 # -----------------------------
 # Partner CRUD
 # -----------------------------
@@ -32,17 +38,32 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
     def get_queryset(self):
         query_set = Partner.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
         query_set = filter_data(request=self.request, query_set=query_set)
-        return query_set.order_by('partner_name')
+        return query_set
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['search_partner_name'] = self.request.GET.get('search_partner_name') or ''
-        context['search_partner_type'] = self.request.GET.get('search_partner_type') or ''
-        context['search_contact_name'] = self.request.GET.get('search_contact_name') or ''
-        context['search_email'] = self.request.GET.get('search_email') or ''
-        context['search_tel_number'] = self.request.GET.get('search_tel_number') or ''
-        context['search_address'] = self.request.GET.get('search_address') or ''
-        context['partner_types'] = Partner.PARTNER_TYPE_CHOICES
+        g = self.request.GET
+        context['sortable_columns'] = [
+            {'label': '取引先名称', 'field': 'partner_name'},
+            {'label': '取引先名称（カナ）','field': 'partner_name_kana'},
+            {'label': '取引先区分', 'field': 'partner_type'},
+            {'label': '担当者名', 'field': 'contact_name'},
+            {'label': 'メールアドレス', 'field': 'email'},
+            {'label': '電話番号', 'field': 'tel_number'},
+            {'label': '住所', 'field': 'address'},
+        ]
+
+        # 現在の検索・ソート状態（テンプレで使用）
+        context.update({
+            'search_partner_name': g.get('search_partner_name', ''),
+            'search_partner_type': g.get('search_partner_type', ''),
+            'search_contact_name': g.get('search_contact_name', ''),
+            'search_email': g.get('search_email', ''),
+            'search_tel_number': g.get('search_tel_number', ''),
+            'search_address': g.get('search_address', ''),
+            'sort': g.get('sort', 'id'),
+            'order': g.get('order', 'asc'),
+        })
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -258,30 +279,32 @@ def get_row(rec):
     ]
 
 def filter_data(request, query_set):
-    partner_name = request.GET.get('search_partner_name') or ''
-    partner_type = request.GET.get('search_partner_type') or ''
-    contact_name = request.GET.get('search_contact_name') or ''
-    email = request.GET.get('search_email') or ''
-    tel_number = request.GET.get('search_tel_number') or ''
-    address = request.GET.get('search_address') or ''
-    if partner_name:
-        query_set = query_set.filter(Q(partner_name__icontains=partner_name))
-    if partner_type:
-        query_set = query_set.filter(Q(partner_type__icontains=partner_type))
-    if contact_name:
-        query_set = query_set.filter(Q(contact_name__icontains=contact_name))
-    if email:
-        query_set = query_set.filter(Q(email__icontains=email))
-    if tel_number:
-        query_set = query_set.filter(Q(tel_number__icontains=tel_number))
-    if address:
-        query_set = query_set.filter(
-            Q(state__icontains=address) |
-            Q(city__icontains=address) |
-            Q(address__icontains=address) |
-            Q(address2__icontains=address)
-        )
-    return query_set
+        # ----- 検索 -----
+        g = request.GET
+        if g.get('search_partner_name'):
+            query_set = query_set.filter(partner_name__icontains=g['search_partner_name'])
+        if g.get('search_partner_type'):
+            query_set = query_set.filter(partner_type=g['search_partner_type'])
+        if g.get('search_contact_name'):
+            query_set = query_set.filter(contact_name__icontains=g['search_contact_name'])
+        if g.get('search_email'):
+            query_set = query_set.filter(email__icontains=g['search_email'])
+        if g.get('search_tel_number'):
+            query_set = query_set.filter(tel_number__icontains=g['search_tel_number'])
+        if g.get('search_address'):
+            s = g['search_address']
+            query_set = query_set.filter(Q(state__icontains=s) | Q(city__icontains=s) | Q(address__icontains=s))
+
+        # ----- ソート -----
+        sort = g.get('sort', 'id')
+        order = g.get('order', 'asc')
+        if sort not in ALLOWED_SORTS:
+            sort = 'id'
+        if order == 'desc':
+            sort = f'-{sort}'
+        query_set = query_set.order_by(sort, 'id')  # 安定ソート用に id を末尾に
+
+        return query_set
 
 
 def set_message(request, action, partner_name):

@@ -116,19 +116,29 @@
       <thead class="table-dark sticky-top">
         <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-          <th class="text-center" scope="col">
-            <input type="checkbox" id="check-all">
-          </th>
+            <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
-          <th scope="col">取引先名称</th>
-          <th scope="col">取引先名称（カナ）</th>
-          <th scope="col">取引先区分</th>
-          <th scope="col">担当者名</th>
-          <th scope="col">メールアドレス</th>
-          <th scope="col">電話番号</th>
-          <th scope="col">住所</th>
+          {% for col in sortable_columns %}
+            <th class="sortable {% if sort == col.field %}text-primary fw-bold{% endif %}">
+              <a class="text-decoration-none {% if sort == col.field %}text-primary{% else %}text-white{% endif %}"
+                href="?{% if search_partner_name %}search_partner_name={{ search_partner_name|urlencode }}&{% endif %}{% if search_partner_type %}search_partner_type={{ search_partner_type }}&{% endif %}{% if search_contact_name %}search_contact_name={{ search_contact_name|urlencode }}&{% endif %}{% if search_email %}search_email={{ search_email|urlencode }}&{% endif %}{% if search_tel_number %}search_tel_number={{ search_tel_number|urlencode }}&{% endif %}{% if search_address %}search_address={{ search_address|urlencode }}&{% endif %}sort={{ col.field }}&order={% if sort == col.field and order == 'asc' %}desc{% else %}asc{% endif %}">
+                <span>{{ col.label }}</span>
+                  {% if sort == col.field %}
+                    {% if order == 'asc' %}
+                      <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="昇順">
+                        <path d="M2 10l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    {% else %}
+                      <svg class="sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" aria-label="降順">
+                        <path d="M2 6l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    {% endif %}
+                  {% endif %}
+              </a>
+            </th>
+          {% endfor %}
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-            <th scope="col">操作</th>
+            <th>操作</th>
           {% endif %}
         </tr>
       </thead>
