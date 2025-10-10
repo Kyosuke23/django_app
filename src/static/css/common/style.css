@@ -177,3 +177,10 @@ textarea.internal-comment {
   min-width: 220px;
   cursor: pointer;
 }
+
+/* optgroup ラベルを見やすく */
+select.form-select optgroup {
+  color: #212529;
+  font-weight: 600;
+  background-color: #f8f9fa;
+}

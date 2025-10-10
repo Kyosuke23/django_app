@@ -5,7 +5,7 @@
 {% block content %}
 
 <form id="search_form" method="get" action="{% url 'register:list' %}">
-  <!-- タイトル・操作ボタン -->
+  {# タイトル・操作ボタン #}
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2 mb-0"><i class="bi bi-person-fill-gear me-2"></i> ユーザーマスタ管理</h1>
 
@@ -29,14 +29,14 @@
 
   {% include 'layout/message.html' %}
 
-  <!-- 検索フォーム -->
+  {# 検索フォーム #}
   <div class="card shadow-sm border-0 mb-3">
     <div class="card-body pb-2">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="card-title mb-0"><i class="bi bi-search me-2 text-primary"></i>検索条件</h5>
       </div>
 
-      <!-- 基本検索 -->
+      {# 基本検索 #}
       <div class="row g-3 align-items-end">
         <div class="col-md-4">
           <label class="form-label small text-muted">キーワード検索</label>
@@ -61,7 +61,7 @@
         </div>
       </div>
 
-      <!-- 詳細検索 -->
+      {# 詳細検索 #}
       <div class="collapse mt-3" id="detailSearch">
         <hr class="text-muted">
         <div class="row g-3">
@@ -116,13 +116,13 @@
       </div>
     </div>
   </div>
-  <!-- 件数表示 + 並び替え -->
+  {# 件数表示 + 並び替え #}
   <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
     <p class="text-muted small mb-0">
       {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
     </p>
 
-    <!-- 並び替えドロップダウン -->
+    {# 並び替えドロップダウン #}
     <div class="d-flex align-items-center gap-2">
       <select id="form-select" name="sort" class="form-select form-select-sm">
         <option value="">並び替え</option>
@@ -149,7 +149,7 @@
   </div>
 </form>
 
-<!-- ユーザーテーブル -->
+{# ユーザーテーブル #}
 <div class="table-responsive border rounded shadow-sm bg-white">
   <form id="bulk-delete-form" method="post" action="{% url 'register:bulk_delete' %}">
     {% csrf_token %}
@@ -201,7 +201,7 @@
   </form>
 </div>
 
-<!-- ページネーション & 一括削除 -->
+{# ページネーション & 一括削除 #}
 <div class="d-flex justify-content-between align-items-center mt-3">
   <div>{% include 'layout/pagination.html' %}</div>
   {% if user.privilege <= PRIVILEGE_MANAGER %}
@@ -214,11 +214,11 @@
   {% endif %}
 </div>
 
-<!-- モーダル -->
+{# モーダル #}
 <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
-      <div class="modal-body"><!-- Ajaxでフォームをロード --></div>
+      <div class="modal-body">{# Ajaxでフォームをロード #}</div>
     </div>
   </div>
 </div>

@@ -49,26 +49,26 @@
         内容をご確認のうえ、<strong>「承認」または「却下」</strong>を選択してください。
       </div>
 
-      <!-- 契約に関する重要メッセージ -->
+      {# 契約に関する重要メッセージ #}
       <div class="contract-notice mb-4">
         <strong>ご注意：</strong> 「承認」ボタンを押すと、本注文書の内容に同意したものとみなされ、
         <strong>正式な契約が成立</strong>します。<br>
         内容に誤りや修正点がある場合は、「却下」ボタンを押しコメント欄にご記入ください。
       </div>
 
-      <!-- 注文書確認ボタン -->
+      {# 注文書確認ボタン #}
       <div class="d-grid gap-2 mb-4">
         <button type="submit" class="btn btn-outline-primary" data-action="OUTPUT_ORDER_OUT">注文書確認</button>
       </div>
 
-      <!-- コメント入力欄 -->
+      {# コメント入力欄 #}
       <div class="mb-4">
         <label for="order_customer_comment" class="form-label fw-semibold">コメント（任意）</label>
         <textarea id="order_customer_comment" name="order_customer_comment" rows="3" class="form-control"
           placeholder="修正点や補足があればご記入ください。"></textarea>
       </div>
 
-      <!-- 承認・却下ボタン -->
+      {# 承認・却下ボタン #}
       <div class="d-flex justify-content-between">
           <button type="submit" class="btn btn-success" data-action="ORDER_CONFIRMED">承認</button>
           <button type="submit" class="btn btn-danger" data-action="ORDER_REJECTED_OUT">却下</button>
