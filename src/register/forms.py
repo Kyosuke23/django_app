@@ -8,6 +8,7 @@ class SignUpForm(forms.ModelForm):
         model = CustomUser
         fields = (
             'username',
+            'username_kana',
             'email',
             'tel_number',
             'gender',
@@ -24,6 +25,7 @@ class SignUpForm(forms.ModelForm):
             self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
         # プレースホルダの設定
         self.fields['username'].widget.attrs['placeholder'] = '例）山田 太郎'
+        self.fields['username_kana'].widget.attrs['placeholder'] = '例）ヤマダ タロウ'
         self.fields['email'].widget.attrs['placeholder'] = '例）xxx@test.com'
         self.fields['tel_number'].widget.attrs['placeholder'] = '例）09012345678'
         # 不要なパスワードフィールドを削除

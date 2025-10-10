@@ -4,6 +4,7 @@
     "pk": 1,
     "fields": {
       "username": "system_user",
+      "username_kana": "システム ユーザー",
       "email": "system@example.com",
       "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "0",
@@ -23,6 +24,7 @@
     "pk": 2,
     "fields": {
       "username": "manager_user",
+      "username_kana": "カンリ ユーザー",
       "email": "manager@example.com",
       "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "1",
@@ -42,6 +44,7 @@
     "pk": 3,
     "fields": {
       "username": "editor_user",
+      "username_kana": "タントウシャ ユーザー",
       "email": "editor@example.com",
       "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "2",
@@ -61,6 +64,7 @@
     "pk": 4,
     "fields": {
       "username": "viewer_user",
+      "username_kana": "サンショウ ユーザー",
       "email": "viewer@example.com",
       "password": "pbkdf2_sha256$870000$mahHzydyVyI4x9yHqKO3e8$/toqil9NrJKPJgugPQHLt1xO7fWyWt07aIGxEcewcuM=",
       "privilege": "3",

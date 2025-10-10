@@ -134,6 +134,7 @@
           <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
           <th>ユーザー名</th>
+          <th>ユーザー名（カナ）</th>
           <th>メールアドレス</th>
           <th>性別</th>
           <th>電話番号</th>
@@ -151,6 +152,7 @@
           <td class="text-center"><input type="checkbox" name="ids" value="{{ u.id }}"></td>
           {% endif %}
           <td>{{ u.username|default_if_none:'' }}</td>
+          <td>{{ u.username_kana|default_if_none:'' }}</td>
           <td>{{ u.email|default_if_none:'' }}</td>
           <td>{{ u.get_gender_display|default_if_none:'' }}</td>
           <td>{{ u.tel_number|default_if_none:'' }}</td>

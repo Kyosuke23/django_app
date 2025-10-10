@@ -14,10 +14,6 @@
               data-action="{% url 'sales_order:export_csv' %}">
         <i class="bi bi-download"></i> CSV
       </button>
-      <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
-              data-action="{% url 'sales_order:export_excel' %}">
-        <i class="bi bi-file-earmark-spreadsheet"></i> Excel
-      </button>
       {% if user.privilege <= PRIVILEGE_MANAGER %}
       <a class="btn btn-outline-primary btn-sm"
          href="#"

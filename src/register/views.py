@@ -330,6 +330,7 @@ def filter_data(request, queryset):
     if keyword:
         filters = (
             Q(username__icontains=keyword)
+            | Q(username_kana__icontains=keyword)
             | Q(email__icontains=keyword)
             | Q(tel_number__icontains=keyword)
         )

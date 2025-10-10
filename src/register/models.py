@@ -22,6 +22,13 @@ class CustomUser(AbstractUser, BaseModel):
         , blank=False
         , verbose_name='ユーザー名'
     )
+    username_kana = models.CharField(
+        max_length=100
+        , unique=False
+        , null=True
+        , blank=True
+        , verbose_name='ユーザー名（カナ）'
+    )
     email = models.EmailField(
         unique=True,
         null=False,

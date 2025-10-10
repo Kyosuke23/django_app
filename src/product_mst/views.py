@@ -62,10 +62,10 @@ class ProductListView(generic.ListView):
         g = self.request.GET
         
         # 検索フォームの入力値保持
-        context['search_product_name'] = g.GET.get('search_product_name') or ''
-        context['search_product_category'] = g.GET.get('search_product_category') or ''
-        context['search_unit_price_min'] = g.GET.get('search_unit_price_min') or ''
-        context['search_unit_price_max'] = g.GET.get('search_unit_price_max') or ''
+        context['search_product_name'] = g.get('search_product_name') or ''
+        context['search_product_category'] = g.get('search_product_category') or ''
+        context['search_unit_price_min'] = g.get('search_unit_price_min') or ''
+        context['search_unit_price_max'] = g.get('search_unit_price_max') or ''
         context['categories'] = ProductCategory.objects.filter(tenant=self.request.user.tenant)
         
         # ページネーション保持
