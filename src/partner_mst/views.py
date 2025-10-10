@@ -40,8 +40,11 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
         # テンプレートの検索条件を適用
         queryset = filter_data(request=req, queryset=queryset)
         
-         # クエリセット返却
-        return queryset.order_by('partner_name')
+        # ソート順を設定
+        queryset = set_table_sort(request=req, queryset=queryset)
+        
+        # クエリセット返却
+        return queryset
 
     def get_context_data(self, **kwargs):
         '''
@@ -326,6 +329,23 @@ def filter_data(request, queryset):
 
     return queryset
 
+def set_table_sort(request, queryset):
+    '''
+    クエリセットにソート順を設定
+    '''
+    g = request.GET
+    
+    # 並び替え処理
+    sort = g.get('sort', '')
+    if sort in [
+        'partner_name_kana', '-partner_name_kana'
+        , 'email', '-email'
+    ]:
+        queryset = queryset.order_by(sort)
+    else:
+        queryset = queryset.order_by('id')  # デフォルト
+
+    return queryset
 
 def set_message(request, action, partner_name):
     '''CRUD後の統一メッセージ'''

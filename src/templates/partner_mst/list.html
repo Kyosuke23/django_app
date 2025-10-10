@@ -110,12 +110,36 @@
       </div>
     </div>
   </div>
-</form>
+  <!-- 件数表示 + 並び替え -->
+  <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+    <p class="text-muted small mb-0">
+      {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
+    </p>
 
-<!-- 件数表示 -->
-<p class="text-muted small mb-2">
-  {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
-</p>
+    <!-- 並び替えドロップダウン -->
+    <div class="d-flex align-items-center gap-2">
+      <select id="form-select" name="sort" class="form-select form-select-sm">
+        <option value="">並び替え</option>
+        <optgroup label="取引先名称（カナ）">
+          <option value="partner_name_kana" {% if request.GET.sort == 'partner_name_kana' %}selected{% endif %}>
+            取引先名称（カナ）：昇順 ▲
+          </option>
+          <option value="-partner_name_kana" {% if request.GET.sort == '-partner_name_kana' %}selected{% endif %}>
+            取引先名称（カナ）：降順 ▼
+          </option>
+        </optgroup>
+        <optgroup label="メールアドレス">
+          <option value="email" {% if request.GET.sort == 'email' %}selected{% endif %}>
+            メールアドレス ▲
+          </option>
+          <option value="-email" {% if request.GET.sort == '-email' %}selected{% endif %}>
+            メールアドレス ▼
+          </option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+</form>
 
 <!-- 結果テーブル -->
 <div class="table-responsive border rounded shadow-sm bg-white">
