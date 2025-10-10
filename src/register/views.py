@@ -47,6 +47,9 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
         # テンプレートの検索条件を適用
         queryset = filter_data(req, queryset)
         
+        # ソート順を設定
+        queryset = set_table_sort(request=req, queryset=queryset)
+        
         # クエリセット返却
         return queryset
 
@@ -393,6 +396,24 @@ def filter_data(request, queryset):
         queryset = queryset.filter(employment_end_date=employment_end_date)
     if privilege:
         queryset = queryset.filter(privilege=privilege)
+
+    return queryset
+
+def set_table_sort(request, queryset):
+    '''
+    クエリセットにソート順を設定
+    '''
+    g = request.GET
+    
+    # 並び替え処理
+    sort = g.get('sort', '')
+    if sort in [
+        'username_kana', '-username_kana'
+        , 'email', '-email'
+    ]:
+        queryset = queryset.order_by(sort)
+    else:
+        queryset = queryset.order_by('id')  # デフォルト
 
     return queryset
 

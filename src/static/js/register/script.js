@@ -98,4 +98,11 @@ $(function () {
         genders.select2({ ...opt, placeholder: '性別を選択...' });
         privileges.select2({ ...opt, placeholder: '権限を選択...' });
     });
+
+    // =====================================================
+    // 並べ替え変更時
+    // ===================================================
+    $('#form-select').on('change', function() {
+        $('#search_form').submit(); // 並び順変更時にフォーム送信
+    });
 });
