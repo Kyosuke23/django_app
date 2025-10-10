@@ -48,33 +48,47 @@ class SalesOrderListView(generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = SalesOrder.objects.filter(
-            is_deleted=False, tenant=self.request.user.tenant
-        ).select_related('partner')
-
-        # 検索フォームの入力値を取得
-        sales_order_no = self.request.GET.get('search_sales_order_no')
-        status_code = self.request.GET.get('search_status_code')
-        partner = self.request.GET.get('search_partner')
-
-        # フィルタ適用
-        if sales_order_no:
-            queryset = queryset.filter(Q(sales_order_no__icontains=sales_order_no))
-        if status_code:
-            queryset = queryset.filter(status_code=status_code)
-        if partner:
-            queryset = queryset.filter(partner=partner)
-
-        # クエリセット返却
-        return queryset.order_by('sales_order_date', 'sales_order_no')
+        '''
+        検索条件を反映したクエリセットを返す
+        '''
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        req = self.request
+        queryset = SalesOrder.objects.filter(is_deleted=False, tenant=req.user.tenant).select_related('partner')
+        
+        # テンプレートの検索条件を適用
+        queryset = filter_data(request=req, queryset=queryset)
+        
+         # クエリセット返却
+        return queryset.order_by('sales_order_no')
 
     def get_context_data(self, **kwargs):
+        '''
+        テンプレートに渡す追加コンテキスト
+        - 検索条件を保持
+        - カテゴリ一覧を提供
+        - ページネーション情報を追加
+        '''
+        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        context['search_sales_order_no'] = self.request.GET.get('search_sales_order_no') or ''
-        context['search_status_code'] = self.request.GET.get('search_status_code') or ''
-        context['search_partner'] = self.request.GET.get('search_partner') or ''
+        g = self.request.GET
+
+        # 検索フォームの入力値保持
+        context['search_keyword'] = g.get('search_keyword', '') or ''
+        context['search_sales_order_no'] = g.get('search_sales_order_no', '') or ''
+        context['search_status_code'] = g.get('search_status_code', '') or ''
+        context['search_partner'] = g.get('search_partner', '') or ''
+        context['search_sales_order_date'] = g.get('search_sales_order_date', '') or ''
+        context['search_delivery_due_date'] = g.get('search_delivery_due_date', '') or ''
+        context['search_delivery_place'] = g.get('search_delivery_place', '') or ''
+
+        # マスタ系の選択肢（セレクトボックス用）
         context['status_choices'] = STATUS_CHOICES
-        context = Common.set_pagination(context, self.request.GET.urlencode())
+        context['partners'] = Partner.objects.filter(tenant=self.request.user.tenant).order_by('partner_name')
+
+        # ページネーション保持
+        context = Common.set_pagination(context, g.urlencode())
+
+        # コンテキストの返却
         return context
 
 
@@ -859,3 +873,50 @@ class QuatationSheetPdfView(generic.DetailView):
         response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
+ 
+    
+def filter_data(request, queryset):
+    '''受注管理画面の検索条件付与'''
+    g = request.GET
+
+    # -----------------------------
+    # 検索パラメータ取得
+    # -----------------------------
+    keyword = g.get('search_keyword', '').strip()
+    sales_order_no = g.get('search_sales_order_no', '').strip()
+    status_code = g.get('search_status_code', '').strip()
+    partner = g.get('search_partner', '').strip()
+    sales_order_date = g.get('search_sales_order_date', '').strip()
+    delivery_due_date = g.get('search_delivery_due_date', '').strip()
+    delivery_place = g.get('search_delivery_place', '').strip()
+
+    # -----------------------------
+    # キーワード検索（横断）
+    # -----------------------------
+    if keyword:
+        queryset = queryset.filter(
+            Q(sales_order_no__icontains=keyword)
+            | Q(partner__partner_name__icontains=keyword)
+            | Q(create_user__username__icontains=keyword)
+            | Q(status_code__icontains=keyword)
+            | Q(delivery_place__icontains=keyword)
+            | Q(remarks__icontains=keyword)
+        )
+
+    # -----------------------------
+    # 個別検索（詳細検索欄）
+    # -----------------------------
+    if sales_order_no:
+        queryset = queryset.filter(sales_order_no__icontains=sales_order_no)
+    if status_code:
+        queryset = queryset.filter(status_code=status_code)
+    if partner:
+        queryset = queryset.filter(partner_id=partner)
+    if sales_order_date:
+        queryset = queryset.filter(sales_order_date=sales_order_date)
+    if delivery_due_date:
+        queryset = queryset.filter(delivery_due_date=delivery_due_date)
+    if delivery_place:
+        queryset = queryset.filter(delivery_place__icontains=delivery_place)
+
+    return queryset

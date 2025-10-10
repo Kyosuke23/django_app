@@ -13,7 +13,7 @@ from .forms import SignUpForm, ChangePasswordForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
-from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES
+from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
 
 
 # CSV/Excel の共通出力カラム
@@ -37,13 +37,18 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        query_set = CustomUser.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
-        query_set = filter_data(self.request, query_set)
-        return query_set.order_by('username')
+        queryset = CustomUser.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
+        queryset = filter_data(self.request, queryset)
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['search_keyword'] = self.request.GET.get('search_keyword') or ''
+        context['search_username'] = self.request.GET.get('search_username') or ''
+        context['search_email'] = self.request.GET.get('search_email') or ''
+        context['search_gender'] = self.request.GET.get('search_gender') or ''
+        context['search_tel_number'] = self.request.GET.get('search_tel_number') or ''
+        context['search_employment_status'] = self.request.GET.get('search_employment_status') or ''
         context['search_privilege'] = self.request.GET.get('search_privilege') or ''
         context['search_employment_status'] = self.request.GET.get('search_employment_status') or ''
         context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
@@ -239,8 +244,8 @@ class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        query_set = super().get_queryset(request)
-        return filter_data(request, query_set).order_by('username')
+        queryset = super().get_queryset(request)
+        return filter_data(request, queryset).order_by('username')
 
     def row(self, rec):
         return get_row(rec)
@@ -252,8 +257,8 @@ class ExportCSV(PrivilegeRequiredMixin, CSVExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        query_set = super().get_queryset(request)
-        return filter_data(request, query_set).order_by('username')
+        queryset = super().get_queryset(request)
+        return filter_data(request, queryset).order_by('username')
 
     def row(self, rec):
         return get_row(rec)
@@ -299,17 +304,72 @@ def get_row(rec):
         rec.privilege,
     ]
 
-def filter_data(request, query_set):
-    keyword = request.GET.get('search_keyword') or ''
-    privilege = request.GET.get('search_privilege') or ''
-    employment_status = request.GET.get('search_employment_status') or ''
+def filter_data(request, queryset):
+    ''' ユーザーマスタ一覧の検索条件付与 '''
+    g = request.GET
+
+    keyword = g.get('search_keyword', '').strip()
+    username = g.get('search_username', '').strip()
+    email = g.get('search_email', '').strip()
+    gender = g.get('search_gender', '').strip()
+    tel_number = g.get('search_tel_number', '').strip()
+    employment_status = g.get('search_employment_status', '').strip()
+    employment_end_date = g.get('search_employment_end_date', '').strip()
+    privilege = g.get('search_privilege', '').strip()
+
+    # -----------------------------
+    # choices のラベル → 値変換辞書
+    # -----------------------------
+    gender_map = {label: val for val, label in GENDER_CHOICES}
+    employment_map = {label: val for val, label in EMPLOYMENT_STATUS_CHOICES}
+    privilege_map = {label: val for val, label in PRIVILEGE_CHOICES}
+
+    # -----------------------------
+    # キーワード検索（横断）
+    # -----------------------------
     if keyword:
-        query_set = query_set.filter(Q(username__icontains=keyword) | Q(email__icontains=keyword))
-    if privilege:
-        query_set = query_set.filter(privilege=privilege)
+        filters = (
+            Q(username__icontains=keyword)
+            | Q(email__icontains=keyword)
+            | Q(tel_number__icontains=keyword)
+        )
+
+        # 性別ラベルにマッチした場合（例：「男性」「女性」など）
+        for label, val in gender_map.items():
+            if keyword in label:
+                filters |= Q(gender=val)
+
+        # 雇用状態ラベル（例：「在職中」「退職済み」など）
+        for label, val in employment_map.items():
+            if keyword in label:
+                filters |= Q(employment_status=val)
+
+        # 権限ラベル（例：「管理者」「閲覧者」など）
+        for label, val in privilege_map.items():
+            if keyword in label:
+                filters |= Q(privilege=val)
+
+        queryset = queryset.filter(filters)
+
+    # -----------------------------
+    # 個別フィルタ
+    # -----------------------------
+    if username:
+        queryset = queryset.filter(username__icontains=username)
+    if email:
+        queryset = queryset.filter(email__icontains=email)
+    if gender:
+        queryset = queryset.filter(gender=gender)
+    if tel_number:
+        queryset = queryset.filter(tel_number__icontains=tel_number)
     if employment_status:
-        query_set = query_set.filter(employment_status=employment_status)
-    return query_set
+        queryset = queryset.filter(employment_status=employment_status)
+    if employment_end_date:
+        queryset = queryset.filter(employment_end_date=employment_end_date)
+    if privilege:
+        queryset = queryset.filter(privilege=privilege)
+
+    return queryset
 
 def set_message(request, action, username):
     messages.success(request, f'ユーザー「{username}」を{action}しました。')

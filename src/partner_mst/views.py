@@ -20,9 +20,9 @@ DATA_COLUMNS = [
 
 FILENAME_PREFIX = 'partner_mst'
 
-# -----------------------------
+#-------------------------
 # Partner CRUD
-# -----------------------------
+#-------------------------
 class PartnerListView(LoginRequiredMixin, generic.ListView):
     model = Partner
     template_name = 'partner_mst/list.html'
@@ -30,20 +30,46 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        query_set = Partner.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
-        query_set = filter_data(request=self.request, query_set=query_set)
-        return query_set.order_by('partner_name')
+        '''
+        検索条件を反映したクエリセットを返す
+        '''
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        req = self.request
+        queryset = Partner.objects.filter(is_deleted=False, tenant=req.user.tenant)
+        
+        # テンプレートの検索条件を適用
+        queryset = filter_data(request=req, queryset=queryset)
+        
+         # クエリセット返却
+        return queryset.order_by('partner_name')
 
     def get_context_data(self, **kwargs):
+        '''
+        テンプレートに渡す追加コンテキスト
+        - 検索条件を保持
+        - カテゴリ一覧を提供
+        - ページネーション情報を追加
+        '''
+        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        context['search_partner_name'] = self.request.GET.get('search_partner_name') or ''
-        context['search_partner_type'] = self.request.GET.get('search_partner_type') or ''
-        context['search_contact_name'] = self.request.GET.get('search_contact_name') or ''
-        context['search_email'] = self.request.GET.get('search_email') or ''
-        context['search_tel_number'] = self.request.GET.get('search_tel_number') or ''
-        context['search_address'] = self.request.GET.get('search_address') or ''
+        g = self.request.GET
+        
+        # 検索フォームの入力値保持
+        context['search_keyword'] = g.get('search_keyword') or ''
+        context['search_partner_name'] = g.get('search_partner_name') or ''
+        context['search_partner_type'] = g.get('search_partner_type') or ''
+        context['search_contact_name'] = g.get('search_contact_name') or ''
+        context['search_email'] = g.get('search_email') or ''
+        context['search_tel_number'] = g.get('search_tel_number') or ''
+        context['search_address'] = g.get('search_address') or ''
+        
+        # マスタ系の選択肢（セレクトボックス用）
         context['partner_types'] = Partner.PARTNER_TYPE_CHOICES
-        context = Common.set_pagination(context, self.request.GET.urlencode())
+        
+        # ページネーション保持
+        context = Common.set_pagination(context, g.urlencode())
+        
+        # コンテキストの返却
         return context
 
 
@@ -181,17 +207,17 @@ class PartnerBulkDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.
         return redirect('partner_mst:list')
 
 
-# -----------------------------
+#-------------------------
 # Export / Import
-# -----------------------------
+#-------------------------
 class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
     model_class = Partner
     filename_prefix = FILENAME_PREFIX
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return filter_data(request=request, query_set=qs).order_by('partner_name')
+        queryset = super().get_queryset(request)
+        return filter_data(request=request, queryset=queryset).order_by('partner_name')
 
     def row(self, rec):
         return get_row(rec)
@@ -203,8 +229,8 @@ class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return filter_data(request=request, query_set=qs).order_by('partner_name')
+        queryset = super().get_queryset(request)
+        return filter_data(request=request, queryset=queryset).order_by('partner_name')
 
     def row(self, rec):
         return get_row(rec)
@@ -239,9 +265,9 @@ class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
         return obj, None
 
 
-# -----------------------------
+#-------------------------
 # 共通関数
-# -----------------------------
+#-------------------------
 def get_row(rec):
     return [
         rec.partner_name,
@@ -257,31 +283,49 @@ def get_row(rec):
         rec.address2
     ]
 
-def filter_data(request, query_set):
-    partner_name = request.GET.get('search_partner_name') or ''
-    partner_type = request.GET.get('search_partner_type') or ''
-    contact_name = request.GET.get('search_contact_name') or ''
-    email = request.GET.get('search_email') or ''
-    tel_number = request.GET.get('search_tel_number') or ''
-    address = request.GET.get('search_address') or ''
-    if partner_name:
-        query_set = query_set.filter(Q(partner_name__icontains=partner_name))
-    if partner_type:
-        query_set = query_set.filter(Q(partner_type__icontains=partner_type))
-    if contact_name:
-        query_set = query_set.filter(Q(contact_name__icontains=contact_name))
-    if email:
-        query_set = query_set.filter(Q(email__icontains=email))
-    if tel_number:
-        query_set = query_set.filter(Q(tel_number__icontains=tel_number))
-    if address:
-        query_set = query_set.filter(
-            Q(state__icontains=address) |
-            Q(city__icontains=address) |
-            Q(address__icontains=address) |
-            Q(address2__icontains=address)
+
+def filter_data(request, queryset):
+    g = request.GET
+
+    # キーワード検索（全体横断）
+    keyword = g.get('search_keyword', '').strip()
+    if keyword:
+        queryset = queryset.filter(
+            Q(partner_name__icontains=keyword)
+            | Q(partner_name_kana__icontains=keyword)
+            | Q(contact_name__icontains=keyword)
+            | Q(email__icontains=keyword)
+            | Q(tel_number__icontains=keyword)
+            | Q(state__icontains=keyword)
+            | Q(city__icontains=keyword)
+            | Q(address__icontains=keyword)
+            | Q(address2__icontains=keyword)
         )
-    return query_set
+        
+    # 取引先区分のkey, valの辞書を作ってキーワード検索
+    type_display_map = dict(Partner._meta.get_field('partner_type').choices)
+    matched_types = [code for code, label in type_display_map.items() if keyword in label]
+    if matched_types:
+        queryset = queryset | Partner.objects.filter(partner_type__in=matched_types)
+
+    # 詳細検索（個別フィールド）
+    if g.get('search_partner_name'):
+        queryset = queryset.filter(partner_name__icontains=g['search_partner_name'])
+    if g.get('search_contact_name'):
+        queryset = queryset.filter(contact_name__icontains=g['search_contact_name'])
+    if g.get('search_email'):
+        queryset = queryset.filter(email__icontains=g['search_email'])
+    if g.get('search_tel_number'):
+        queryset = queryset.filter(tel_number__icontains=g['search_tel_number'])
+    if g.get('search_address'):
+        s = g['search_address']
+        queryset = queryset.filter(Q(state__icontains=s) | Q(city__icontains=s) | Q(address__icontains=s) | Q(address2__icontains=s))
+
+    # 区分検索
+    if g.get('search_partner_type'):
+        queryset = queryset.filter(partner_type=g['search_partner_type'])
+
+    return queryset
 
 
 def set_message(request, action, partner_name):

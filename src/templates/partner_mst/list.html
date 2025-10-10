@@ -2,143 +2,148 @@
 {% load django_bootstrap5 %}
 {% load static %}
 {% load humanize %}
-{% block content %}
 {% load formatters %}
-{# 検索フォーム #}
-<form id="search_form" method="get" action="{% url 'partner_mst:list' %}">
-  {# ページタイトル & 操作用ボタン #}
-  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-    <h1 class="h2">取引先マスタ管理画面</h1>
 
-    {# インポート/エクスポート/一括削除用のボタンエリア #}
+{% block content %}
+<form id="search_form" method="get" action="{% url 'partner_mst:list' %}">
+  <!-- タイトル・操作ボタン -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 mb-0"><i class="bi bi-people-fill me-2"></i> 取引先マスタ管理</h1>
+
     <div class="d-flex gap-2">
       <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
-      <button type="button" id="import-btn" class="btn btn-outline-secondary" data-action="{% url 'partner_mst:import_csv' %}">
-        IMPORT
+      <button type="button" id="import-btn" class="btn btn-outline-secondary btn-sm"
+              data-action="{% url 'partner_mst:import_csv' %}">
+        <i class="bi bi-upload"></i> Import
       </button>
-      <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_csv' %}">
-        CSV
+      <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
+              data-action="{% url 'partner_mst:export_csv' %}">
+        <i class="bi bi-download"></i> Export
       </button>
-      <button type="button" class="btn btn-outline-secondary export-btn" data-action="{% url 'partner_mst:export_excel' %}">
-        Excel
-      </button>
+      {% if user.privilege <= PRIVILEGE_EDITOR %}
+      <a class="btn btn-outline-primary btn-sm"
+         href="#"
+         data-bs-toggle="modal"
+         data-bs-target="#partnerModal"
+         data-url="{% url 'partner_mst:create' %}">
+         <i class="bi bi-plus-circle"></i> 新規登録
+      </a>
+      {% endif %}
     </div>
   </div>
 
-  {# メッセージ #}
   {% include 'layout/message.html' %}
 
-  {% csrf_token %}
-  <div class="row mb-3 align-items-center">
-
-    {# 基本検索：取引先名称 #}
-    <div class="col col-md-3">
-      <label for="search_partner_name" class="form-label visually-hidden">取引先名称</label>
-      <input id="search_partner_name" type="text" name="search_partner_name" class="form-control"
-             value="{{ search_partner_name }}" placeholder="取引先名称">
-    </div>
-
-    {# 基本検索：取引先区分 #}
-    <div class="col col-md-1">
-      <label for="search_partner_type" class="form-label visually-hidden">取引先区分</label>
-      <select id="search_partner_type" class="form-control" name="search_partner_type">
-        <option value="">-- 全カテゴリ --</option>
-        {% for val,label in partner_types %}
-        <option value="{{ val }}" {% if search_partner_type == val|stringformat:"s" %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    {# 基本検索：担当者名 #}
-    <div class="col col-md-2">
-      <label for="search_contact_name" class="form-label visually-hidden">担当者名</label>
-      <input id="search_contact_name" type="text" name="search_contact_name" class="form-control"
-             value="{{ search_contact_name }}" placeholder="担当者名">
-    </div>
-
-    {# 検索ボタン #}
-    <div class="col">
-      <button type="submit" class="btn btn-primary search_form_btn"
-              data-action="{% url 'partner_mst:list' %}">
-        検索
-      </button>
-      <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#detailSearch"
-              aria-expanded="false" aria-controls="detailSearch">
-        詳細検索
-      </button>
-    </div>
-
-    {# 登録ボタン #}
-    {% if user.privilege <= PRIVILEGE_EDITOR %}
-    <div class="col d-flex justify-content-end">
-      <a class="btn btn-outline-primary"
-        href="#"
-        data-bs-toggle="modal"
-        data-bs-target="#partnerModal"
-        data-url="{% url 'partner_mst:create' %}">
-        + 新規登録
-      </a>
-    </div>
-    {% endif %}
-  </div>
-
-  {# 詳細検索エリア（折りたたみ） #}
-  <div class="collapse border rounded p-3 mb-2 bg-light" id="detailSearch">
-    <div class="row g-2">
-      <div class="col-md-4">
-        <input id="search_email" type="text" name="search_email" class="form-control"
-               value="{{ search_email }}" placeholder="メールアドレス">
+  <!-- 検索フォーム -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body pb-2">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0"><i class="bi bi-search me-2 text-primary"></i>検索条件</h5>
       </div>
-      <div class="col-md-2">
-        <input id="search_tel_number" type="text" name="search_tel_number" class="form-control"
-               value="{{ search_tel_number }}" placeholder="電話番号">
+
+      <!-- 基本検索 -->
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">キーワード検索</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="search_keyword" class="form-control"
+                  value="{{ search_keyword }}" placeholder="キーワードを入力">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-2 text-start">
+          <button class="btn btn-outline-secondary btn-sm" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#detailSearch"
+                  aria-expanded="false" aria-controls="detailSearch">
+            <i class="bi bi-funnel"></i> 詳細検索
+          </button>
+          <a href="{% url 'partner_mst:list' %}" class="btn btn-link btn-sm text-muted">
+            <i class="bi bi-arrow-counterclockwise"></i> リセット
+          </a>
+        </div>
       </div>
-      <div class="col-md-3">
-        <input id="search_address" type="text" name="search_address" class="form-control"
-               value="{{ search_address }}" placeholder="住所">
+
+      <!-- 詳細検索 -->
+      <div class="collapse mt-3" id="detailSearch">
+        <hr class="text-muted">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label small text-muted">取引先名称</label>
+            <input type="text" name="search_partner_name" class="form-control form-control-sm"
+                   value="{{ search_partner_name }}">
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small text-muted">取引先区分</label>
+            <select name="search_partner_type" class="form-select form-select-sm">
+              <option value="">すべて</option>
+              {% for val, label in partner_types %}
+                <option value="{{ val }}" {% if search_partner_type == val|stringformat:"s" %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">担当者名</label>
+            <input type="text" name="search_contact_name" class="form-control form-control-sm"
+                   value="{{ search_contact_name }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">メールアドレス</label>
+            <input type="text" name="search_email" class="form-control form-control-sm"
+                   value="{{ search_email }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">電話番号</label>
+            <input type="text" name="search_tel_number" class="form-control form-control-sm"
+                   value="{{ search_tel_number }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">住所</label>
+            <input type="text" name="search_address" class="form-control form-control-sm"
+                   value="{{ search_address }}">
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </form>
 
-{# 件数表示 #}
-<p class="mt-2">
-  {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
+<!-- 件数表示 -->
+<p class="text-muted small mb-2">
+  {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
 </p>
 
-{# 検索結果表示 #}
-<div class="result-table overflow-auto table-responsive">
+<!-- 結果テーブル -->
+<div class="table-responsive border rounded shadow-sm bg-white">
   <form id="bulk-delete-form" method="post" action="{% url 'partner_mst:bulk_delete' %}">
     {% csrf_token %}
-    <table class="table table-hover table-striped text-nowrap">
-      <thead class="table-dark sticky-top">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
         <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-          <th class="text-center" scope="col">
-            <input type="checkbox" id="check-all">
-          </th>
+          <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
-          <th scope="col">取引先名称</th>
-          <th scope="col">取引先名称（カナ）</th>
-          <th scope="col">取引先区分</th>
-          <th scope="col">担当者名</th>
-          <th scope="col">メールアドレス</th>
-          <th scope="col">電話番号</th>
-          <th scope="col">住所</th>
+          <th>取引先名称</th>
+          <th>取引先名称（カナ）</th>
+          <th>取引先区分</th>
+          <th>担当者名</th>
+          <th>メールアドレス</th>
+          <th>電話番号</th>
+          <th>住所</th>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-            <th scope="col">操作</th>
+          <th>操作</th>
           {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for partner in partners %}
-        <tr class="align-middle">
+        <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-          <td class="text-center">
-            <input type="checkbox" name="ids" value="{{ partner.id }}" class="check-item">
-          </td>
+          <td class="text-center"><input type="checkbox" name="ids" value="{{ partner.id }}"></td>
           {% endif %}
           <td>{{ partner.partner_name|default_if_none:'' }}</td>
           <td>{{ partner.partner_name_kana|default_if_none:'' }}</td>
@@ -147,51 +152,47 @@
           <td>{{ partner.email|default_if_none:'' }}</td>
           <td>{{ partner.tel_number|format_tel }}</td>
           <td>
-            {% if partner.postal_code %}〒{% endif %}{{ partner.postal_code|format_postal|default_if_none:'' }}<br>
-            {{ partner.state|default_if_none:'' }} {{ partner.city|default_if_none:'' }} {{ partner.address|default_if_none:'' }} {{ partner.address2|default_if_none:'' }}
+            {% if partner.postal_code %}〒{% endif %}
+            {{ partner.postal_code|format_postal }} {{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}
           </td>
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
-            {% if user.privilege <= PRIVILEGE_EDITOR %}
-            <a href="#"
-              class="btn btn-sm btn-outline-secondary"
-              data-bs-toggle="modal"
-              data-bs-target="#partnerModal"
-              data-url="{% url 'partner_mst:update' partner.id %}">
-              編集
+            <a href="#" class="btn btn-sm btn-outline-secondary"
+               data-bs-toggle="modal"
+               data-bs-target="#partnerModal"
+               data-url="{% url 'partner_mst:update' partner.id %}">
+              <i class="bi bi-pencil"></i> 編集
             </a>
-            {% endif %}
           </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </form>
-
-  <!-- モーダル -->
-  <div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-      <div class="modal-content">
-        <div class="modal-body">
-          <!-- Ajaxでここにフォームをロード -->
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
 
-{# ページネーション + 一括削除ボタン #}
+<!-- ページネーション & 一括削除 -->
 <div class="d-flex justify-content-between align-items-center mt-3">
-  <div>
-    {% include 'layout/pagination.html' %}
-  </div>
+  <div>{% include 'layout/pagination.html' %}</div>
   {% if user.privilege <= PRIVILEGE_EDITOR %}
-  <div class="text-end">
-    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'product_mst:bulk_delete' %}">
-      一括削除
+  <div>
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger btn-sm"
+            data-url="{% url 'partner_mst:bulk_delete' %}">
+      <i class="bi bi-trash3"></i> 一括削除
     </button>
   </div>
   {% endif %}
 </div>
 
-<script type="text/javascript" src="{% static 'js/partner_mst/script.js' %}"></script>
+<!-- モーダル -->
+<div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-body"><!-- Ajaxでここにフォームをロード --></div>
+    </div>
+  </div>
+</div>
+
+<script src="{% static 'js/partner_mst/script.js' %}"></script>
 {% endblock %}

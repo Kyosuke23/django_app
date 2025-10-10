@@ -4,137 +4,187 @@
 {% load humanize %}
 {% block content %}
 
-{# ページタイトル & 操作用ボタン #}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-  <h1 class="h2">ユーザーマスタ管理画面</h1>
-
-  {# インポート/エクスポート/削除用のボタンエリア #}
-  <div class="d-flex gap-2">
-    <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
-    <button type="button" class="btn btn-outline-secondary export-btn"
-            data-action="{% url 'register:export_csv' %}">
-      CSV
-    </button>
-    <button type="button" class="btn btn-outline-secondary export-btn"
-            data-action="{% url 'register:export_excel' %}">
-      Excel
-    </button>
-  </div>
-</div>
-
-{# メッセージ #}
-{% include 'layout/message.html' %}
-
-{# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'register:list' %}">
-  {% csrf_token %}
-  <div class="row mb-3 align-items-center">
-    <div class="col col-md-3">
-      <input id="search_keyword" type="text" name="search_keyword" class="form-control"
-             value="{{ search_keyword }}" placeholder="ユーザー名 / メールアドレスを入力してください">
-    </div>
+  <!-- タイトル・操作ボタン -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 mb-0"><i class="bi bi-person-fill-gear me-2"></i> ユーザーマスタ管理</h1>
 
-    <div class="col col-md-1">
-      <select id="search_privilege" class="form-control" name="search_privilege">
-        <option value="">-- 権限 --</option>
-        {% for val,label in PRIVILEGE_CHOICES %}
-        <option value="{{ val }}" {% if search_privilege == val|stringformat:"s" %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col col-md-1">
-      <select id="search_employment_status" class="form-control" name="search_employment_status">
-        <option value="">-- 雇用状態 --</option>
-        {% for val,label in EMPLOYMENT_STATUS_CHOICES %}
-        <option value="{{ val }}" {% if search_employment_status == val|stringformat:"s" %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    <div class="col">
-      <button type="submit" class="btn btn-primary search_form_btn"
-              data-action="{% url 'register:list' %}">
-        検索
+    <div class="d-flex gap-2">
+      <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+      <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
+              data-action="{% url 'register:export_csv' %}">
+        <i class="bi bi-download"></i> CSV
       </button>
-    </div>
-    {% if user.privilege <= PRIVILEGE_MANAGER %}
-    <div class="col d-flex justify-content-end">
-      <a class="btn btn-outline-primary"
-        href="#"
-        data-bs-toggle="modal"
-        data-bs-target="#userModal"
-        data-url="{% url 'register:create' %}">
-        + 新規登録
+      {% if user.privilege <= PRIVILEGE_MANAGER %}
+      <a class="btn btn-outline-primary btn-sm"
+         href="#"
+         data-bs-toggle="modal"
+         data-bs-target="#userModal"
+         data-url="{% url 'register:create' %}">
+         <i class="bi bi-plus-circle"></i> 新規登録
       </a>
+      {% endif %}
     </div>
-    {% endif %}
+  </div>
+
+  {% include 'layout/message.html' %}
+
+  <!-- 検索フォーム -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body pb-2">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0"><i class="bi bi-search me-2 text-primary"></i>検索条件</h5>
+      </div>
+
+      <!-- 基本検索 -->
+      <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label small text-muted">キーワード検索</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="search_keyword" class="form-control"
+                   value="{{ search_keyword }}" placeholder="ユーザー名 / メールアドレス">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-2 text-start">
+          <button class="btn btn-outline-secondary btn-sm" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#detailSearch"
+                  aria-expanded="false" aria-controls="detailSearch">
+            <i class="bi bi-funnel"></i> 詳細検索
+          </button>
+          <a href="{% url 'register:list' %}" class="btn btn-link btn-sm text-muted">
+            <i class="bi bi-arrow-counterclockwise"></i> リセット
+          </a>
+        </div>
+      </div>
+
+      <!-- 詳細検索 -->
+      <div class="collapse mt-3" id="detailSearch">
+        <hr class="text-muted">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label small text-muted">ユーザー名</label>
+            <input type="text" name="search_username" class="form-control form-control-sm"
+                   value="{{ search_username }}">
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">メールアドレス</label>
+            <input type="text" name="search_email" class="form-control form-control-sm"
+                   value="{{ search_email }}">
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label small text-muted">性別</label>
+            <select name="search_gender" class="form-select form-select-sm">
+              <option value="">すべて</option>
+              {% for val,label in GENDER_CHOICES %}
+              <option value="{{ val }}" {% if search_gender == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label small text-muted">電話番号</label>
+            <input type="text" name="search_tel_number" class="form-control form-control-sm"
+                   value="{{ search_tel_number }}">
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label small text-muted">雇用状態</label>
+            <select name="search_employment_status" class="form-select form-select-sm">
+              <option value="">すべて</option>
+              {% for val,label in EMPLOYMENT_STATUS_CHOICES %}
+              <option value="{{ val }}" {% if search_employment_status == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="col-md-1">
+            <label class="form-label small text-muted">権限</label>
+            <select name="search_privilege" class="form-select form-select-sm">
+              <option value="">すべて</option>
+              {% for val,label in PRIVILEGE_CHOICES %}
+              <option value="{{ val }}" {% if search_privilege == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </form>
 
-<p class="mt-2">
-  {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
+<!-- 件数表示 -->
+<p class="text-muted small mb-2">
+  {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
 </p>
 
-{# 一括削除フォーム（チェックボックス用） #}
-<form id="bulk-delete-form" method="post" action="{% url 'register:bulk_delete' %}">
-  {% csrf_token %}
-  <div class="result-table overflow-auto table-responsive">
-    <table class="table table-hover table-striped text-nowrap">
-      <thead class="table-dark sticky-top">
+<!-- ユーザーテーブル -->
+<div class="table-responsive border rounded shadow-sm bg-white">
+  <form id="bulk-delete-form" method="post" action="{% url 'register:bulk_delete' %}">
+    {% csrf_token %}
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
         <tr>
           {% if user.privilege <= PRIVILEGE_MANAGER %}
-          <th class="text-center" scope="col">
-            <input type="checkbox" id="check-all">
-          </th>
+          <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
-          <th scope="col">ユーザー名</th>
-          <th scope="col">メールアドレス</th>
-          <th scope="col">性別</th>
-          <th scope="col">電話番号</th>
-          <th scope="col">雇用状態</th>
-          <th scope="col">退職日</th>
-          <th scope="col">権限</th>
-          <th scope="col">操作</th>
+          <th>ユーザー名</th>
+          <th>メールアドレス</th>
+          <th>性別</th>
+          <th>電話番号</th>
+          <th>雇用状態</th>
+          <th>権限</th>
+          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          <th>操作</th>
+          {% endif %}
         </tr>
       </thead>
       <tbody>
         {% for u in users %}
-        <tr class="align-middle">
+        <tr>
           {% if user.privilege <= PRIVILEGE_MANAGER %}
-          <td class="text-center">
-            <input type="checkbox" name="ids" value="{{ u.id }}" class="check-item">
-          </td>
+          <td class="text-center"><input type="checkbox" name="ids" value="{{ u.id }}"></td>
           {% endif %}
           <td>{{ u.username|default_if_none:'' }}</td>
           <td>{{ u.email|default_if_none:'' }}</td>
           <td>{{ u.get_gender_display|default_if_none:'' }}</td>
           <td>{{ u.tel_number|default_if_none:'' }}</td>
-          <td>{{ u.get_employment_status_display }}</td>
-          <td>{{ u.employment_end_date|date:"Y-m-d" }}</td>
-          <td>{{ u.get_privilege_display }}</td>
+          <td>{{ u.get_employment_status_display|default_if_none:'' }}</td>
+          <td>{{ u.get_privilege_display|default_if_none:'' }}</td>
+          {% if user.privilege <= PRIVILEGE_MANAGER %}
           <td>
-            {% if user.privilege <= PRIVILEGE_MANAGER %}
-            <a href="#"
-              class="btn btn-sm btn-outline-secondary"
-              data-bs-toggle="modal"
-              data-bs-target="#userModal"
-              data-url="{% url 'register:update' u.id %}">
-              編集
+            <a href="#" class="btn btn-sm btn-outline-secondary"
+               data-bs-toggle="modal"
+               data-bs-target="#userModal"
+               data-url="{% url 'register:update' u.id %}">
+              <i class="bi bi-pencil"></i> 編集
             </a>
-            {% endif %}
           </td>
+          {% endif %}
         </tr>
         {% endfor %}
       </tbody>
     </table>
-  </div>
-</form>
+  </form>
+</div>
 
+<!-- ページネーション & 一括削除 -->
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <div>{% include 'layout/pagination.html' %}</div>
+  {% if user.privilege <= PRIVILEGE_MANAGER %}
+  <div>
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger btn-sm"
+            data-url="{% url 'register:bulk_delete' %}">
+      <i class="bi bi-trash3"></i> 一括削除
+    </button>
+  </div>
+  {% endif %}
+</div>
 
 <!-- モーダル -->
 <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
@@ -145,19 +195,5 @@
   </div>
 </div>
 
-{# ページネーション + 一括削除ボタン #}
-<div class="d-flex justify-content-between align-items-center mt-3">
-  <div>
-    {% include 'layout/pagination.html' %}
-  </div>
-  {% if user.privilege <= PRIVILEGE_MANAGER %}
-  <div class="text-end">
-    <button type="button" id="bulk-delete-btn" class="btn btn-danger" data-url="{% url 'register:bulk_delete' %}">
-      一括削除
-    </button>
-  </div>
-  {% endif %}
-</div>
-
-<script type="text/javascript" src="{% static 'js/register/script.js' %}"></script>
+<script src="{% static 'js/register/script.js' %}"></script>
 {% endblock %}

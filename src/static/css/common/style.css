@@ -7,6 +7,7 @@ body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   height: stretch;
+  background-color: #F3F4F6;
 }
 
 .dropdown-toggle {
@@ -147,4 +148,27 @@ textarea[readonly] {
 
 textarea.internal-comment {
   background-color: #f8f9fa;
+}
+
+/* 共通: フォーム周辺の調整 */
+#search_form .card {
+  border-radius: 0.75rem;
+}
+#search_form label {
+  font-weight: 500;
+}
+#search_form input::placeholder {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+/* ボタン内テキスト中央揃え補正 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.btn i {
+  margin-right: 0.4rem;
+  line-height: 1;
 }

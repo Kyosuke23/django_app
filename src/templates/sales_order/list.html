@@ -3,121 +3,152 @@
 {% load static %}
 {% load humanize %}
 {% block content %}
-{# ページタイトル & 操作用ボタン #}
-<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
-  <h1 class="h2">受注管理画面</h1>
 
-  {# インポート/エクスポート用のボタンエリア（必要に応じてコメントアウト可） #}
-  <div class="d-flex gap-2">
-    <button type="button" class="btn btn-outline-secondary export-btn"
-            data-action="{% url 'sales_order:export_csv' %}">
-      CSV
-    </button>
-    <button type="button" class="btn btn-outline-secondary export-btn"
-            data-action="{% url 'sales_order:export_excel' %}">
-      Excel
-    </button>
-  </div>
-</div>
-
-{# メッセージ #}
-{% include 'layout/message.html' %}
-
-{# 検索フォーム #}
 <form id="search_form" method="get" action="{% url 'sales_order:list' %}">
-  {% csrf_token %}
-  <div class="row mb-3 align-items-center">
+  <!-- タイトル・操作ボタン -->
+  <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 mb-0"><i class="bi bi-clipboard-check-fill me-2"></i> 受注管理</h1>
 
-    {# 受注番号検索 #}
-    <div class="col col-md-2">
-      <label for="search_sales_order_no" class="form-label visually-hidden">キーワード</label>
-      <input id="search_sales_order_no" type="text" name="search_sales_order_no" class="form-control"
-             value="{{ search_sales_order_no }}" placeholder="受注番号を入力してください">
-    </div>
-
-    {# ステータス選択 #}
-    <div class="col col-md-1">
-      <label for="search_status_code" class="form-label visually-hidden">ステータス</label>
-      <select id="search_status_code" class="form-control" name="search_status_code">
-        <option value="">-- 全ステータス --</option>
-        {% for value,label in status_choices %}
-        <option value="{{ value }}" {% if search_status_code == value %}selected{% endif %}>
-          {{ label }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    {# 取引先選択 #}
-    <div class="col col-md-2">
-      <label for="search_partner" class="form-label visually-hidden">取引先</label>
-      <select id="search_partner" class="form-control" name="search_partner">
-        <option value="">-- 全取引先 --</option>
-        {% for p in partners %}
-        <option value="{{ p.id }}" {% if search_partner == p.id|stringformat:"s" %}selected{% endif %}>
-          {{ p.partner_name }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-
-    {# 検索ボタン #}
-    <div class="col">
-      <button type="submit" class="btn btn-primary search_form_btn" data-action="{% url 'sales_order:list' %}">
-        検索
+    <div class="d-flex gap-2">
+      <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
+              data-action="{% url 'sales_order:export_csv' %}">
+        <i class="bi bi-download"></i> CSV
       </button>
-    </div>
-
-    {# 新規登録ボタン（モーダル表示） #}
-    {% if user.privilege <= PRIVILEGE_MANAGER %}
-    <div class="col d-flex justify-content-end">
-      <a class="btn btn-outline-primary"
-        href="#"
-        data-bs-toggle="modal"
-        data-bs-target="#salesOrderModal"
-        data-url="{% url 'sales_order:create' %}">
-        + 新規登録
+      <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
+              data-action="{% url 'sales_order:export_excel' %}">
+        <i class="bi bi-file-earmark-spreadsheet"></i> Excel
+      </button>
+      {% if user.privilege <= PRIVILEGE_MANAGER %}
+      <a class="btn btn-outline-primary btn-sm"
+         href="#"
+         data-bs-toggle="modal"
+         data-bs-target="#salesOrderModal"
+         data-url="{% url 'sales_order:create' %}">
+         <i class="bi bi-plus-circle"></i> 新規登録
       </a>
+      {% endif %}
     </div>
-    {% endif %}
+  </div>
+
+  {% include 'layout/message.html' %}
+
+  <!-- 検索フォーム -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body pb-2">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0"><i class="bi bi-search me-2 text-primary"></i>検索条件</h5>
+      </div>
+
+      <!-- 基本検索 -->
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">キーワード検索</label>
+          <div class="input-group input-group-sm">
+            <input type="text" name="search_keyword" class="form-control"
+                   value="{{ search_keyword }}" placeholder="受注番号 / 取引先 / 担当者など">
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-2 text-start">
+          <button class="btn btn-outline-secondary btn-sm" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#detailSearch"
+                  aria-expanded="false" aria-controls="detailSearch">
+            <i class="bi bi-funnel"></i> 詳細検索
+          </button>
+          <a href="{% url 'sales_order:list' %}" class="btn btn-link btn-sm text-muted">
+            <i class="bi bi-arrow-counterclockwise"></i> リセット
+          </a>
+        </div>
+      </div>
+
+      <!-- 詳細検索 -->
+      <div class="collapse mt-3" id="detailSearch">
+        <hr class="text-muted">
+        <div class="row g-3">
+          <div class="col-md-1">
+            <label class="form-label small text-muted">受注番号</label>
+            <input type="text" name="search_sales_order_no" class="form-control form-control-sm"
+                   value="{{ search_sales_order_no }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">取引先</label>
+            <select name="search_partner" class="form-select form-select-sm">
+              <option value="">すべて</option>
+              {% for p in partners %}
+                <option value="{{ p.id }}" {% if search_partner == p.id|stringformat:"s" %}selected{% endif %}>
+                  {{ p.partner_name }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small text-muted">ステータス</label>
+            <select name="search_status_code" class="form-select form-select-sm">
+              <option value="">すべて</option>
+              {% for val,label in status_choices %}
+                <option value="{{ val }}" {% if search_status_code == val|stringformat:"s" %}selected{% endif %}>
+                  {{ label }}
+                </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">受注日</label>
+            <input type="date" name="search_sales_order_date" class="form-control form-control-sm"
+                   value="{{ search_sales_order_date }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">納入予定日</label>
+            <input type="date" name="search_delivery_due_date" class="form-control form-control-sm"
+                   value="{{ search_delivery_due_date }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">納入場所</label>
+            <input type="text" name="search_delivery_place" class="form-control form-control-sm"
+                   value="{{ search_delivery_place }}">
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </form>
 
-{# 件数表示 #}
-<p class="mt-2">
-  {{ paginator.count }}件中 {{ page_obj.start_index }}件 - {{ page_obj.end_index }}件
+<!-- 件数表示 -->
+<p class="text-muted small mb-2">
+  {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
 </p>
 
-{# 検索結果表示 #}
-<div class="result-table table-responsive">
-  <table class="table table-hover table-striped text-nowrap">
-    <thead class="table-dark sticky-top">
+<!-- 受注テーブル -->
+<div class="table-responsive border rounded shadow-sm bg-white">
+  <table class="table table-hover align-middle mb-0">
+    <thead class="table-dark">
       <tr>
-        <th scope="col">受注番号</th>
-        <th scope="col">ステータス</th>
-        <th scope="col">受注日</th>
-        <th scope="col">納入日</th>
-        <th scope="col">納入場所</th>
-        <th scope="col">取引先</th>
-        <th scope="col">金額合計</th>
-        <th scope="col">担当者</th>
-        <th scope="col">備考</th>
-        <th scope="col">操作</th>
+        <th>受注番号</th>
+        <th>ステータス</th>
+        <th>受注日</th>
+        <th>納入予定日</th>
+        <th>納入場所</th>
+        <th>取引先</th>
+        <th>金額合計</th>
+        <th>担当者</th>
+        <th>備考</th>
+        <th>操作</th>
       </tr>
     </thead>
     <tbody>
       {% for sales_order in sales_orders %}
-      <tr class="align-middle">
+      <tr>
         <td>{{ sales_order.sales_order_no }}</td>
-        <td>{{ sales_order.get_status_code_display   }}</td>
-        <td>{{ sales_order.sales_order_date }}</td>
-        <td>{{ sales_order.delivery_due_date|default_if_none:'未定' }}</td>
-        <td>{{ sales_order.delivery_place }}</td>
-        <td>{{ sales_order.partner.partner_name|default_if_none:'' }}</td>
+        <td>{{ sales_order.get_status_code_display }}</td>
+        <td>{{ sales_order.sales_order_date|date:"Y-m-d" }}</td>
+        <td>{{ sales_order.delivery_due_date|default_if_none:"未定" }}</td>
+        <td>{{ sales_order.delivery_place|default_if_none:"" }}</td>
+        <td>{{ sales_order.partner.partner_name|default_if_none:"" }}</td>
         <td>¥{{ sales_order.grand_total|floatformat:0|intcomma }}</td>
-        <td>
-          {{ sales_order.create_user }}
-        </td>
+        <td>{{ sales_order.create_user }}</td>
         <td>{{ sales_order.remarks|truncatechars:20 }}</td>
         <td>
           {% if user.privilege <= PRIVILEGE_MANAGER %}
@@ -126,7 +157,7 @@
             data-bs-toggle="modal"
             data-bs-target="#salesOrderModal"
             data-url="{% url 'sales_order:update' sales_order.id %}">
-            編集
+            <i class="bi bi-pencil"></i> 編集
           </a>
           {% endif %}
         </td>
@@ -134,22 +165,23 @@
       {% endfor %}
     </tbody>
   </table>
+</div>
 
-  <!-- モーダル -->
-  <div class="modal fade" id="salesOrderModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
-      <div class="modal-content">
-        <div id="modalBody" class="modal-body">
-            <!-- Ajaxでここにフォームをロード -->
-          </div>
-        </div>
+<!-- ページネーション -->
+<div class="d-flex justify-content-between align-items-center mt-3">
+  <div>{% include 'layout/pagination.html' %}</div>
+</div>
+
+<!-- モーダル -->
+<div class="modal fade" id="salesOrderModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-fullscreen-lg-down">
+    <div class="modal-content">
+      <div id="modalBody" class="modal-body">
+        <!-- Ajaxでここにフォームをロード -->
       </div>
     </div>
   </div>
+</div>
 
-{# ページネーション #}
-{% include 'layout/pagination.html' %}
-
-{# 個別JS読み込み #}
-<script type="text/javascript" src="{% static 'js/sales_order/script.js' %}"></script>
+<script src="{% static 'js/sales_order/script.js' %}"></script>
 {% endblock %}

@@ -37,10 +37,18 @@ class ProductListView(generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        '''検索条件を反映したクエリセットを返す'''
-        query_set = Product.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
-        query_set = filter_data(request=self.request, query_set=query_set)
-        return query_set.order_by('product_name')
+        '''
+        検索条件を反映したクエリセットを返す
+        '''
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        req = self.request
+        queryset = Product.objects.filter(is_deleted=False, tenant=req.user.tenant)
+        
+        # テンプレートの検索条件を適用
+        queryset = filter_data(request=req, queryset=queryset)
+
+        # クエリセット返却
+        return queryset.order_by('product_name')
     
     def get_context_data(self, **kwargs):
         '''
@@ -49,12 +57,21 @@ class ProductListView(generic.ListView):
         - カテゴリ一覧を提供
         - ページネーション情報を追加
         '''
+        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        context['search_product_name'] = self.request.GET.get('search_product_name') or ''
-        context['search_product_category'] = self.request.GET.get('search_product_category') or ''
-        context['search_unit_price_min'] = self.request.GET.get('search_unit_price_min') or ''
-        context['search_unit_price_max'] = self.request.GET.get('search_unit_price_max') or ''
+        g = self.request.GET
+        
+        # 検索フォームの入力値保持
+        context['search_product_name'] = g.GET.get('search_product_name') or ''
+        context['search_product_category'] = g.GET.get('search_product_category') or ''
+        context['search_unit_price_min'] = g.GET.get('search_unit_price_min') or ''
+        context['search_unit_price_max'] = g.GET.get('search_unit_price_max') or ''
+        context['categories'] = ProductCategory.objects.filter(tenant=self.request.user.tenant)
+        
+        # ページネーション保持
         context = Common.set_pagination(context, self.request.GET.urlencode())
+        
+        # コンテキストの返却
         return context
 
 
@@ -255,8 +272,8 @@ class ExportExcel(ExcelExportBaseView):
 
     def get_queryset(self, request):
         '''検索条件を適用したクエリセットを返す'''
-        qs = super().get_queryset(request)
-        return filter_data(request=request, query_set=qs).order_by('product_name')
+        queryset = super().get_queryset(request)
+        return filter_data(request=request, queryset=queryset).order_by('product_name')
 
     def row(self, rec):
         '''1行分のデータを返す'''
@@ -275,8 +292,8 @@ class ExportCSV(CSVExportBaseView):
 
     def get_queryset(self, request):
         '''検索条件を適用したクエリセットを返す'''
-        qs = super().get_queryset(request)
-        return filter_data(request=request, query_set=qs).order_by('product_name')
+        queryset = super().get_queryset(request)
+        return filter_data(request=request, queryset=queryset).order_by('product_name')
 
     def row(self, rec):
         '''1行分のデータを返す'''
@@ -340,31 +357,39 @@ def get_row(rec):
     ]
     
 
-def filter_data(request, query_set):
+def filter_data(request, queryset):
+    g = request.GET
+
     ''' 検索条件付与 '''
     # リクエストから検索フォームの入力値を取得
-    product_name = request.GET.get('search_product_name') or ''
-    category = request.GET.get('search_product_category') or ''
-    unit_price_min = request.GET.get('search_unit_price_min') or ''
-    unit_price_max = request.GET.get('search_unit_price_max') or ''
+    keyword = g.get('search_keyword') or ''
+    product_name = g.get('search_product_name') or ''
+    category = g.get('search_product_category') or ''
+    unit_price_min = g.get('search_unit_price_min') or ''
+    unit_price_max = g.get('search_unit_price_max') or ''
     
     # フィルタ実行
+    if keyword:
+        queryset = queryset.filter(
+            Q(product_name__icontains=keyword)
+            | Q(product_category__product_category_name__icontains=keyword)
+        )
     if product_name:
-        query_set = query_set.filter(Q(product_name__icontains=product_name))
+        queryset = queryset.filter(Q(product_name__icontains=product_name))
     if category:
-        query_set = query_set.filter(product_category_id=category)
+        queryset = queryset.filter(product_category_id=category)
     if unit_price_min:
-        query_set = query_set.filter(unit_price__gte=unit_price_min)
+        queryset = queryset.filter(unit_price__gte=unit_price_min)
     if unit_price_max:
-        query_set = query_set.filter(unit_price__lte=unit_price_max)
+        queryset = queryset.filter(unit_price__lte=unit_price_max)
     
     # バリデーション
     if unit_price_min and unit_price_max and int(unit_price_min) > int(unit_price_max):
         messages.error(request, '価格(下限)は価格(上限)以下を指定してください')
-        query_set = query_set.none()
+        queryset = queryset.none()
 
     # クエリセットの返却
-    return query_set
+    return queryset
 
 def set_message(request, action, product_name):
     '''CRUD後の統一メッセージ'''
