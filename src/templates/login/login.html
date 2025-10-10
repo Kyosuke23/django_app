@@ -1,40 +1,50 @@
-{% extends "layout/base.html" %}
-{% load django_bootstrap5 %}
 {% load static %}
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/login/style.css' %}">
-{% endblock %}
-{% block content %}
-<body class="d-flex justify-content-center">
+{% load django_bootstrap5 %}
+<!doctype html>
+<html lang="ja" data-bs-theme="auto">
+<head>
+  {% bootstrap_css %}
+  {% bootstrap_javascript %}
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Django APP{% endblock %}</title>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+          integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+          crossorigin="anonymous"></script>
+  <script type="text/javascript" src="{% static 'js/common/script.js' %}"></script>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="d-flex align-items-center justify-content-center min-vh-100 bg-light">
   <div style="width: 360px;">
     {# ログインフォーム #}
-    <form class="text-center" method="post">
+    <form class="text-center bg-white p-4 rounded shadow-sm" method="post">
       {% csrf_token %}
       {# ロゴ #}
       <img class="mb-4" src="{% static 'images/bootstrap-logo.svg' %}" alt="" width="72" height="57" loading="lazy">
+
       {# タイトル #}
       <h1 class="h3 mb-3 fw-normal">ログイン</h1>
 
       {# メールアドレス #}
       <div class="form-group mb-3">
         <input class="form-control" type="email" placeholder="Email"
-          name="{{ form.username.html_name }}" autofocus autocomplete="email"
-          required id="{{ form.username.id_for_label }}">
+               name="{{ form.username.html_name }}" autofocus autocomplete="email"
+               required id="{{ form.username.id_for_label }}">
         {{ form.username.errors }}
       </div>
 
       {# パスワード #}
       <div class="form-group mb-3">
         <input class="form-control" type="password" placeholder="Password"
-          name="{{ form.password.html_name }}" autocomplete="current-password"
-          required id="{{ form.password.id_for_label }}">
+               name="{{ form.password.html_name }}" autocomplete="current-password"
+               required id="{{ form.password.id_for_label }}">
         {{ form.password.errors }}
       </div>
 
       {# エラーメッセージ #}
       {% for error in form.non_field_errors %}
         <div class="alert alert-danger" role="alert">
-          <p>{{ error }}</p>
+          <p class="m-0">{{ error }}</p>
         </div>
       {% endfor %}
 
@@ -56,4 +66,4 @@
     </form>
   </div>
 </body>
-{% endblock %}
+</html>
