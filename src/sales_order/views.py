@@ -58,8 +58,11 @@ class SalesOrderListView(generic.ListView):
         # テンプレートの検索条件を適用
         queryset = filter_data(request=req, queryset=queryset)
         
+        # ソート条件を設定
+        queryset = set_table_sort(request=req, queryset=queryset)
+        
          # クエリセット返却
-        return queryset.order_by('sales_order_no')
+        return queryset
 
     def get_context_data(self, **kwargs):
         '''
@@ -918,4 +921,23 @@ def filter_data(request, queryset):
     if delivery_place:
         queryset = queryset.filter(delivery_place__icontains=delivery_place)
 
+    return queryset
+
+def set_table_sort(request, queryset):
+    '''
+    クエリセットにソート順を設定
+    '''
+    g = request.GET
+    
+    # 並び替え処理
+    sort = g.get('sort', '')
+    if sort in [
+        'sales_order_no', '-sales_order_no'
+        , 'sales_order_date', '-sales_order_date'
+        , 'delivery_due_date', '-delivery_due_date'
+        , 'grand_total', '-grand_total'
+    ]:
+        queryset = queryset.order_by(sort)
+    else:
+        queryset = queryset.order_by('-sales_order_date')
     return queryset

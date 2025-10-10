@@ -172,3 +172,8 @@ textarea.internal-comment {
   margin-right: 0.4rem;
   line-height: 1;
 }
+
+#form-select {
+  min-width: 220px;
+  cursor: pointer;
+}

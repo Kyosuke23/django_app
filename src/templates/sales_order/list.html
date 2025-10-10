@@ -110,12 +110,56 @@
       </div>
     </div>
   </div>
-</form>
+  <!-- 件数表示 + 並び替え -->
+  <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+    <p class="text-muted small mb-0">
+      {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
+    </p>
 
-<!-- 件数表示 -->
-<p class="text-muted small mb-2">
-  {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
-</p>
+    <!-- 並び替えドロップダウン -->
+    <div class="d-flex align-items-center gap-2">
+      <select id="form-select" name="sort" class="form-select form-select-sm">
+        <option value="">並び替え</option>
+
+        <optgroup label="受注番号">
+          <option value="sales_order_no" {% if request.GET.sort == 'sales_order_no' %}selected{% endif %}>
+            受注番号：昇順 ▲
+          </option>
+          <option value="-sales_order_no" {% if request.GET.sort == '-sales_order_no' %}selected{% endif %}>
+            受注番号：降順 ▼
+          </option>
+        </optgroup>
+
+        <optgroup label="受注日">
+          <option value="sales_order_date" {% if request.GET.sort == 'sales_order_date' %}selected{% endif %}>
+            受注日：昇順 ▲
+          </option>
+          <option value="-sales_order_date" {% if request.GET.sort == '-sales_order_date' %}selected{% endif %}>
+            受注日：降順 ▼
+          </option>
+        </optgroup>
+
+        <optgroup label="納入日">
+          <option value="delivery_due_date" {% if request.GET.sort == 'delivery_due_date' %}selected{% endif %}>
+            納入日：昇順 ▲
+          </option>
+          <option value="-delivery_due_date" {% if request.GET.sort == '-delivery_due_date' %}selected{% endif %}>
+            納入日：降順 ▼
+          </option>
+        </optgroup>
+
+        <optgroup label="合計金額">
+          <option value="grand_total" {% if request.GET.sort == 'grand_total' %}selected{% endif %}>
+            合計金額：昇順 ▲
+          </option>
+          <option value="-grand_total" {% if request.GET.sort == '-grand_total' %}selected{% endif %}>
+            合計金額：降順 ▼
+          </option>
+        </optgroup>
+      </select>
+    </div>
+  </div>
+</form>
 
 <!-- 受注テーブル -->
 <div class="table-responsive border rounded shadow-sm bg-white">

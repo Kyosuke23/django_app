@@ -47,7 +47,7 @@ class ProductListView(generic.ListView):
         # テンプレートの検索条件を適用
         queryset = filter_data(request=req, queryset=queryset)
         
-        # テンプレートの検索条件を適用
+        # ソート条件を設定
         queryset = set_table_sort(request=req, queryset=queryset)
 
         # クエリセット返却
