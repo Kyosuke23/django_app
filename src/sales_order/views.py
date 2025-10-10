@@ -939,5 +939,5 @@ def set_table_sort(request, queryset):
     ]:
         queryset = queryset.order_by(sort)
     else:
-        queryset = queryset.order_by('-sales_order_date')
+        queryset = queryset.order_by('id')
     return queryset
