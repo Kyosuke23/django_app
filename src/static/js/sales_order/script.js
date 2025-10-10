@@ -1,4 +1,18 @@
 $(function () {
+    const initSelect2ForModal = function ($modal) {
+        const opt = {
+            width: '100%',
+            allowClear: true,
+            tags: false,
+            dropdownParent: $modal.closest('.modal'),
+            placeholder: '選択してください',
+        };
+        $modal.find('select[id^="id_details-"][id$="-product"]').select2({ ...opt, placeholder: '商品を選択...' });
+        $modal.find('#id_header-partner').select2({ ...opt, placeholder: '取引先を選択...' });
+        $modal.find('#id_header-reference_users').select2({ ...opt, placeholder: 'ユーザーを選択...' });
+        $modal.find('#id_header-reference_groups').select2({ ...opt, placeholder: 'グループを選択...' });
+    }
+
     // =====================================================
     // エクスポートボタン
     // =====================================================
@@ -81,21 +95,22 @@ $(function () {
                 if (response.success) {
                     // success時に html があれば → モーダル再描画（閉じない）
                     if (response.html) {
-                        $("#modalBody").html(response.html);
+                        $('#modalBody').html(response.html);
+                        initSelect2ForModal($('#modalBody'));
                     } else {
                         // html がなければ → 通常の更新完了（モーダル閉じるなど）
-                        $("#modal").modal("hide");
+                        $('#modal').modal('hide');
                         location.reload();
                     }
                 } else if (response.html) {
-                    // バリデーションエラーなど: モーダル内容更新
-                    $("#modalBody").html(response.html);
+                    $('#modalBody').html(response.html);
+                    initSelect2ForModal($('#modalBody'));
                 } else {
-                    alert("更新に失敗しました");
+                    alert('更新に失敗しました');
                 }
                 },
                 error: function () {
-                alert("サーバーエラーが発生しました");
+                alert('サーバーエラーが発生しました');
             }
         });
     });
@@ -311,28 +326,8 @@ $(function () {
     // モーダルフォーム共通処理
     // =====================================================
     $(document).modal_form('#salesOrderModal', function($modal) {
-        // 適用先フォームの取得
-        const partners  = $modal.find('#id_header-partner');
-        const ref_users  = $modal.find('#id_header-reference_users');
-        const ref_groups = $modal.find('#id_header-reference_groups');
-        const products  = $modal.find('select[id^="id_details-"][id$="-product"]')
-
-        // Select2のオプション設定
-        const opt = {
-            width: '100%',
-            allowClear: true,
-            tags: false,
-            dropdownParent: $modal,
-            placeholder: '選択してください',
-        };
-
-        // Select2を適用
-        partners.select2({ ...opt, placeholder: '取引先を選択...' });
-        ref_users.select2({ ...opt, placeholder: 'ユーザーを選択...' });
-        ref_groups.select2({ ...opt, placeholder: 'グループを選択...' });
-        products.select2({ ...opt, placeholder: '商品を選択...' });
+        initSelect2ForModal($modal);
     });
-
 
     // =====================================================
     // 顧客向けページ専用の処理

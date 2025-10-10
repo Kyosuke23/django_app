@@ -146,10 +146,6 @@ textarea[readonly] {
   cursor: not-allowed;
 }
 
-textarea.internal-comment {
-  background-color: #f8f9fa;
-}
-
 /* 共通: フォーム周辺の調整 */
 #search_form .card {
   border-radius: 0.75rem;
