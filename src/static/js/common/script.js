@@ -1,11 +1,8 @@
 $(function () {
     /**
      * フラッシュメッセージ表示処理
-     * @param {*} options 
-     * @returns フラッシュメッセージ
      */
     $.fn.flash_message = function (options) {
-        // デフォルト値
         options = $.extend({
             text: '完了しました',
             time: 3000,
@@ -14,22 +11,16 @@ $(function () {
         }, options);
 
         return $(this).each(function () {
-            // 既存のメッセージを削除
             if ($(this).find('.flash_messages').length) {
                 $(this).find('.flash_messages').fadeOut(200, function () {
                     $(this).remove();
                 });
             }
-
-            // 新しいメッセージ作成
             var message = $('<span />', {
                 'class': 'flash_messages ' + options.class_name,
                 text: options.text
             });
-
             $(this)[options.how](message).addClass('show');
-
-            // 指定時間後にフェードアウト
             message.delay(options.time).queue(function () {
                 $(this).parents('#flash_message_area').removeClass('show');
                 $(this).remove();
@@ -39,10 +30,8 @@ $(function () {
 
     /**
      * データ登録処理（非同期）
-     * @param {*} form jQueryオブジェクト
      */
     $.fn.post_data = function (form) {
-        // 既存エラーのクリア
         form.find('.is-invalid').removeClass('is-invalid');
         form.find('.errorlist').remove();
 
@@ -53,38 +42,30 @@ $(function () {
             timeout: 10000,
             dataType: 'json',
         })
-            // 成功時の処理
-            .done(function (data) {
-                let errors = data.errors || {};
-                if (Object.keys(errors).length === 0) {
-                    // リダイレクト
-                    window.location.href = data.success_url;
-                    return;
-                }
-
-                // エラーフィールドのループ
-                for (let key in errors) {
-                    let errorField = $(`input[name='${key}']`);
-                    errorField.addClass('is-invalid');
-                    errorField.after(
-                        '<ul class="errorlist"><li>' + errors[key][0] + '</li></ul>'
-                    );
-                }
-            })
-            // 失敗時の処理
-            .fail(function () {
-                $('#flash_message_area').flash_message({
-                    text: 'サーバー通信に失敗しました',
-                    class_name: 'error',
-                    how: 'append',
-                    time: 4000
-                });
+        .done(function (data) {
+            let errors = data.errors || {};
+            if (Object.keys(errors).length === 0) {
+                window.location.href = data.success_url;
+                return;
+            }
+            for (let key in errors) {
+                let errorField = $(`input[name='${key}']`);
+                errorField.addClass('is-invalid');
+                errorField.after('<ul class="errorlist"><li>' + errors[key][0] + '</li></ul>');
+            }
+        })
+        .fail(function () {
+            $('#flash_message_area').flash_message({
+                text: 'サーバー通信に失敗しました',
+                class_name: 'error',
+                how: 'append',
+                time: 4000
             });
+        });
     };
 
     /**
      * データのimport処理（非同期）
-     * @param {*} input type=file のDOM
      */
     $.fn.import_data = function (input) {
         let file = input.files[0];
@@ -95,8 +76,6 @@ $(function () {
         formData.append('csrfmiddlewaretoken', $('[name=csrfmiddlewaretoken]').val());
 
         let url = $('#import-btn').data('action');
-
-        // スピナー表示
         let spinner = $('#loading-spinner');
         spinner.removeClass('d-none');
 
@@ -129,36 +108,29 @@ $(function () {
             setTimeout(() => location.reload(), 2000);
         })
         .fail(function (jqXHR, textStatus) {
-            //  キャンセルボタンによる中断の時は何もしない
             if (textStatus != 'abort') {
-                alert(['アップロード失敗:', jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
+                alert(['アップロード失敗:', jqXHR.responseJSON?.error || '', jqXHR.responseJSON?.details || ''].join('\n'));
                 spinner.addClass('d-none');
             }
         })
         .always(function () {
-            spinner.addClass('d-none');  // 念のため always で非表示
+            spinner.addClass('d-none');
         });
 
-        // キャンセルボタン処理
         $('#cancel-btn').off('click').on('click', function () {
-            if (jqXHR) {
-                jqXHR.abort();  // 通信を中断
-            }
+            if (jqXHR) jqXHR.abort();
             spinner.addClass('d-none');
         });
     };
 
     /**
      * モーダルフォーム（共通部品）
-     * @param {*} modalSelector モーダルのセレクタ
      */
     $.fn.modal_form = function (modalSelector, afterLoadCallback) {
         const $modal = $(modalSelector);
 
-        // モーダル表示時にフォームをロード
         $modal.on('show.bs.modal', function (e) {
             const url = $(e.relatedTarget).data('url');
-
             $.ajax({
                 url: url,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
@@ -178,7 +150,6 @@ $(function () {
             });
         });
 
-        // モーダル内フォーム送信
         $modal.on('submit', 'form', function (e) {
             e.preventDefault();
             const $form = $(this);
@@ -213,8 +184,7 @@ $(function () {
         return this;
     };
 
-
-    // フラッシュメッセージの表示判定 & 実行
+    // フラッシュメッセージの表示判定
     if ($('.flash_messages').length) {
         $('#flash_message_area').flash_message({
             text: $('.flash_messages').val(),
@@ -222,7 +192,7 @@ $(function () {
         });
     }
 
-    // CSRFトークン取得
+    // CSRF関連
     $.fn.getCookie = function (name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -242,7 +212,6 @@ $(function () {
         return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
     };
 
-    // 全てのAjax通信にCSRFトークンを自動付与
     $.ajaxSetup({
         beforeSend: function (xhr, settings) {
             if (!$.fn.csrfSafeMethod(settings.type) && !this.crossDomain) {
@@ -251,27 +220,22 @@ $(function () {
         }
     });
 
-    // チェックボックスの選択制御
-    $.fn.checkAll = function(itemSelector) {
+    // チェックボックス全選択
+    $.fn.checkAll = function (itemSelector) {
         const master = this;
         const items = $(itemSelector);
-
-        // 全選択
         master.on('change', function () {
             items.prop('checked', master.prop('checked'));
         });
-
-        // 個別チェック時に全選択更新
         items.on('change', function () {
             const allChecked = items.length === items.filter(':checked').length;
             master.prop('checked', allChecked);
         });
-
         return this;
     };
 
-    $.fn.call_bulk_delete = function(url, target_nm) {
-        // 選択されたIDを配列にまとめる
+    // 一括削除
+    $.fn.call_bulk_delete = function (url, target_nm) {
         let ids = $('.check-item:checked').map(function () {
             return $(this).val();
         }).get();
@@ -280,10 +244,7 @@ $(function () {
             alert(`削除する${target_nm}を選択してください`);
             return;
         }
-
-        if (!confirm(`選択した${target_nm}を一括削除しますか？`)) {
-            return;
-        }
+        if (!confirm(`選択した${target_nm}を一括削除しますか？`)) return;
 
         $.ajax({
             url: url,
@@ -298,8 +259,31 @@ $(function () {
                 location.reload();
             },
             error: function (jqXHR) {
-                alert([jqXHR.responseJSON?.error || '',  jqXHR.responseJSON?.details || ''].join('\n'));
+                alert([jqXHR.responseJSON?.error || '', jqXHR.responseJSON?.details || ''].join('\n'));
             }
         });
     };
+
+    /**
+     * テーマ切り替え機能
+     */
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    $('html').attr('data-theme', savedTheme);
+
+    const $icon = $('#themeToggle i');
+    if ($icon.length) {
+        $icon.attr('class', savedTheme === 'dark' ? 'bi bi-sun' : 'bi bi-moon');
+    }
+
+    $('#themeToggle').on('click', function () {
+        const $html = $('html');
+        const current = $html.attr('data-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        $html.attr('data-theme', next);
+        localStorage.setItem('theme', next);
+
+        if ($icon.length) {
+            $icon.attr('class', next === 'dark' ? 'bi bi-sun' : 'bi bi-moon');
+        }
+    });
 });

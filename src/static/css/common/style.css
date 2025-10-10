@@ -1,182 +1,205 @@
-/* =========================================
- *  基本レイアウト
- * ========================================= */
-html {
-  height: -webkit-fill-available;
-  height: stretch;
+/* =======================================================
+ * カラーテーマ変数（ライト / ダーク）
+ * ======================================================= */
+:root {
+  --color-bg-header: #23282d;
+  --color-bg-sidebar: #23282d;
+  --color-bg-content: #f5f6f8;
+  --color-text-base: #212529;
+  --color-accent: #0d6efd;
+  --color-border: #dee2e6;
+  --sidebar-width: 280px; /* ← サイドバー幅ここで調整 */
 }
+
+[data-theme="dark"] {
+  --color-bg-header: #111;
+  --color-bg-sidebar: #111;
+  --color-bg-content: #1a1a1a;
+  --color-text-base: #e9ecef;
+  --color-accent: #4dabf7;
+  --color-border: #333;
+}
+
+/* =======================================================
+ * 全体
+ * ======================================================= */
 body {
+  background-color: var(--color-bg-content);
+  color: var(--color-text-base);
+  font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+}
+
+/* メインコンテンツ */
+main.container-fluid {
+  padding: 1.5rem;
+  background-color: var(--color-bg-content);
   min-height: 100vh;
-  min-height: -webkit-fill-available;
-  height: stretch;
-  background-color: #F3F4F6;
-}
-.dropdown-toggle {
-  outline: 0;
+  margin-left: var(--sidebar-width); /* ← サイドバー幅分を確保 */
+  transition: margin-left 0.3s ease;
 }
 
-/* =========================================
- *  汎用スタイル
- * ========================================= */
-.errorlist > li {
-  color: red;
-}
-
-/* デフォルトボタン整形 */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.btn i {
-  margin-right: 0.4rem;
-  line-height: 1;
-}
-
-/* 無効フィールド・読み取り専用 */
-input[disabled], select[disabled], textarea[disabled],
-input[readonly], textarea[readonly] {
-  background-color: #f8f9fa !important;
-  color: #6c757d !important;
-  cursor: not-allowed;
-}
-
-/* 初期非表示 select2 */
-select.select2-hidden-initial {
-  visibility: hidden;
-}
-
-/* =========================================
- *  レイアウト関連（共通）
- * ========================================= */
-.result-table { max-height: 75vh; }
-.edit-area { max-width: 800px; }
-th.w-25 { width: 25%; }
-th.w-20 { width: 20%; }
-th.w-15 { width: 15%; }
-th.w-10 { width: 10%; }
-th.w-5  { width: 5%;  }
-
-/* =========================================
- *  フラッシュメッセージ
- * ========================================= */
-#flash_message_area {
-  opacity: 0;
+/* =======================================================
+ * ヘッダー
+ * ======================================================= */
+header.navbar {
+  background-color: var(--color-bg-header) !important;
+  color: #fff;
+  border-bottom: 1px solid #2c3338;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0;
   position: fixed;
-  left: 50%;
-  top: 20px;
-  transform: translateX(-50%);
-  transition: all 200ms ease-out;
-  margin-top: 30px;
-  z-index: 1050;
-}
-#flash_message_area.show { opacity: 1; }
-#flash_message_area .flash_messages {
-  display: inline-block;
-  text-align: center;
-  font-size: 15px;
-  padding: 10px 20px;
-  border-radius: 10px;
-  background-color: var(--bs-success-bg-subtle);
-  box-shadow: 1px 1px 2px 1px #ddd;
-}
-#flash_message_area .flash_messages.error {
-  background-color: var(--bs-danger);
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1030;
 }
 
-/* =========================================
- *  フォーム / 検索エリア
- * ========================================= */
-#search_form .card { border-radius: 0.75rem; }
-#search_form label { font-weight: 500; }
-#search_form input::placeholder {
-  color: #aaa;
-  font-size: 0.9rem;
+header.navbar .navbar-brand {
+  font-weight: bold;
+  color: #fff !important;
 }
 
-/* 並び替えセレクト */
-#form-select {
-  min-width: 220px;
+header.navbar .text-white {
+  color: #f5f5f5 !important;
+}
+
+/* テーマ切り替えボタン */
+#themeToggle {
+  background: transparent;
+  border: none;
+  color: #fff;
   cursor: pointer;
 }
-
-/* optgroup ラベル見やすく */
-select.form-select optgroup {
-  color: #212529;
-  font-weight: 600;
-  background-color: #f8f9fa;
+#themeToggle:hover {
+  opacity: 0.8;
 }
 
-/* =========================================
- *  サイドバー / ナビゲーション
- * ========================================= */
-.bi {
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  vertical-align: -.125em;
-  fill: currentColor;
-}
-
+/* =======================================================
+ * サイドバー
+ * ======================================================= */
 .sidebar {
-  height: calc(100vh - 34px);
-}
-.sidebar .nav-link {
-  font-size: .875rem;
-  font-weight: 500;
-}
-.sidebar .nav-link.active {
-  color: #2470dc;
-}
-.sidebar-heading {
-  font-size: .75rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100vh;
+  background-color: var(--color-bg-sidebar);
+  border-right: 1px solid #2c3338;
+  color: #c3c4c7;
+  margin-top: -1px; /* ヘッダーとの隙間補正 */
+  margin-left: -1px;
+  padding-top: 3rem; /* ヘッダー高さ分 */
+  overflow-y: auto;
+  transition: width 0.3s ease;
 }
 
-/* サイドバー幅調整 */
+.sidebar .nav-link {
+  color: #c3c4c7;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .nav-link.active {
+  background-color: #2c3338;
+  color: #fff;
+}
+
+.sidebar .nav-link i {
+  font-size: 1rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+/* Offcanvas内も同じ色に統一 */
 #sidebarMenu.offcanvas-xl,
 #sidebarMenu.offcanvas-end {
-  width: 300px;
+  background-color: var(--color-bg-sidebar) !important;
 }
 
-@media (min-width: 768px) {
-  .sidebar .offcanvas-lg {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 48px;
-  }
-  .navbar-search {
-    display: block;
-  }
+/* 見出し(h6) */
+.sidebar-heading {
+  color: #fff !important;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  margin: 1rem 0.5rem 0.5rem;
+  padding-left: 0.75rem;
+  opacity: 0.8;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 0.75rem;
 }
 
-/* =========================================
- *  テーブル表示（リスト画面）
- * ========================================= */
-.table-responsive table {
-  white-space: nowrap;     /* 折り返し防止 */
-  min-width: 100%;
+/* =======================================================
+ * テーブル
+ * ======================================================= */
+.table {
+  border-color: var(--color-border);
+  color: var(--color-text-base);
 }
+
+.table thead {
+  background-color: var(--color-bg-header); /* ヘッダーと統一 */
+  color: #fff;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(13, 110, 253, 0.05);
+}
+
 .table td,
 .table th {
-  text-overflow: ellipsis; /* はみ出しは… */
-  overflow: hidden;
-  max-width: 300px;
-}
-.table thead th {
-  font-size: 0.9rem;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
-/* =========================================
- *  レスポンシブ対応
- * ========================================= */
-@media (max-width: 768px) {
-  .table-responsive {
-    border: none;
-    box-shadow: none;
-  }
-  .table td, .table th {
-    font-size: 0.85rem;
-    max-width: 200px;
-  }
+/* テーブル枠と丸み */
+.table-responsive {
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+/* =======================================================
+ * ボタン・フォーム
+ * ======================================================= */
+.btn-outline-secondary {
+  border-color: var(--color-border);
+}
+
+.form-control,
+.form-select {
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+}
+
+/* 検索フォームカード */
+.card {
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+}
+
+/* =======================================================
+ * フッター / 区切り
+ * ======================================================= */
+hr {
+  border-color: var(--color-border);
+}
+
+/* =======================================================
+ * アニメーション（テーマ切り替え用）
+ * ======================================================= */
+html[data-theme='dark'],
+html[data-theme='light'] {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* =======================================================
+ * その他細かい調整
+ * ======================================================= */
+.table-dark th {
+  background-color: var(--color-bg-header) !important;
+}
+
+.sidebar .nav-item + .nav-item {
+  margin-top: 0.25rem;
 }
