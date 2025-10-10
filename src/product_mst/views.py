@@ -46,9 +46,12 @@ class ProductListView(generic.ListView):
         
         # テンプレートの検索条件を適用
         queryset = filter_data(request=req, queryset=queryset)
+        
+        # テンプレートの検索条件を適用
+        queryset = set_table_sort(request=req, queryset=queryset)
 
         # クエリセット返却
-        return queryset.order_by('product_name')
+        return queryset
     
     def get_context_data(self, **kwargs):
         '''
@@ -358,9 +361,9 @@ def get_row(rec):
     
 
 def filter_data(request, queryset):
-    g = request.GET
-
     ''' 検索条件付与 '''
+
+    g = request.GET
     # リクエストから検索フォームの入力値を取得
     keyword = g.get('search_keyword') or ''
     product_name = g.get('search_product_name') or ''
@@ -389,6 +392,23 @@ def filter_data(request, queryset):
         queryset = queryset.none()
 
     # クエリセットの返却
+    return queryset
+
+def set_table_sort(request, queryset):
+    '''
+    クエリセットにソート順を設定
+    '''
+    g = request.GET
+    
+    # 並び替え処理
+    sort = g.get('sort', '')
+    if sort in [
+        'unit_price', '-unit_price'
+    ]:
+        queryset = queryset.order_by(sort)
+    else:
+        queryset = queryset.order_by('id')  # デフォルト
+
     return queryset
 
 def set_message(request, action, product_name):

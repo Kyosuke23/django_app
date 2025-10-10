@@ -118,4 +118,18 @@ $(function () {
         // Select2を適用
         categories.select2({ ...opt, placeholder: '商品カテゴリを選択...' });
     });
+
+    // =====================================================
+    // 並べ替え変更時
+    // ===================================================
+    $('#form-select').on('change', function() {
+        const sort = $(this).val();
+        const baseUrl = new URL(window.location.href);
+
+        // 既存の検索条件を維持
+        baseUrl.searchParams.set('sort', sort);
+
+        // そのURLへ遷移（＝GET送信）
+        window.location.href = baseUrl.toString();
+    });
 });

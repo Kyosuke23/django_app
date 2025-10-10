@@ -147,10 +147,27 @@
   </div>
 </div>
 
-<!-- 件数表示 -->
-<p class="text-muted small mb-2">
-  {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
-</p>
+<!-- 件数表示 + 並び替え -->
+<div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+  <p class="text-muted small mb-0">
+    {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
+  </p>
+
+  <!-- 並び替えドロップダウン -->
+  <div class="d-flex align-items-center gap-2">
+    <select id="form-select" name="sort" class="form-select form-select-sm">
+      <option value="">並び替え</option>
+      <optgroup label="単価">
+        <option value="unit_price" {% if request.GET.sort == 'unit_price' %}selected{% endif %}>
+          単価：昇順 ▲
+        </option>
+        <option value="-unit_price" {% if request.GET.sort == '-unit_price' %}selected{% endif %}>
+          単価：降順 ▼
+        </option>
+      </optgroup>
+    </select>
+  </div>
+</div>
 
 <!-- 商品テーブル -->
 <div class="table-responsive border rounded shadow-sm bg-white">
