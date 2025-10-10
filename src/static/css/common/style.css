@@ -180,3 +180,13 @@ select.form-select optgroup {
   font-weight: 600;
   background-color: #f8f9fa;
 }
+
+/* サイドバーの幅を広げる */
+#sidebarMenu.offcanvas-xl {
+  width: 300px;  /* デフォルト約300px → 少し広めに */
+}
+
+/* モバイル時（offcanvas右スライド表示時）も同じ幅に統一 */
+#sidebarMenu.offcanvas-end {
+  width: 300px;
+}
