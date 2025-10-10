@@ -1,164 +1,28 @@
+/* =========================================
+ *  基本レイアウト
+ * ========================================= */
 html {
   height: -webkit-fill-available;
-  height: stretch; /* Firefoxなどモダンブラウザ対応 */
+  height: stretch;
 }
-
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
   height: stretch;
   background-color: #F3F4F6;
 }
-
 .dropdown-toggle {
   outline: 0;
 }
 
-/* エラーメッセージ */
+/* =========================================
+ *  汎用スタイル
+ * ========================================= */
 .errorlist > li {
   color: red;
 }
 
-/* 検索結果テーブル */
-.result-table {
-  max-height: 75vh;
-}
-
-/* 登録・編集フォーム */
-.edit-area {
-  max-width: 800px;
-}
-
-th.w-25 { width: 25%; }
-th.w-10 { width: 10%; }
-th.w-5  { width: 5%;  }
-th.w-15 { width: 15%; }
-th.w-20 { width: 20%; }
-
-/* フラッシュメッセージ */
-#flash_message_area {
-  opacity: 0;
-  position: fixed;
-  left: 50%;
-  top: 20px;
-  transform: translateX(-50%);
-  transition: all 200ms ease-out;
-  margin-top: 30px;
-  z-index: 1050; /* モーダルより上に出す */
-}
-
-#flash_message_area.show {
-  opacity: 1;
-}
-
-#flash_message_area .flash_messages {
-  display: inline-block;
-  text-align: center;
-  font-size: 15px;
-  padding: 10px 20px;
-  border-radius: 10px;
-  background-color: var(--bs-success-bg-subtle); /* Bootstrap変数を利用 */
-  box-shadow: 1px 1px 2px 1px #ddd;
-}
-
-#flash_message_area .flash_messages.error {
-  background-color: var(--bs-danger); /* エラー用カラーを統一 */
-}
-
-/*
- * Sidebar
- */
-.bi {
-  vertical-align: -.125em;
-  fill: currentColor;
-}
-
-.nav-scroller {
-  position: relative;
-  z-index: 2;
-  height: 2.75rem;
-  overflow-y: hidden;
-}
-
-.nav-scroller .nav {
-  display: flex;
-  flex-wrap: nowrap;
-  padding-bottom: 1rem;
-  margin-top: -1px;
-  overflow-x: auto;
-  text-align: center;
-  white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
-}
-
-.bi {
-  display: inline-block;
-  width: 1rem;
-  height: 1rem;
-}
-
-.sidebar {
-  /* 固定heightではなくpaddingで調整するのも検討可 */
-  height: calc(100vh - 34px);
-}
-
-@media (min-width: 768px) {
-  .sidebar .offcanvas-lg {
-    position: -webkit-sticky;
-    position: sticky;
-    top: 48px;
-  }
-
-  .navbar-search {
-    display: block;
-  }
-}
-
-.sidebar .nav-link {
-  font-size: .875rem;
-  font-weight: 500;
-}
-
-.sidebar .nav-link.active {
-  color: #2470dc;
-}
-
-.sidebar-heading {
-  font-size: .75rem;
-}
-
-input[disabled], select[disabled], textarea[disabled] {
-  background-color: #f8f9fa !important;
-  color: #6c757d !important;
-  cursor: not-allowed;
-}
-
-/* 初期は非表示 */
-select.select2-hidden-initial {
-  visibility: hidden;
-}
-
-/* readonlyフィールドをグレー背景に */
-input[readonly],
-textarea[readonly] {
-  background-color: #f8f9fa !important;
-  color: #495057 !important;
-  cursor: not-allowed;
-}
-
-/* 共通: フォーム周辺の調整 */
-#search_form .card {
-  border-radius: 0.75rem;
-}
-#search_form label {
-  font-weight: 500;
-}
-#search_form input::placeholder {
-  color: #aaa;
-  font-size: 0.9rem;
-}
-
-/* ボタン内テキスト中央揃え補正 */
+/* デフォルトボタン整形 */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -169,24 +33,150 @@ textarea[readonly] {
   line-height: 1;
 }
 
+/* 無効フィールド・読み取り専用 */
+input[disabled], select[disabled], textarea[disabled],
+input[readonly], textarea[readonly] {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  cursor: not-allowed;
+}
+
+/* 初期非表示 select2 */
+select.select2-hidden-initial {
+  visibility: hidden;
+}
+
+/* =========================================
+ *  レイアウト関連（共通）
+ * ========================================= */
+.result-table { max-height: 75vh; }
+.edit-area { max-width: 800px; }
+th.w-25 { width: 25%; }
+th.w-20 { width: 20%; }
+th.w-15 { width: 15%; }
+th.w-10 { width: 10%; }
+th.w-5  { width: 5%;  }
+
+/* =========================================
+ *  フラッシュメッセージ
+ * ========================================= */
+#flash_message_area {
+  opacity: 0;
+  position: fixed;
+  left: 50%;
+  top: 20px;
+  transform: translateX(-50%);
+  transition: all 200ms ease-out;
+  margin-top: 30px;
+  z-index: 1050;
+}
+#flash_message_area.show { opacity: 1; }
+#flash_message_area .flash_messages {
+  display: inline-block;
+  text-align: center;
+  font-size: 15px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background-color: var(--bs-success-bg-subtle);
+  box-shadow: 1px 1px 2px 1px #ddd;
+}
+#flash_message_area .flash_messages.error {
+  background-color: var(--bs-danger);
+}
+
+/* =========================================
+ *  フォーム / 検索エリア
+ * ========================================= */
+#search_form .card { border-radius: 0.75rem; }
+#search_form label { font-weight: 500; }
+#search_form input::placeholder {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+/* 並び替えセレクト */
 #form-select {
   min-width: 220px;
   cursor: pointer;
 }
 
-/* optgroup ラベルを見やすく */
+/* optgroup ラベル見やすく */
 select.form-select optgroup {
   color: #212529;
   font-weight: 600;
   background-color: #f8f9fa;
 }
 
-/* サイドバーの幅を広げる */
-#sidebarMenu.offcanvas-xl {
-  width: 300px;  /* デフォルト約300px → 少し広めに */
+/* =========================================
+ *  サイドバー / ナビゲーション
+ * ========================================= */
+.bi {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  vertical-align: -.125em;
+  fill: currentColor;
 }
 
-/* モバイル時（offcanvas右スライド表示時）も同じ幅に統一 */
+.sidebar {
+  height: calc(100vh - 34px);
+}
+.sidebar .nav-link {
+  font-size: .875rem;
+  font-weight: 500;
+}
+.sidebar .nav-link.active {
+  color: #2470dc;
+}
+.sidebar-heading {
+  font-size: .75rem;
+}
+
+/* サイドバー幅調整 */
+#sidebarMenu.offcanvas-xl,
 #sidebarMenu.offcanvas-end {
   width: 300px;
+}
+
+@media (min-width: 768px) {
+  .sidebar .offcanvas-lg {
+    position: -webkit-sticky;
+    position: sticky;
+    top: 48px;
+  }
+  .navbar-search {
+    display: block;
+  }
+}
+
+/* =========================================
+ *  テーブル表示（リスト画面）
+ * ========================================= */
+.table-responsive table {
+  white-space: nowrap;     /* 折り返し防止 */
+  min-width: 100%;
+}
+.table td,
+.table th {
+  text-overflow: ellipsis; /* はみ出しは… */
+  overflow: hidden;
+  max-width: 300px;
+}
+.table thead th {
+  font-size: 0.9rem;
+  vertical-align: middle;
+}
+
+/* =========================================
+ *  レスポンシブ対応
+ * ========================================= */
+@media (max-width: 768px) {
+  .table-responsive {
+    border: none;
+    box-shadow: none;
+  }
+  .table td, .table th {
+    font-size: 0.85rem;
+    max-width: 200px;
+  }
 }
