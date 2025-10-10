@@ -37,23 +37,47 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        queryset = CustomUser.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
-        queryset = filter_data(self.request, queryset)
+        '''
+        検索条件を反映したクエリセットを返す
+        '''
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        req = self.request
+        queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
+        
+        # テンプレートの検索条件を適用
+        queryset = filter_data(req, queryset)
+        
+        # クエリセット返却
         return queryset
 
     def get_context_data(self, **kwargs):
+        '''
+        テンプレートに渡す追加コンテキスト
+        - 検索条件を保持
+        - ページネーション情報を追加
+        '''
+        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        context['search_keyword'] = self.request.GET.get('search_keyword') or ''
-        context['search_username'] = self.request.GET.get('search_username') or ''
-        context['search_email'] = self.request.GET.get('search_email') or ''
-        context['search_gender'] = self.request.GET.get('search_gender') or ''
-        context['search_tel_number'] = self.request.GET.get('search_tel_number') or ''
-        context['search_employment_status'] = self.request.GET.get('search_employment_status') or ''
-        context['search_privilege'] = self.request.GET.get('search_privilege') or ''
-        context['search_employment_status'] = self.request.GET.get('search_employment_status') or ''
+        g = self.request.GET
+        
+        # 検索フォームの入力値保持
+        context['search_keyword'] = g.get('search_keyword') or ''
+        context['search_username'] = g.get('search_username') or ''
+        context['search_email'] = g.get('search_email') or ''
+        context['search_gender'] = g.get('search_gender') or ''
+        context['search_tel_number'] = g.get('search_tel_number') or ''
+        context['search_employment_status'] = g.get('search_employment_status') or ''
+        context['search_privilege'] = g.get('search_privilege') or ''
+        context['search_employment_status'] = g.get('search_employment_status') or ''
+        
+        # セレクトボックス用
         context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
         context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
-        context = Common.set_pagination(context, self.request.GET.urlencode())
+        
+        # ページネーション保持
+        context = Common.set_pagination(context, g.urlencode())
+        
+        # コンテキストの返却
         return context
 
 

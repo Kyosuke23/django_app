@@ -65,7 +65,6 @@ class SalesOrderListView(generic.ListView):
         '''
         テンプレートに渡す追加コンテキスト
         - 検索条件を保持
-        - カテゴリ一覧を提供
         - ページネーション情報を追加
         '''
         # コンテキスト取得
