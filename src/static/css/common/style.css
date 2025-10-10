@@ -172,3 +172,15 @@ textarea.internal-comment {
   margin-right: 0.4rem;
   line-height: 1;
 }
+
+#form-select {
+  min-width: 220px;
+  cursor: pointer;
+}
+
+/* optgroup ラベルを見やすく */
+select.form-select optgroup {
+  color: #212529;
+  font-weight: 600;
+  background-color: #f8f9fa;
+}
