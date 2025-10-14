@@ -46,8 +46,17 @@ class SalesOrderListView(generic.ListView):
         req = self.request
         form = SalesOrderSearchForm(req.GET or None)
 
-        # 対象テナントかつ削除フラグFalse
-        queryset = SalesOrder.objects.filter(is_deleted=False, tenant=req.user.tenant).select_related('partner')
+        # 基本フィルタ：対象テナントかつ削除フラグFalse
+        queryset = SalesOrder.objects.filter(
+            is_deleted=False
+            , tenant=req.user.tenant
+        ).select_related('partner')
+        
+        # 権限フィルタ：担当者（作成者）が自分または参照可能
+        queryset = queryset.filter(
+            Q(create_user=req.user) 
+            | Q(reference_users=req.user) & ~Q(status_code='DRAFT')
+        )
 
         # 検索フォームが有効な場合のみフィルタ
         if form.is_valid():
