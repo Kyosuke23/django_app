@@ -46,13 +46,13 @@ class SalesOrder(BaseModel):
     )
     sales_order_date = models.DateField(default=timezone.now, verbose_name='受注日')
     delivery_due_date = models.DateField(null=True, blank=True, verbose_name='納入予定日')
-    delivery_place = models.CharField(max_length=255, null=True, blank=True, verbose_name='納入場所')
+    delivery_place = models.CharField(max_length=100, null=True, blank=True, verbose_name='納入場所')
     partner = models.ForeignKey('partner_mst.Partner', on_delete=models.SET_NULL, blank=True, null=True, verbose_name='取引先')
-    remarks = models.TextField(blank=True, null=True, verbose_name='備考')
-    quotation_manager_comment = models.TextField(blank=True, null=True, verbose_name='見積書_承認者コメント')
-    quotation_customer_comment = models.TextField(blank=True, null=True, verbose_name='見積書_顧客コメント')
-    order_manager_comment = models.TextField(blank=True, null=True, verbose_name='注文書_承認者コメント')
-    order_customer_comment = models.TextField(blank=True, null=True, verbose_name='注文書_顧客コメント')
+    remarks = models.TextField(max_length=100,blank=True, null=True, verbose_name='備考')
+    quotation_manager_comment = models.TextField(max_length=100, blank=True, null=True, verbose_name='見積書_承認者コメント')
+    quotation_customer_comment = models.TextField(max_length=100,blank=True, null=True, verbose_name='見積書_顧客コメント')
+    order_manager_comment = models.TextField(max_length=100, blank=True, null=True, verbose_name='注文書_承認者コメント')
+    order_customer_comment = models.TextField(max_length=100, blank=True, null=True, verbose_name='注文書_顧客コメント')
     rounding_method = models.CharField(  # 小数点以下の丸め方
         max_length=10,
         choices=ROUNDING_CHOICES,

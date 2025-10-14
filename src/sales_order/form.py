@@ -19,6 +19,7 @@ class SalesOrderSearchForm(forms.Form):
     # -----------------------------
     search_keyword = forms.CharField(
         required=False,
+        max_length=255,
         label='キーワード検索',
         widget=forms.TextInput(
             attrs={
@@ -33,6 +34,7 @@ class SalesOrderSearchForm(forms.Form):
     # -----------------------------
     search_sales_order_no = forms.CharField(
         required=False,
+        max_length=50,
         label='受注番号',
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
     )
@@ -72,6 +74,7 @@ class SalesOrderSearchForm(forms.Form):
 
     search_delivery_place = forms.CharField(
         required=False,
+        max_length=100,
         label='納入場所',
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
     )

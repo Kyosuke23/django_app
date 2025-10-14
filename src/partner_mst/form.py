@@ -7,6 +7,7 @@ class PartnerSearchForm(forms.Form):
     '''
     search_keyword = forms.CharField(
         required=False,
+        max_length=255,
         label='キーワード検索',
         widget=forms.TextInput(
             attrs={
@@ -18,6 +19,7 @@ class PartnerSearchForm(forms.Form):
 
     search_partner_name = forms.CharField(
         required=False,
+        max_length=100,
         label='取引先名称',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}
@@ -35,6 +37,7 @@ class PartnerSearchForm(forms.Form):
 
     search_contact_name = forms.CharField(
         required=False,
+        max_length=50,
         label='担当者名',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}
@@ -51,6 +54,7 @@ class PartnerSearchForm(forms.Form):
 
     search_tel_number = forms.CharField(
         required=False,
+        max_length=20,
         label='電話番号',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}
@@ -59,6 +63,7 @@ class PartnerSearchForm(forms.Form):
 
     search_address = forms.CharField(
         required=False,
+        max_length=255,
         label='住所',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}

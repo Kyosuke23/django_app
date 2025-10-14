@@ -16,7 +16,7 @@ class CustomUser(AbstractUser, BaseModel):
     postal_code_VALID = RegexValidator(regex=r'^\d{7}$', message=('半角数字7桁で入力してください'))
     
     username = models.CharField(
-        max_length=50
+        max_length=100
         , unique=False
         , null=False
         , blank=False
@@ -36,12 +36,12 @@ class CustomUser(AbstractUser, BaseModel):
         verbose_name='メールアドレス'
     )
     gender = models.CharField(null=True, blank=True, max_length=1, choices=GENDER_CHOICES, verbose_name='性別')
-    tel_number = models.CharField(validators=[TEL_NUM_VALID], max_length=15, blank=True, null=True, verbose_name='電話番号')
-    postal_code = models.CharField(validators=[postal_code_VALID], max_length=7, blank=True, null=True, verbose_name='郵便番号')
+    tel_number = models.CharField(validators=[TEL_NUM_VALID], max_length=20, blank=True, null=True, verbose_name='電話番号')
+    postal_code = models.CharField(validators=[postal_code_VALID], max_length=10, blank=True, null=True, verbose_name='郵便番号')
     state = models.CharField(max_length=5, blank=True, null=True, verbose_name='都道府県')
-    city = models.CharField(max_length=255, blank=True, null=True, verbose_name='市区町村')
-    address = models.CharField(max_length=255, blank=True, null=True, verbose_name='住所')
-    address2 = models.CharField(max_length=255, blank=True, null=True, verbose_name='住所2')
+    city = models.CharField(max_length=50, blank=True, null=True, verbose_name='市区町村')
+    address = models.CharField(max_length=100, blank=True, null=True, verbose_name='住所')
+    address2 = models.CharField(max_length=150, blank=True, null=True, verbose_name='住所2')
     birthday = models.DateField(null=True, blank=True, verbose_name='誕生日')
     employment_status = models.CharField(
         max_length=1,

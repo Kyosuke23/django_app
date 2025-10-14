@@ -8,6 +8,7 @@ class ProductSearchForm(forms.Form):
     # 基本検索
     search_keyword = forms.CharField(
         required=False,
+        max_length=255,
         label='キーワード検索',
         widget=forms.TextInput(
             attrs={
@@ -20,6 +21,7 @@ class ProductSearchForm(forms.Form):
     # 詳細検索
     search_product_name = forms.CharField(
         required=False,
+        max_length=100,
         label='商品名称',
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
@@ -34,6 +36,7 @@ class ProductSearchForm(forms.Form):
 
     search_unit = forms.CharField(
         required=False,
+        max_length=20,
         label='単位',
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )

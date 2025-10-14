@@ -9,6 +9,7 @@ class UserSearchForm(forms.Form):
     '''
     search_keyword = forms.CharField(
         required=False,
+        max_length=255,
         label='キーワード検索',
         widget=forms.TextInput(
             attrs={
@@ -20,6 +21,7 @@ class UserSearchForm(forms.Form):
 
     search_username = forms.CharField(
         required=False,
+        max_length=100,
         label='ユーザー名',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}
@@ -45,6 +47,7 @@ class UserSearchForm(forms.Form):
 
     search_tel_number = forms.CharField(
         required=False,
+        max_length=20,
         label='電話番号',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}

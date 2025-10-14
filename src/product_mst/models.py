@@ -15,7 +15,7 @@ class Product(BaseModel):
         ]
         ordering = ['product_name']
 
-    product_name = models.CharField(max_length=255, verbose_name='商品名称')
+    product_name = models.CharField(max_length=100, verbose_name='商品名称')
     product_category = models.ForeignKey(
         'ProductCategory',
         on_delete=models.SET_NULL,
