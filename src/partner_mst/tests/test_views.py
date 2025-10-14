@@ -30,9 +30,9 @@ class PartnerViewTests(TestCase):
         self.user = get_user_model().objects.get(pk=1)
         self.client.login(email='system@example.com', password='pass')
 
-    # -------------------
+    #----------------
     # 初期表示
-    # -------------------
+    #----------------
     def test_1_1_1(self):
         '''初期表示（データあり）'''
         # レスポンス取得
@@ -64,9 +64,9 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 0)  # 件数
         
-    # -------------------
+    #----------------
     # 検索処理
-    # -------------------
+    #----------------
     def test_2_1_1(self):
         '''検索処理（取引先名称）'''
         # レスポンス取得
@@ -205,9 +205,9 @@ class PartnerViewTests(TestCase):
         self.assertEqual(list.count(), 1)  # 件数
         self.assertEqual('both', response.context['search_partner_type'])  # 検索フォームの入力値
         
-    # -------------------
+    #----------------
     # 登録処理
-    # -------------------
+    #----------------
     def test_3_1_1(self):
         '''登録画面表示（正常系）'''
         # レスポンス取得
@@ -648,9 +648,9 @@ class PartnerViewTests(TestCase):
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_partner_name + .invalid-feedback').get_text())
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
-    # -------------------
+    #----------------
     # 更新処理
-    # -------------------
+    #----------------
     def test_4_1_1(self):
         '''更新画面表示'''
         # レスポンス取得
@@ -1203,9 +1203,9 @@ class PartnerViewTests(TestCase):
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_partner_name + .invalid-feedback').get_text())
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
-    # -------------------
+    #----------------
     # 削除処理
-    # -------------------
+    #----------------
     def test_5_1_1(self):
         '''
         削除処理（正常系）
@@ -1349,9 +1349,9 @@ class PartnerViewTests(TestCase):
         self.assertTrue(Partner.objects.filter(id=partner1.id).exists())
         self.assertTrue(Partner.objects.filter(id=partner2.id).exists())
         
-    # -------------------
+    #----------------
     # CSVインポート
-    # -------------------
+    #----------------
     def _make_csv_file(self, rows, header=None):
         '''
         テスト用CSVファイルの作成
@@ -2074,9 +2074,9 @@ class PartnerViewTests(TestCase):
         self.assertEqual(['2行目: address2: この値は 255 文字以下でなければなりません( 256 文字になっています)。'], res_json['details'])
         self.assertEqual(Partner.objects.count(), 0)
 
-    # -------------------
+    #----------------
     # CSVエクスポート
-    # -------------------
+    #----------------
     def _request_and_parse(self, url: str):
         '''エクスポートを叩いてレスポンスとCSV行を返す共通処理'''
         response = self.client.get(url)
@@ -2249,9 +2249,9 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, 0)
 
             
-    # -------------------
+    #----------------
     # EXCELエクスポート
-    # -------------------
+    #----------------
     def _get_excel_rows(self, response):
         '''Excelレスポンスをopenpyxlで読み取り、行データを返す'''
         wb = load_workbook(io.BytesIO(response.content))
@@ -2418,9 +2418,9 @@ class PartnerViewTests(TestCase):
             0, qs
         )
 
-    # -------------------
+    #----------------
     # 直リンク禁止
-    # -------------------
+    #----------------
     def test_9_1_1(self):
         '''一覧画面表示（異常系：未ログイン）'''
         url = reverse('partner_mst:list')

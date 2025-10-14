@@ -3,9 +3,9 @@ from register import constants as register_const
 
 
 def const_str(request):
-    """
+    '''
     HTMLメタデータを渡す
-    """
+    '''
     return {
         # 性別
         'GENDER_MALE': register_const.GENDER_MALE,

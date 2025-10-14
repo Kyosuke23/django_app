@@ -32,113 +32,11 @@
     </div>
   </div>
 
+  {# フラッシュメッセージ #}
   {% include 'layout/message.html' %}
 
   {# 検索フォーム #}
-  <div class="card shadow-sm border-0 mb-3">
-    <div class="card-body pb-2">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="card-title mb-0"><i class="bi bi-search me-2 text-primary"></i>検索条件</h5>
-      </div>
-
-      {# 基本検索 #}
-      <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small text-muted">キーワード検索</label>
-          <div class="input-group input-group-sm">
-            <input type="text" name="search_keyword" class="form-control"
-                  value="{{ search_keyword }}" placeholder="キーワードを入力">
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-search"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="col-md-2 text-start">
-          <button class="btn btn-outline-secondary btn-sm" type="button"
-                  data-bs-toggle="collapse" data-bs-target="#detailSearch"
-                  aria-expanded="false" aria-controls="detailSearch">
-            <i class="bi bi-funnel"></i> 詳細検索
-          </button>
-          <a href="{% url 'partner_mst:list' %}" class="btn btn-link btn-sm text-muted">
-            <i class="bi bi-arrow-counterclockwise"></i> リセット
-          </a>
-        </div>
-      </div>
-
-      {# 詳細検索 #}
-      <div class="collapse mt-3" id="detailSearch">
-        <hr class="text-muted">
-        <div class="row g-3">
-          <div class="col-md-2">
-            <label class="form-label small text-muted">取引先名称</label>
-            <input type="text" name="search_partner_name" class="form-control form-control-sm"
-                   value="{{ search_partner_name }}">
-          </div>
-          <div class="col-md-1">
-            <label class="form-label small text-muted">取引先区分</label>
-            <select name="search_partner_type" class="form-select form-select-sm">
-              <option value="">すべて</option>
-              {% for val, label in partner_types %}
-                <option value="{{ val }}" {% if search_partner_type == val|stringformat:"s" %}selected{% endif %}>
-                  {{ label }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small text-muted">担当者名</label>
-            <input type="text" name="search_contact_name" class="form-control form-control-sm"
-                   value="{{ search_contact_name }}">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small text-muted">メールアドレス</label>
-            <input type="text" name="search_email" class="form-control form-control-sm"
-                   value="{{ search_email }}">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small text-muted">電話番号</label>
-            <input type="text" name="search_tel_number" class="form-control form-control-sm"
-                   value="{{ search_tel_number }}">
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small text-muted">住所</label>
-            <input type="text" name="search_address" class="form-control form-control-sm"
-                   value="{{ search_address }}">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  {# 件数表示 + 並び替え #}
-  <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
-    <p class="text-muted small mb-0">
-      {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
-    </p>
-
-    {# 並び替えドロップダウン #}
-    <div class="d-flex align-items-center gap-2">
-      <select id="form-select" name="sort" class="form-select form-select-sm">
-        <option value="">並び替え</option>
-        <optgroup label="取引先名称（カナ）">
-          <option value="partner_name_kana" {% if request.GET.sort == 'partner_name_kana' %}selected{% endif %}>
-            取引先名称（カナ）：昇順 ▲
-          </option>
-          <option value="-partner_name_kana" {% if request.GET.sort == '-partner_name_kana' %}selected{% endif %}>
-            取引先名称（カナ）：降順 ▼
-          </option>
-        </optgroup>
-        <optgroup label="メールアドレス">
-          <option value="email" {% if request.GET.sort == 'email' %}selected{% endif %}>
-            メールアドレス ▲
-          </option>
-          <option value="-email" {% if request.GET.sort == '-email' %}selected{% endif %}>
-            メールアドレス ▼
-          </option>
-        </optgroup>
-      </select>
-    </div>
-  </div>
+  {% include 'partner_mst/search_form.html' with form=form %}
 </form>
 
 {# 結果テーブル #}
@@ -201,15 +99,14 @@
   <div>{% include 'layout/pagination.html' %}</div>
   {% if user.privilege <= PRIVILEGE_EDITOR %}
   <div>
-    <button type="button" id="bulk-delete-btn" class="btn btn-danger btn-sm"
-            data-url="{% url 'partner_mst:bulk_delete' %}">
+    <button type="button" id="bulk-delete-btn" class="btn btn-danger btn-sm" data-url="{% url 'partner_mst:bulk_delete' %}">
       <i class="bi bi-trash3"></i> 一括削除
     </button>
   </div>
   {% endif %}
 </div>
 
-{# モーダル #}
+{# 登録・編集モーダル #}
 <div class="modal fade" id="partnerModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
@@ -218,5 +115,6 @@
   </div>
 </div>
 
+{# 個別js #}
 <script src="{% static 'js/partner_mst/script.js' %}"></script>
 {% endblock %}

@@ -1,6 +1,115 @@
-from django.contrib.auth.forms import UserCreationForm, PasswordChangeForm
+from django.contrib.auth.forms import PasswordChangeForm
 from .models import CustomUser
 from django import forms
+from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
+
+class UserSearchForm(forms.Form):
+    '''
+    ユーザーマスタ検索フォーム
+    '''
+    search_keyword = forms.CharField(
+        required=False,
+        label='キーワード検索',
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': 'ユーザー名 / メールアドレス',
+            }
+        )
+    )
+
+    search_username = forms.CharField(
+        required=False,
+        label='ユーザー名',
+        widget=forms.TextInput(
+            attrs={'class': 'form-control form-control-sm'}
+        )
+    )
+
+    search_email = forms.CharField(
+        required=False,
+        label='メールアドレス',
+        widget=forms.TextInput(
+            attrs={'class': 'form-control form-control-sm'}
+        )
+    )
+
+    search_gender = forms.ChoiceField(
+        required=False,
+        label='性別',
+        choices=[('', 'すべて')] + list(GENDER_CHOICES),
+        widget=forms.Select(
+            attrs={'class': 'form-select form-select-sm'}
+        )
+    )
+
+    search_tel_number = forms.CharField(
+        required=False,
+        label='電話番号',
+        widget=forms.TextInput(
+            attrs={'class': 'form-control form-control-sm'}
+        )
+    )
+
+    search_employment_status = forms.ChoiceField(
+        required=False,
+        label='雇用状態',
+        choices=[('', 'すべて')] + list(EMPLOYMENT_STATUS_CHOICES),
+        widget=forms.Select(
+            attrs={'class': 'form-select form-select-sm'}
+        )
+    )
+
+    search_privilege = forms.ChoiceField(
+        required=False,
+        label='権限',
+        choices=[('', 'すべて')] + list(PRIVILEGE_CHOICES),
+        widget=forms.Select(
+            attrs={'class': 'form-select form-select-sm'}
+        )
+    )
+
+    sort = forms.ChoiceField(
+        required=False,
+        label='並び替え',
+        choices=[
+            ('', '並び替え'),
+            ('username_kana', 'ユーザー名（カナ）：昇順 ▲'),
+            ('-username_kana', 'ユーザー名（カナ）：降順 ▼'),
+            ('email', 'メールアドレス：昇順 ▲'),
+            ('-email', 'メールアドレス：降順 ▼'),
+        ],
+        widget=forms.Select(
+            attrs={'class': 'form-select form-select-sm', 'id': 'form-select'}
+        )
+    )
+    
+    # 並び替え
+    SORT_GROUPS = {
+        'ユーザー名（カナ）': [
+            ('username_kana', 'ユーザー名（カナ）：昇順 ▲'),
+            ('-username_kana', 'ユーザー名（カナ）：降順 ▼'),
+        ],
+        'メールアドレス': [
+            ('email', 'メールアドレス：昇順  ▲'),
+            ('-email', 'メールアドレス：降順 ▼'),
+        ],
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # optgroup構造を設定
+        choices = [('', '並び替え')]
+        for group_label, options in self.SORT_GROUPS.items():
+            # optgroup構造は (group_label, [ (value, label), ... ]) の形で渡す必要あり
+            choices.append((group_label, [(val, lbl) for val, lbl in options]))
+        self.fields['sort'].choices = choices
+
+        # 各フィールド共通属性
+        for name, field in self.fields.items():
+            if name != 'search_keyword':
+                field.widget.attrs.setdefault('class', 'form-control form-control-sm')
 
 
 class SignUpForm(forms.ModelForm):

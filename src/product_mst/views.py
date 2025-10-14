@@ -1,7 +1,7 @@
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from .models import Product, ProductCategory
-from .form import ProductForm
+from .form import ProductSearchForm, ProductForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
@@ -22,9 +22,9 @@ DATA_COLUMNS = [
 FILENAME_PREFIX = 'product_mst'
 
 
-# -----------------------------
+#--------------------------
 # Product CRUD
-# -----------------------------
+#--------------------------
 class ProductListView(generic.ListView):
     '''
     商品一覧画面
@@ -37,44 +37,26 @@ class ProductListView(generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        '''
-        検索条件を反映したクエリセットを返す
-        '''
-        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         req = self.request
+        form = ProductSearchForm(req.GET or None)
+        
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Product.objects.filter(is_deleted=False, tenant=req.user.tenant)
         
-        # テンプレートの検索条件を適用
-        queryset = filter_data(request=req, queryset=queryset)
-        
-        # ソート条件を設定
-        queryset = set_table_sort(request=req, queryset=queryset)
+        # フォームが有効なら検索条件を反映
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
 
-        # クエリセット返却
+        # 並び替え
+        sort = form.cleaned_data.get('sort') if form.is_valid() else ''
+        queryset = set_table_sort(queryset=queryset, sort=sort)
+
         return queryset
     
     def get_context_data(self, **kwargs):
-        '''
-        テンプレートに渡す追加コンテキスト
-        - 検索条件を保持
-        - カテゴリ一覧を提供
-        - ページネーション情報を追加
-        '''
-        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        g = self.request.GET
-        
-        # 検索フォームの入力値保持
-        context['search_product_name'] = g.get('search_product_name') or ''
-        context['search_product_category'] = g.get('search_product_category') or ''
-        context['search_unit_price_min'] = g.get('search_unit_price_min') or ''
-        context['search_unit_price_max'] = g.get('search_unit_price_max') or ''
-        context['categories'] = ProductCategory.objects.filter(tenant=self.request.user.tenant)
-        
-        # ページネーション保持
+        context['form'] = ProductSearchForm(self.request.GET or None)
         context = Common.set_pagination(context, self.request.GET.urlencode())
-        
-        # コンテキストの返却
         return context
 
 
@@ -260,9 +242,9 @@ class ProductCategoryEditView(PrivilegeRequiredMixin, generic.View):
         return redirect(f"{reverse('product_mst:list')}?category_open=1")
 
 
-# -----------------------------
+#--------------------------
 # Export / Import
-# -----------------------------
+#--------------------------
 class ExportExcel(ExcelExportBaseView):
     '''
     商品マスタのExcel出力
@@ -347,9 +329,9 @@ class ImportCSV(CSVImportBaseView):
         return obj, None
 
 
-# -----------------------------
+#--------------------------
 # 共通関数
-# -----------------------------
+#--------------------------
 def get_row(rec):
     '''CSV/Excel出力用: 1行分のリストを返す'''
     return [
@@ -360,56 +342,40 @@ def get_row(rec):
     ]
     
 
-def filter_data(request, queryset):
-    ''' 検索条件付与 '''
-
-    g = request.GET
-    # リクエストから検索フォームの入力値を取得
-    keyword = g.get('search_keyword') or ''
-    product_name = g.get('search_product_name') or ''
-    category = g.get('search_product_category') or ''
-    unit_price_min = g.get('search_unit_price_min') or ''
-    unit_price_max = g.get('search_unit_price_max') or ''
-    
-    # フィルタ実行
+def filter_data(cleaned_data, queryset):
+    keyword = cleaned_data.get('search_keyword', '').strip()
     if keyword:
         queryset = queryset.filter(
             Q(product_name__icontains=keyword)
+            | Q(description__icontains=keyword)
+            | Q(unit__icontains=keyword)
             | Q(product_category__product_category_name__icontains=keyword)
         )
-    if product_name:
-        queryset = queryset.filter(Q(product_name__icontains=product_name))
-    if category:
-        queryset = queryset.filter(product_category_id=category)
-    if unit_price_min:
-        queryset = queryset.filter(unit_price__gte=unit_price_min)
-    if unit_price_max:
-        queryset = queryset.filter(unit_price__lte=unit_price_max)
-    
-    # バリデーション
-    if unit_price_min and unit_price_max and int(unit_price_min) > int(unit_price_max):
-        messages.error(request, '価格(下限)は価格(上限)以下を指定してください')
-        queryset = queryset.none()
 
-    # クエリセットの返却
+    if cleaned_data.get('search_product_name'):
+        queryset = queryset.filter(product_name__icontains=cleaned_data['search_product_name'])
+    if cleaned_data.get('search_category'):
+        queryset = queryset.filter(product_category=cleaned_data['search_category'])
+    if cleaned_data.get('search_unit'):
+        queryset = queryset.filter(unit__icontains=cleaned_data['search_unit'])
+    if cleaned_data.get('min_price') is not None:
+        queryset = queryset.filter(unit_price__gte=cleaned_data['min_price'])
+    if cleaned_data.get('max_price') is not None:
+        queryset = queryset.filter(unit_price__lte=cleaned_data['max_price'])
+
     return queryset
 
-def set_table_sort(request, queryset):
+def set_table_sort(queryset, sort):
     '''
     クエリセットにソート順を設定
     '''
-    g = request.GET
-    
-    # 並び替え処理
-    sort = g.get('sort', '')
     if sort in [
-        'unit_price', '-unit_price'
+        'product_name', '-product_name',
+        'product_category__product_category_name', '-product_category__product_category_name',
+        'unit_price', '-unit_price',
     ]:
-        queryset = queryset.order_by(sort)
-    else:
-        queryset = queryset.order_by('id')  # デフォルト
-
-    return queryset
+        return queryset.order_by(sort)
+    return queryset.order_by('id')
 
 def set_message(request, action, product_name):
     '''CRUD後の統一メッセージ'''

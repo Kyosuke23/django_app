@@ -18,10 +18,10 @@ def validate_ip(value):
         )
 
 class AccessLog(BaseModel):
-    """
+    '''
     アクセス履歴
     - BaseModel 継承により tenant / 作成者 / 更新者 / 作成日時 / 更新日時 を統一
-    """
+    '''
     class Meta:
         app_label = 'login'
         ordering = ['access_at', 'username']
@@ -37,9 +37,9 @@ class AccessLog(BaseModel):
 
 @receiver(user_logged_in)
 def user_logged_in_callback(sender, request, user, **kwargs):
-    """
+    '''
     ログイン時の履歴登録
-    """
+    '''
     ip = Common.get_ip_address(request) or '0.0.0.0'
     AccessLog.objects.create(
         tenant=user.tenant,
@@ -53,9 +53,9 @@ def user_logged_in_callback(sender, request, user, **kwargs):
 
 @receiver(user_logged_out)
 def user_logged_out_callback(sender, request, user, **kwargs):
-    """
+    '''
     ログアウト時の履歴登録
-    """
+    '''
     ip = Common.get_ip_address(request) or '0.0.0.0'
     AccessLog.objects.create(
         tenant=user.tenant,

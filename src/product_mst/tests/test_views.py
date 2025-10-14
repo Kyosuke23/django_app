@@ -25,9 +25,9 @@ class ProductViewTests(TestCase):
         self.user = get_user_model().objects.get(pk=1)
         self.client.login(email='system@example.com', password='pass')
 
-    # -----------------------------
+    #--------------------------
     # 一覧
-    # -----------------------------
+    #--------------------------
     def test_1_1_1(self):
         '''初期表示（データあり）'''
         # レスポンス取得
@@ -59,9 +59,9 @@ class ProductViewTests(TestCase):
         list = response.context['products']
         self.assertEqual(list.count(), 0)  # 件数
         
-    # -------------------
+    #----------------
     # 検索処理
-    # -------------------
+    #----------------
     def test_2_1_1(self):
         '''検索処理（商品名称）'''
         # レスポンス取得

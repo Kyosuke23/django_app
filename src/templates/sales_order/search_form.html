@@ -1,0 +1,85 @@
+{# 検索フォーム #}
+<div class="card shadow-sm border-0 mb-3">
+  <div class="card-body pb-2">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h5 class="card-title mb-0">
+        <i class="bi bi-search me-2 text-primary"></i>検索条件
+      </h5>
+    </div>
+
+    {# 基本検索 #}
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <label for="{{ form.search_keyword.id_for_label }}" class="form-label small text-muted">
+          {{ form.search_keyword.label }}
+        </label>
+        <div class="input-group input-group-sm">
+          {{ form.search_keyword }}
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-search"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="col-md-2 text-start">
+        <button class="btn btn-outline-secondary btn-sm" type="button"
+                data-bs-toggle="collapse" data-bs-target="#detailSearch"
+                aria-expanded="false" aria-controls="detailSearch">
+          <i class="bi bi-funnel"></i> 詳細検索
+        </button>
+        <a href="{% url 'sales_order:list' %}" class="btn btn-link btn-sm text-muted">
+          <i class="bi bi-arrow-counterclockwise"></i> リセット
+        </a>
+      </div>
+    </div>
+
+    {# 詳細検索 #}
+    <div class="collapse mt-3" id="detailSearch">
+      <hr class="text-muted">
+      <div class="row g-3">
+
+        <div class="col-md-1">
+          <label for="{{ form.search_sales_order_no.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_sales_order_no.label }}
+          </label>
+          {{ form.search_sales_order_no }}
+        </div>
+
+        <div class="col-md-2">
+          <label for="{{ form.search_partner.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_partner.label }}
+          </label>
+          {{ form.search_partner }}
+        </div>
+
+        <div class="col-md-1">
+          <label for="{{ form.search_status_code.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_status_code.label }}
+          </label>
+          {{ form.search_status_code }}
+        </div>
+
+        <div class="col-md-2">
+          <label for="{{ form.search_sales_order_date.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_sales_order_date.label }}
+          </label>
+          {{ form.search_sales_order_date }}
+        </div>
+
+        <div class="col-md-2">
+          <label for="{{ form.search_delivery_due_date.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_delivery_due_date.label }}
+          </label>
+          {{ form.search_delivery_due_date }}
+        </div>
+
+        <div class="col-md-2">
+          <label for="{{ form.search_delivery_place.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_delivery_place.label }}
+          </label>
+          {{ form.search_delivery_place }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

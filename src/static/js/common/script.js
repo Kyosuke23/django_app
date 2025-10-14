@@ -4,63 +4,29 @@ $(function () {
      */
     $.fn.flash_message = function (options) {
         options = $.extend({
-            text: '完了しました',
-            time: 3000,
-            how: 'before',
-            class_name: 'info'
+            text: '処理が完了しました。',
+            how: 'append',
+            class_name: 'info',
+            delay: 2000
         }, options);
 
-        return $(this).each(function () {
-            if ($(this).find('.flash_messages').length) {
-                $(this).find('.flash_messages').fadeOut(200, function () {
+        return this.each(function () {
+            const message = $('<span class="flash_message ' + options.class_name + '">' + options.text + '</span>');
+            const $this = $(this);
+
+            if (options.how === 'append') {
+                $this.append(message);
+            } else {
+                $this.prepend(message);
+            }
+
+            message
+                .hide()
+                .fadeIn(400)
+                .delay(options.delay)
+                .fadeOut(800, function () {
                     $(this).remove();
                 });
-            }
-            var message = $('<span />', {
-                'class': 'flash_messages ' + options.class_name,
-                text: options.text
-            });
-            $(this)[options.how](message).addClass('show');
-            message.delay(options.time).queue(function () {
-                $(this).parents('#flash_message_area').removeClass('show');
-                $(this).remove();
-            });
-        });
-    };
-
-    /**
-     * データ登録処理（非同期）
-     */
-    $.fn.post_data = function (form) {
-        form.find('.is-invalid').removeClass('is-invalid');
-        form.find('.errorlist').remove();
-
-        $.ajax({
-            url: form.prop('action'),
-            method: form.prop('method'),
-            data: form.serialize(),
-            timeout: 10000,
-            dataType: 'json',
-        })
-        .done(function (data) {
-            let errors = data.errors || {};
-            if (Object.keys(errors).length === 0) {
-                window.location.href = data.success_url;
-                return;
-            }
-            for (let key in errors) {
-                let errorField = $(`input[name='${key}']`);
-                errorField.addClass('is-invalid');
-                errorField.after('<ul class="errorlist"><li>' + errors[key][0] + '</li></ul>');
-            }
-        })
-        .fail(function () {
-            $('#flash_message_area').flash_message({
-                text: 'サーバー通信に失敗しました',
-                class_name: 'error',
-                how: 'append',
-                time: 4000
-            });
         });
     };
 
@@ -186,9 +152,15 @@ $(function () {
 
     // フラッシュメッセージの表示判定
     if ($('.flash_messages').length) {
-        $('#flash_message_area').flash_message({
-            text: $('.flash_messages').val(),
-            how: 'append'
+        $('.flash_messages').each(function () {
+            const msg = $(this).val();
+            const cls = $(this).attr('class').split(' ').pop();
+            $('#flash_message_area').flash_message({
+                text: msg,
+                class_name: cls,
+                how: 'append',
+                delay: 2500
+            });
         });
     }
 

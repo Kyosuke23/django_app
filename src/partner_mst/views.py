@@ -1,7 +1,7 @@
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from .models import Partner
-from .form import PartnerForm
+from .form import PartnerSearchForm, PartnerForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
@@ -30,48 +30,27 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        '''
-        検索条件を反映したクエリセットを返す
-        '''
-        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         req = self.request
+        form = PartnerSearchForm(req.GET or None)
+        
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Partner.objects.filter(is_deleted=False, tenant=req.user.tenant)
-        
-        # テンプレートの検索条件を適用
-        queryset = filter_data(request=req, queryset=queryset)
- 
-        # ソート条件を設定
-        queryset = set_table_sort(request=req, queryset=queryset)
-        
-        # クエリセット返却
+
+        # フォームが有効なら検索条件を反映
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        # 並び替え
+        sort = form.cleaned_data.get('sort') if form.is_valid() else ''
+        queryset = set_table_sort(queryset=queryset, sort=sort)
+
         return queryset
 
     def get_context_data(self, **kwargs):
-        '''
-        テンプレートに渡す追加コンテキスト
-        - 検索条件を保持
-        - ページネーション情報を追加
-        '''
-        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        g = self.request.GET
-        
-        # 検索フォームの入力値保持
-        context['search_keyword'] = g.get('search_keyword') or ''
-        context['search_partner_name'] = g.get('search_partner_name') or ''
-        context['search_partner_type'] = g.get('search_partner_type') or ''
-        context['search_contact_name'] = g.get('search_contact_name') or ''
-        context['search_email'] = g.get('search_email') or ''
-        context['search_tel_number'] = g.get('search_tel_number') or ''
-        context['search_address'] = g.get('search_address') or ''
-        
-        # マスタ系の選択肢（セレクトボックス用）
+        context['form'] = PartnerSearchForm(self.request.GET or None)
         context['partner_types'] = Partner.PARTNER_TYPE_CHOICES
-        
-        # ページネーション保持
-        context = Common.set_pagination(context, g.urlencode())
-        
-        # コンテキストの返却
+        context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
 
@@ -286,11 +265,8 @@ def get_row(rec):
     ]
 
 
-def filter_data(request, queryset):
-    g = request.GET
-
-    # キーワード検索（全体横断）
-    keyword = g.get('search_keyword', '').strip()
+def filter_data(cleaned_data, queryset):
+    keyword = cleaned_data.get('search_keyword', '').strip()
     if keyword:
         queryset = queryset.filter(
             Q(partner_name__icontains=keyword)
@@ -303,49 +279,32 @@ def filter_data(request, queryset):
             | Q(address__icontains=keyword)
             | Q(address2__icontains=keyword)
         )
-        
-    # 取引先区分のkey, valの辞書を作ってキーワード検索
-    type_display_map = dict(Partner._meta.get_field('partner_type').choices)
-    matched_types = [code for code, label in type_display_map.items() if keyword in label]
-    if matched_types:
-        queryset = queryset | Partner.objects.filter(partner_type__in=matched_types)
 
-    # 詳細検索（個別フィールド）
-    if g.get('search_partner_name'):
-        queryset = queryset.filter(partner_name__icontains=g['search_partner_name'])
-    if g.get('search_contact_name'):
-        queryset = queryset.filter(contact_name__icontains=g['search_contact_name'])
-    if g.get('search_email'):
-        queryset = queryset.filter(email__icontains=g['search_email'])
-    if g.get('search_tel_number'):
-        queryset = queryset.filter(tel_number__icontains=g['search_tel_number'])
-    if g.get('search_address'):
-        s = g['search_address']
-        queryset = queryset.filter(Q(state__icontains=s) | Q(city__icontains=s) | Q(address__icontains=s) | Q(address2__icontains=s))
-
-    # 区分検索
-    if g.get('search_partner_type'):
-        queryset = queryset.filter(partner_type=g['search_partner_type'])
-
+    if cleaned_data.get('search_partner_name'):
+        queryset = queryset.filter(partner_name__icontains=cleaned_data['search_partner_name'])
+    if cleaned_data.get('search_contact_name'):
+        queryset = queryset.filter(contact_name__icontains=cleaned_data['search_contact_name'])
+    if cleaned_data.get('search_email'):
+        queryset = queryset.filter(email__icontains=cleaned_data['search_email'])
+    if cleaned_data.get('search_tel_number'):
+        queryset = queryset.filter(tel_number__icontains=cleaned_data['search_tel_number'])
+    if cleaned_data.get('search_address'):
+        s = cleaned_data['search_address']
+        queryset = queryset.filter(
+            Q(state__icontains=s) | Q(city__icontains=s)
+            | Q(address__icontains=s) | Q(address2__icontains=s)
+        )
+    if cleaned_data.get('search_partner_type'):
+        queryset = queryset.filter(partner_type=cleaned_data['search_partner_type'])
     return queryset
 
-def set_table_sort(request, queryset):
+def set_table_sort(queryset, sort):
     '''
     クエリセットにソート順を設定
     '''
-    g = request.GET
-    
-    # 並び替え処理
-    sort = g.get('sort', '')
-    if sort in [
-        'partner_name_kana', '-partner_name_kana'
-        , 'email', '-email'
-    ]:
-        queryset = queryset.order_by(sort)
-    else:
-        queryset = queryset.order_by('id')  # デフォルト
-
-    return queryset
+    if sort in ['partner_name_kana', '-partner_name_kana', 'email', '-email']:
+        return queryset.order_by(sort)
+    return queryset.order_by('id')
 
 def set_message(request, action, partner_name):
     '''CRUD後の統一メッセージ'''

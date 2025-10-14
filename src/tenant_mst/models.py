@@ -4,9 +4,9 @@ from django.db import models
 from django.urls import reverse
 
 class Tenant(models.Model):
-    """
+    '''
     企業・組織情報を管理するモデル
-    """
+    '''
     class Meta:
         ordering = ['tenant_code']
 

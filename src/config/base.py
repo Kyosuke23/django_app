@@ -17,29 +17,29 @@ class ExcelExportBaseView(View):
     headers: list[str] = []  # 出力ヘッダ定義
 
     def get(self, request, *args, **kwargs):
-        # --- ファイル名設定 ---
+        # ファイル名設定
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         file_name = f'{self.filename_prefix}_{timestamp}.xlsx'
 
-        # --- データ取得 ---
+        # データ取得
         data = self.get_queryset(request).filter(is_deleted=False, tenant=request.user.tenant)
 
-        # --- Workbook 作成 ---
+        # Workbook 作成
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = 'data'
 
-        # --- ヘッダ書き込み ---
+        # ヘッダ書き込み
         for col, header in enumerate(self.headers, start=1):
             ws.cell(row=1, column=col, value=header)
 
-        # --- データ書き込み ---
+        # データ書き込み
         for row_idx, rec in enumerate(data, start=2):
             values = self.row(rec)
             for col_idx, val in enumerate(values, start=1):
                 ws.cell(row=row_idx, column=col_idx, value=val)
 
-        # --- レスポンス作成 ---
+        # レスポンス作成
         response = HttpResponse(
             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         )
@@ -61,23 +61,23 @@ class CSVExportBaseView(View):
     headers: list[str] = []  # 出力ヘッダ定義
 
     def get(self, request, *args, **kwargs):
-        # --- ファイル名設定 ---
+        # ファイル名設定
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         file_name = f'{self.filename_prefix}_{timestamp}.csv'
 
-        # --- データ取得 ---
+        # データ取得
         data = self.get_queryset(request)
 
-        # --- レスポンス準備 ---
+        # レスポンス準備
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = f"attachment; filename*=UTF-8''{file_name}"
 
         writer = csv.writer(response)
 
-        # --- ヘッダ出力 ---
+        # ヘッダ出力
         writer.writerow(self.headers)
 
-        # --- データ出力 ---
+        # データ出力
         for rec in data:
             writer.writerow(self.row(rec))
 
@@ -106,7 +106,7 @@ class CSVImportBaseView(View):
         if not file:
             return JsonResponse({'error': 'ファイルが選択されていません'}, status=400)
 
-        # --- decode ---
+        # decode
         file_data = file.read()
         try:
             decoded_data = file_data.decode('utf-8-sig')
@@ -116,14 +116,14 @@ class CSVImportBaseView(View):
         decoded_file = decoded_data.splitlines()
         reader = csv.DictReader(decoded_file)
 
-        # --- ヘッダチェック ---
+        # ヘッダチェック
         if reader.fieldnames is None or any(h not in reader.fieldnames for h in self.expected_headers):
             return JsonResponse({
                 'error': 'CSVヘッダが正しくありません。',
                 'details': f'期待: {self.expected_headers}, 実際: {reader.fieldnames}'
             }, status=400)
 
-        # --- バリデーション ---
+        # バリデーション
         if isinstance(self.unique_field, (list, tuple)):
             existing = set(self.model_class.objects.values_list(*self.unique_field))
         else:
@@ -143,7 +143,7 @@ class CSVImportBaseView(View):
         if errors:
             return JsonResponse({'error': 'CSVに問題があります。', 'details': errors}, status=400)
 
-        # --- bulk insert ---
+        # bulk insert
         try:
             with transaction.atomic():
                 self.model_class.objects.bulk_create(objects_to_create)
@@ -163,12 +163,12 @@ class CSVImportBaseView(View):
         raise NotImplementedError
 
 class BaseModel(models.Model):
-    """
+    '''
     共通基底クラス
     - 論理削除
     - 作成日時 / 更新日時
     - 作成者 / 更新者
-    """
+    '''
 
     tenant = models.ForeignKey('tenant_mst.Tenant', on_delete=models.CASCADE, related_name="%(class)ss", null=False, blank=False, verbose_name='所属テナント')
     is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')

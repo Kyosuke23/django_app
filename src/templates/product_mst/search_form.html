@@ -1,0 +1,67 @@
+{% load django_bootstrap5 %}
+
+{% load django_bootstrap5 %}
+
+<form method="get" id="search_form" action="{% url 'product_mst:list' %}">
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body pb-2">
+      <!-- タイトル -->
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="card-title mb-0">
+          <i class="bi bi-search me-2 text-primary"></i>検索条件
+        </h5>
+      </div>
+
+      {# 基本検索 #}
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small text-muted">キーワード検索</label>
+          <div class="input-group input-group-sm">
+            {{ form.search_keyword }}
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-search"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="col-md-2 text-start">
+          <button class="btn btn-outline-secondary btn-sm" type="button"
+                  data-bs-toggle="collapse" data-bs-target="#detailSearch"
+                  aria-expanded="false" aria-controls="detailSearch">
+            <i class="bi bi-funnel"></i> 詳細検索
+          </button>
+          <a href="{% url 'product_mst:list' %}" class="btn btn-link btn-sm text-muted">
+            <i class="bi bi-arrow-counterclockwise"></i> リセット
+          </a>
+        </div>
+      </div>
+
+      {# 詳細検索 #}
+      <div class="collapse mt-3" id="detailSearch">
+        <hr class="text-muted">
+        <div class="row g-3">
+          <div class="col-md-2">
+            <label class="form-label small text-muted">商品名称</label>
+            {{ form.search_product_name }}
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-muted">カテゴリ</label>
+            {{ form.search_category }}
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-muted">単価（下限〜上限）</label>
+            <div class="input-group input-group-sm">
+              {{ form.min_price }}
+              <span class="input-group-text">〜</span>
+              {{ form.max_price }}
+            </div>
+          </div>
+          <div class="col-md-1">
+            <label class="form-label small text-muted">単位</label>
+            {{ form.search_unit }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>

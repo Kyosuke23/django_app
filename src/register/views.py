@@ -9,7 +9,7 @@ from django.shortcuts import redirect, get_object_or_404
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from .models import CustomUser
-from .forms import SignUpForm, ChangePasswordForm
+from .forms import UserSearchForm, SignUpForm, ChangePasswordForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
@@ -24,9 +24,9 @@ DATA_COLUMNS = [
 
 FILENAME_PREFIX = 'user_mst'
 
-# -----------------------------
+#--------------------------
 # User CRUD
-# -----------------------------
+#--------------------------
 class UserListView(PrivilegeRequiredMixin, generic.ListView):
     '''
     ユーザー一覧画面
@@ -37,50 +37,29 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        '''
-        検索条件を反映したクエリセットを返す
-        '''
-        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         req = self.request
+        form = UserSearchForm(req.GET or None)
+        
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
         
-        # テンプレートの検索条件を適用
-        queryset = filter_data(req, queryset)
-        
-        # ソート条件を設定
-        queryset = set_table_sort(request=req, queryset=queryset)
-        
-        # クエリセット返却
+        # フォームが有効なら検索条件を反映
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        # 並び替え
+        sort = form.cleaned_data.get('sort') if form.is_valid() else ''
+        queryset = set_table_sort(queryset=queryset, sort=sort)
+
         return queryset
 
     def get_context_data(self, **kwargs):
-        '''
-        テンプレートに渡す追加コンテキスト
-        - 検索条件を保持
-        - ページネーション情報を追加
-        '''
-        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        g = self.request.GET
-        
-        # 検索フォームの入力値保持
-        context['search_keyword'] = g.get('search_keyword') or ''
-        context['search_username'] = g.get('search_username') or ''
-        context['search_email'] = g.get('search_email') or ''
-        context['search_gender'] = g.get('search_gender') or ''
-        context['search_tel_number'] = g.get('search_tel_number') or ''
-        context['search_employment_status'] = g.get('search_employment_status') or ''
-        context['search_privilege'] = g.get('search_privilege') or ''
-        context['search_employment_status'] = g.get('search_employment_status') or ''
-        
-        # セレクトボックス用
-        context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
+        form = UserSearchForm(self.request.GET or None)
+        context['form'] = form
+        context['GENDER_CHOICES'] = GENDER_CHOICES
         context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
-        
-        # ページネーション保持
-        context = Common.set_pagination(context, g.urlencode())
-        
-        # コンテキストの返却
+        context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
         return context
 
 
@@ -262,9 +241,9 @@ class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
         return redirect('register:list')
 
 
-# -----------------------------
+#--------------------------
 # Export / Import
-# -----------------------------
+#--------------------------
 class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
@@ -317,9 +296,9 @@ class ImportCSV(PrivilegeRequiredMixin, CSVImportBaseView):
         return obj, None
 
 
-# -----------------------------
+#--------------------------
 # 共通関数
-# -----------------------------
+#--------------------------
 def get_row(rec):
     return [
         rec.username,
@@ -331,91 +310,49 @@ def get_row(rec):
         rec.privilege,
     ]
 
-def filter_data(request, queryset):
+def filter_data(cleaned_data, queryset):
     ''' ユーザーマスタ一覧の検索条件付与 '''
-    g = request.GET
-
-    keyword = g.get('search_keyword', '').strip()
-    username = g.get('search_username', '').strip()
-    email = g.get('search_email', '').strip()
-    gender = g.get('search_gender', '').strip()
-    tel_number = g.get('search_tel_number', '').strip()
-    employment_status = g.get('search_employment_status', '').strip()
-    employment_end_date = g.get('search_employment_end_date', '').strip()
-    privilege = g.get('search_privilege', '').strip()
-
-    # -----------------------------
-    # choices のラベル → 値変換辞書
-    # -----------------------------
-    gender_map = {label: val for val, label in GENDER_CHOICES}
-    employment_map = {label: val for val, label in EMPLOYMENT_STATUS_CHOICES}
-    privilege_map = {label: val for val, label in PRIVILEGE_CHOICES}
-
-    # -----------------------------
-    # キーワード検索（横断）
-    # -----------------------------
+    #------------------------
+    # キーワード検索
+    #------------------------
+    keyword = cleaned_data.get('search_keyword', '').strip()
     if keyword:
-        filters = (
+        queryset = queryset.filter(
             Q(username__icontains=keyword)
             | Q(username_kana__icontains=keyword)
             | Q(email__icontains=keyword)
-            | Q(tel_number__icontains=keyword)
         )
 
-        # 性別ラベルにマッチした場合（例：「男性」「女性」など）
-        for label, val in gender_map.items():
-            if keyword in label:
-                filters |= Q(gender=val)
+    #------------------------
+    # 詳細検索
+    #------------------------
+    if cleaned_data.get('search_username'):
+        queryset = queryset.filter(username__icontains=cleaned_data['search_username'])
 
-        # 雇用状態ラベル（例：「在職中」「退職済み」など）
-        for label, val in employment_map.items():
-            if keyword in label:
-                filters |= Q(employment_status=val)
+    if cleaned_data.get('search_email'):
+        queryset = queryset.filter(email__icontains=cleaned_data['search_email'])
 
-        # 権限ラベル（例：「管理者」「閲覧者」など）
-        for label, val in privilege_map.items():
-            if keyword in label:
-                filters |= Q(privilege=val)
+    if cleaned_data.get('search_gender'):
+        queryset = queryset.filter(gender=cleaned_data['search_gender'])
 
-        queryset = queryset.filter(filters)
+    if cleaned_data.get('search_tel_number'):
+        queryset = queryset.filter(tel_number__icontains=cleaned_data['search_tel_number'])
 
-    # -----------------------------
-    # 個別フィルタ
-    # -----------------------------
-    if username:
-        queryset = queryset.filter(username__icontains=username)
-    if email:
-        queryset = queryset.filter(email__icontains=email)
-    if gender:
-        queryset = queryset.filter(gender=gender)
-    if tel_number:
-        queryset = queryset.filter(tel_number__icontains=tel_number)
-    if employment_status:
-        queryset = queryset.filter(employment_status=employment_status)
-    if employment_end_date:
-        queryset = queryset.filter(employment_end_date=employment_end_date)
-    if privilege:
-        queryset = queryset.filter(privilege=privilege)
+    if cleaned_data.get('search_employment_status'):
+        queryset = queryset.filter(employment_status=cleaned_data['search_employment_status'])
+
+    if cleaned_data.get('search_privilege'):
+        queryset = queryset.filter(privilege=cleaned_data['search_privilege'])
 
     return queryset
 
-def set_table_sort(request, queryset):
+def set_table_sort(queryset, sort):
     '''
     クエリセットにソート順を設定
     '''
-    g = request.GET
-    
-    # 並び替え処理
-    sort = g.get('sort', '')
-    if sort in [
-        'username_kana', '-username_kana'
-        , 'email', '-email'
-    ]:
-        queryset = queryset.order_by(sort)
-    else:
-        queryset = queryset.order_by('id')  # デフォルト
-
-    return queryset
+    if sort in ['username_kana', '-username_kana', 'email', '-email']:
+        return queryset.order_by(sort)
+    return queryset.order_by('id')
 
 def set_message(request, action, username):
     messages.success(request, f'ユーザー「{username}」を{action}しました。')

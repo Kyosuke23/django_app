@@ -7,9 +7,9 @@ from config.base import BaseModel
 import register.constants as Constant
 
 class CustomUser(AbstractUser, BaseModel):
-    """
+    '''
     独自ユーザーモデル
-    """
+    '''
     USERNAME_FIELD = 'email'  # ← 認証に使うフィールドを email に変更
     REQUIRED_FIELDS = ['username']  # ← createsuperuser のとき追加で入力させるフィールド
     TEL_NUM_VALID = RegexValidator(regex=r'^[0-9]+$', message=('半角数字のみで入力してください'))

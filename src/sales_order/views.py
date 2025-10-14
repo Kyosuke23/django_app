@@ -7,7 +7,7 @@ from django.template.loader import render_to_string
 from .models import SalesOrder, SalesOrderDetail
 from partner_mst.models import Partner
 from product_mst.models import Product
-from .form import SalesOrderForm, SalesOrderDetailFormSet
+from .form import SalesOrderSearchForm, SalesOrderForm, SalesOrderDetailFormSet
 from config.common import Common
 from config.base import CSVExportBaseView, ExcelExportBaseView
 from .services import *
@@ -30,73 +30,49 @@ DATA_COLUMNS = [
     'sales_order_no', 'partner', 'sales_order_date', 'remarks',
     'line_no', 'product', 'quantity', 'unit', 'master_unit_price', 'billing_unit_price',
     'is_tax_exempt', 'tax_rate', 'rounding_method'
-] + Common.COMMON_DATA_COLUMNS
+]
 
 
-# -----------------------------
+#--------------------------
 # 一覧表示
-# -----------------------------
+#--------------------------
 class SalesOrderListView(generic.ListView):
-    '''
-    受注一覧画面
-    - 検索条件（キーワード / 受注日）に対応
-    - ページネーション対応
-    '''
     model = SalesOrder
     template_name = 'sales_order/list.html'
     context_object_name = 'sales_orders'
     paginate_by = 20
 
     def get_queryset(self):
-        '''
-        検索条件を反映したクエリセットを返す
-        '''
-        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         req = self.request
+        form = SalesOrderSearchForm(req.GET or None)
+
+        # 対象テナントかつ削除フラグFalse
         queryset = SalesOrder.objects.filter(is_deleted=False, tenant=req.user.tenant).select_related('partner')
-        
-        # テンプレートの検索条件を適用
-        queryset = filter_data(request=req, queryset=queryset)
-        
-        # ソート条件を設定
-        queryset = set_table_sort(request=req, queryset=queryset)
-        
-         # クエリセット返却
+
+        # 検索フォームが有効な場合のみフィルタ
+        if form.is_valid():
+            queryset = filter_data(form.cleaned_data, queryset)
+
+            # 並び替え処理
+            sort = form.cleaned_data.get('sort')
+            queryset = set_table_sort(queryset, sort)
+        else:
+            queryset = queryset.order_by('-sales_order_date')
+
         return queryset
 
     def get_context_data(self, **kwargs):
-        '''
-        テンプレートに渡す追加コンテキスト
-        - 検索条件を保持
-        - ページネーション情報を追加
-        '''
-        # コンテキスト取得
         context = super().get_context_data(**kwargs)
-        g = self.request.GET
-
-        # 検索フォームの入力値保持
-        context['search_keyword'] = g.get('search_keyword', '') or ''
-        context['search_sales_order_no'] = g.get('search_sales_order_no', '') or ''
-        context['search_status_code'] = g.get('search_status_code', '') or ''
-        context['search_partner'] = g.get('search_partner', '') or ''
-        context['search_sales_order_date'] = g.get('search_sales_order_date', '') or ''
-        context['search_delivery_due_date'] = g.get('search_delivery_due_date', '') or ''
-        context['search_delivery_place'] = g.get('search_delivery_place', '') or ''
-
-        # マスタ系の選択肢（セレクトボックス用）
-        context['status_choices'] = STATUS_CHOICES
-        context['partners'] = Partner.objects.filter(tenant=self.request.user.tenant).order_by('partner_name')
-
-        # ページネーション保持
-        context = Common.set_pagination(context, g.urlencode())
-
-        # コンテキストの返却
+        form = SalesOrderSearchForm(self.request.GET or None)
+        context['form'] = form
+        context['partners'] = Partner.objects.filter(is_deleted=False, tenant=self.request.user.tenant)
+        context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
 
-# -----------------------------
+#--------------------------
 # 削除処理
-# -----------------------------
+#--------------------------
 class SalesOrderDeleteView(generic.View):
     '''
     受注削除（物理削除）
@@ -108,9 +84,9 @@ class SalesOrderDeleteView(generic.View):
         return JsonResponse({'success': True})
 
 
-# -----------------------------
+#--------------------------
 # 登録処理
-# -----------------------------
+#--------------------------
 class SalesOrderCreateView(generic.CreateView):
     model = SalesOrder
     form_class = SalesOrderForm
@@ -144,9 +120,9 @@ class SalesOrderCreateView(generic.CreateView):
         )
         return JsonResponse({'success': True, 'html': html})
 
-    # ----------------------------------------------------
+    #-------------------------------------------------
     # POST（登録処理）
-    # ----------------------------------------------------
+    #-------------------------------------------------
     def post(self, request, *args, **kwargs):
         form = SalesOrderForm(request.POST, prefix='header')
         formset = SalesOrderDetailFormSet(request.POST, prefix='details')
@@ -171,18 +147,18 @@ class SalesOrderCreateView(generic.CreateView):
         sales_order_message(request, '登録', order.sales_order_no)
         return JsonResponse({'success': True})
 
-# -----------------------------
+#--------------------------
 # 更新処理
-# -----------------------------
+#--------------------------
 class SalesOrderUpdateView(generic.UpdateView):
     model = SalesOrder
     form_class = SalesOrderForm
     template_name = 'sales_order/form.html'
     success_url = reverse_lazy('sales_order:list')
 
-    # ----------------------------------------------------
+    #-------------------------------------------------
     # GET（モーダル表示）
-    # ----------------------------------------------------
+    #-------------------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
@@ -226,9 +202,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         )
         return JsonResponse({'success': True, 'html': html})
 
-    # ----------------------------------------------------
+    #-------------------------------------------------
     # POST（更新処理）
-    # ----------------------------------------------------
+    #-------------------------------------------------
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
@@ -579,9 +555,9 @@ class SalesOrderUpdateView(generic.UpdateView):
         message = render_to_string(template, context)
         print(f"[MAIL DEBUG]\n{message}\n{url}")  # TODO: logger.infoに変更予定
     
-# -----------------------------
+#--------------------------
 # 顧客回答後の画面表示
-# -----------------------------
+#--------------------------
 class SalesOrderPublicThanksView(generic.View):
     '''
     顧客回答後の完了画面
@@ -591,9 +567,9 @@ class SalesOrderPublicThanksView(generic.View):
     def get(self, request, *args, **kwargs):
         return render(request, self.template_name)
 
-# -----------------------------
+#--------------------------
 # 商品情報の取得処理
-# -----------------------------
+#--------------------------
 class ProductInfoView(generic.View):
     def get(self, request, *args, **kwargs):
         product_id = request.GET.get('product_id')
@@ -606,9 +582,9 @@ class ProductInfoView(generic.View):
         except Product.DoesNotExist:
             return JsonResponse({'error': '商品が見つかりません'}, status=404)
         
-# -----------------------------
+#--------------------------
 # 取引先情報の取得処理
-# -----------------------------
+#--------------------------
 class PartnerInfoView(generic.View):
     def get(self, request, *args, **kwargs):
         partner_id = request.GET.get('partner_id')
@@ -627,9 +603,9 @@ class PartnerInfoView(generic.View):
         except Partner.DoesNotExist:
             return JsonResponse({'error': '取引先が見つかりません'}, status=404)
 
-# -----------------------------
+#--------------------------
 # 見積書確認画面
-# -----------------------------   
+#--------------------------   
 class SalesOrderPublicConfirmView(generic.View):
     '''
     見積書確認画面
@@ -640,50 +616,50 @@ class SalesOrderPublicConfirmView(generic.View):
     def get(self, request, token, *args, **kwargs):
         signer = TimestampSigner()
 
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # トークン検証
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         try:
             data = signer.unsign_object(token, max_age=self.max_age_seconds)
             order_id = data.get('sales_order_id')
             partner_email = data.get('partner_email')
         except SignatureExpired:
-            return HttpResponseForbidden("リンクの有効期限が切れています。")
+            return HttpResponseForbidden('リンクの有効期限が切れています。')
         except BadSignature:
-            return HttpResponseForbidden("リンクが不正または改ざんされています。")
+            return HttpResponseForbidden('リンクが不正または改ざんされています。')
         except Exception:
-            return HttpResponseForbidden("リンクが無効です。")
+            return HttpResponseForbidden('リンクが無効です。')
         
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # 対象受注データの取得
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         order = SalesOrder.objects.select_related('partner').filter(pk=order_id).first()
         if not order:
-            raise Http404("受注データが見つかりません。")
+            raise Http404('受注データが見つかりません。')
         
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # アクセス認可チェック（メールアドレス照合）
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         if not order.partner or order.partner.email.lower() != partner_email.lower():
-            return HttpResponseForbidden("アクセス権限がありません。")
+            return HttpResponseForbidden('アクセス権限がありません。')
         
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # アクセスログ更新（任意）
-        # ------------------------------------------------------------
-        if hasattr(order, "public_accessed_at") and not order.public_accessed_at:
+        #---------------------------------------------------------
+        if hasattr(order, 'public_accessed_at') and not order.public_accessed_at:
             order.public_accessed_at = timezone.now()
-            order.save(update_fields=["public_accessed_at"])
+            order.save(update_fields=['public_accessed_at'])
 
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # コンテキストをテンプレートに渡す
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         context = {'order_id': order.pk,}
         
         return render(request, self.template_name, context)
 
-# -----------------------------
+#--------------------------
 # 注文書確認画面
-# -----------------------------   
+#--------------------------   
 class SalesOrderPublicContractView(generic.View):
     '''
     注文書確認画面
@@ -694,50 +670,50 @@ class SalesOrderPublicContractView(generic.View):
     def get(self, request, token, *args, **kwargs):
         signer = TimestampSigner()
 
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # トークン検証
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         try:
             data = signer.unsign_object(token, max_age=self.max_age_seconds)
             order_id = data.get('sales_order_id')
             partner_email = data.get('partner_email')
         except SignatureExpired:
-            return HttpResponseForbidden("リンクの有効期限が切れています。")
+            return HttpResponseForbidden('リンクの有効期限が切れています。')
         except BadSignature:
-            return HttpResponseForbidden("リンクが不正または改ざんされています。")
+            return HttpResponseForbidden('リンクが不正または改ざんされています。')
         except Exception:
-            return HttpResponseForbidden("リンクが無効です。")
+            return HttpResponseForbidden('リンクが無効です。')
         
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # 対象受注データの取得
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         order = SalesOrder.objects.select_related('partner').filter(pk=order_id).first()
         if not order:
-            raise Http404("受注データが見つかりません。")
+            raise Http404('受注データが見つかりません。')
         
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # アクセス認可チェック（メールアドレス照合）
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         if not order.partner or order.partner.email.lower() != partner_email.lower():
-            return HttpResponseForbidden("アクセス権限がありません。")
+            return HttpResponseForbidden('アクセス権限がありません。')
         
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # アクセスログ更新（任意）
-        # ------------------------------------------------------------
-        if hasattr(order, "public_accessed_at") and not order.public_accessed_at:
+        #---------------------------------------------------------
+        if hasattr(order, 'public_accessed_at') and not order.public_accessed_at:
             order.public_accessed_at = timezone.now()
-            order.save(update_fields=["public_accessed_at"])
+            order.save(update_fields=['public_accessed_at'])
 
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         # コンテキストをテンプレートに渡す
-        # ------------------------------------------------------------
+        #---------------------------------------------------------
         context = {'order_id': order.pk,}
         
         return render(request, self.template_name, context)
     
-# -----------------------------
+#--------------------------
 # Export / Import
-# -----------------------------
+#--------------------------
 class ExportExcel(ExcelExportBaseView):
     model_class = SalesOrderDetail
     filename_prefix = 'sales_order'
@@ -788,24 +764,24 @@ class OrderSheetPdfView(generic.DetailView):
     template_name = 'sales_order/pdf/order_sheet.html'
     context_object_name = 'order'
 
-    # -------------------------------------------
+    #----------------------------------------
     # GET処理
-    # -------------------------------------------
+    #----------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
 
-    # -------------------------------------------
+    #----------------------------------------
     # POST処理
-    # -------------------------------------------    
+    #----------------------------------------    
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
 
 
-    # -------------------------------------------
+    #----------------------------------------
     # PDF生成処理
-    # -------------------------------------------
+    #----------------------------------------
     def render_pdf(self):
         context = {
             'order': self.object,
@@ -823,7 +799,7 @@ class OrderSheetPdfView(generic.DetailView):
             output.seek(0)
             pdf_data = output.read()
 
-        filename = f"注文書_{self.object.sales_order_no}.pdf"
+        filename = f'注文書_{self.object.sales_order_no}.pdf'
         response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
@@ -836,24 +812,24 @@ class QuatationSheetPdfView(generic.DetailView):
     template_name = 'sales_order/pdf/quotation_sheet.html'
     context_object_name = 'order'
 
-    # -------------------------------------------
+    #----------------------------------------
     # GET処理
-    # -------------------------------------------
+    #----------------------------------------
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
 
-    # -------------------------------------------
+    #----------------------------------------
     # POST処理
-    # -------------------------------------------    
+    #----------------------------------------    
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
 
 
-    # -------------------------------------------
+    #----------------------------------------
     # PDF生成処理
-    # -------------------------------------------
+    #----------------------------------------
     def render_pdf(self):
         context = {
             'order': self.object,
@@ -877,67 +853,47 @@ class QuatationSheetPdfView(generic.DetailView):
         return response
  
     
-def filter_data(request, queryset):
-    '''受注管理画面の検索条件付与'''
-    g = request.GET
-
-    # -----------------------------
-    # 検索パラメータ取得
-    # -----------------------------
-    keyword = g.get('search_keyword', '').strip()
-    sales_order_no = g.get('search_sales_order_no', '').strip()
-    status_code = g.get('search_status_code', '').strip()
-    partner = g.get('search_partner', '').strip()
-    sales_order_date = g.get('search_sales_order_date', '').strip()
-    delivery_due_date = g.get('search_delivery_due_date', '').strip()
-    delivery_place = g.get('search_delivery_place', '').strip()
-
-    # -----------------------------
-    # キーワード検索（横断）
-    # -----------------------------
+def filter_data(cleaned_data, queryset):
+    '''検索条件反映'''
+    keyword = cleaned_data.get('search_keyword', '').strip()
     if keyword:
         queryset = queryset.filter(
             Q(sales_order_no__icontains=keyword)
             | Q(partner__partner_name__icontains=keyword)
-            | Q(create_user__username__icontains=keyword)
-            | Q(status_code__icontains=keyword)
             | Q(delivery_place__icontains=keyword)
-            | Q(remarks__icontains=keyword)
+            | Q(status_code__icontains=keyword)
         )
 
-    # -----------------------------
-    # 個別検索（詳細検索欄）
-    # -----------------------------
-    if sales_order_no:
-        queryset = queryset.filter(sales_order_no__icontains=sales_order_no)
-    if status_code:
-        queryset = queryset.filter(status_code=status_code)
-    if partner:
-        queryset = queryset.filter(partner_id=partner)
-    if sales_order_date:
-        queryset = queryset.filter(sales_order_date=sales_order_date)
-    if delivery_due_date:
-        queryset = queryset.filter(delivery_due_date=delivery_due_date)
-    if delivery_place:
-        queryset = queryset.filter(delivery_place__icontains=delivery_place)
+    # 個別フィールド
+    if cleaned_data.get('search_sales_order_no'):
+        queryset = queryset.filter(sales_order_no__icontains=cleaned_data['search_sales_order_no'])
+
+    if cleaned_data.get('search_partner'):
+        queryset = queryset.filter(partner=cleaned_data['search_partner'])
+
+    if cleaned_data.get('search_status_code'):
+        queryset = queryset.filter(status_code=cleaned_data['search_status_code'])
+
+    if cleaned_data.get('search_sales_order_date'):
+        queryset = queryset.filter(sales_order_date=cleaned_data['search_sales_order_date'])
+
+    if cleaned_data.get('search_delivery_due_date'):
+        queryset = queryset.filter(delivery_due_date=cleaned_data['search_delivery_due_date'])
+
+    if cleaned_data.get('search_delivery_place'):
+        queryset = queryset.filter(delivery_place__icontains=cleaned_data['search_delivery_place'])
 
     return queryset
 
-def set_table_sort(request, queryset):
-    '''
-    クエリセットにソート順を設定
-    '''
-    g = request.GET
-    
-    # 並び替え処理
-    sort = g.get('sort', '')
-    if sort in [
-        'sales_order_no', '-sales_order_no'
-        , 'sales_order_date', '-sales_order_date'
-        , 'delivery_due_date', '-delivery_due_date'
-        , 'grand_total', '-grand_total'
-    ]:
-        queryset = queryset.order_by(sort)
-    else:
-        queryset = queryset.order_by('id')
-    return queryset
+
+def set_table_sort(queryset, sort):
+    '''並び替え処理'''
+    valid_sorts = [
+        'sales_order_no', '-sales_order_no',
+        'sales_order_date', '-sales_order_date',
+        'delivery_due_date', '-delivery_due_date',
+        'total_amount', '-total_amount'
+    ]
+    if sort in valid_sorts:
+        return queryset.order_by(sort)
+    return queryset.order_by('-sales_order_date')

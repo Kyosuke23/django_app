@@ -8,7 +8,6 @@
   {# タイトル・操作ボタン #}
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2 mb-0"><i class="bi bi-box-seam me-4"></i>商品マスタ管理</h1>
-
     <div class="d-flex gap-2">
       <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
       <button type="button" id="import-btn" class="btn btn-outline-secondary btn-sm"
@@ -31,141 +30,24 @@
     </div>
   </div>
 
+  {# フラッシュメッセージ #}
   {% include 'layout/message.html' %}
 
   {# 検索フォーム #}
-  <div class="card shadow-sm border-0 mb-3">
-    <div class="card-body pb-2">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="card-title mb-0"><i class="bi bi-search me-2 text-primary"></i>検索条件</h5>
-      </div>
-
-      {# 基本検索 #}
-      <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small text-muted">キーワード検索</label>
-          <div class="input-group input-group-sm">
-            <input type="text" name="search_keyword" class="form-control"
-                   value="{{ search_keyword }}" placeholder="キーワードを入力">
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-search"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="col-md-2 text-start">
-          <button class="btn btn-outline-secondary btn-sm" type="button"
-                  data-bs-toggle="collapse" data-bs-target="#detailSearch"
-                  aria-expanded="false" aria-controls="detailSearch">
-            <i class="bi bi-funnel"></i> 詳細検索
-          </button>
-          <a href="{% url 'product_mst:list' %}" class="btn btn-link btn-sm text-muted">
-            <i class="bi bi-arrow-counterclockwise"></i> リセット
-          </a>
-        </div>
-      </div>
-
-      {# 詳細検索 #}
-      <div class="collapse mt-3" id="detailSearch">
-        <hr class="text-muted">
-        <div class="row g-3">
-          <div class="col-md-2">
-            <label class="form-label small text-muted">商品名</label>
-            <input type="text" name="search_unit" class="form-control form-control-sm"
-                   value="{{ search_unit }}" placeholder="商品名">
-          </div>
-
-          <div class="col-md-1">
-            <label class="form-label small text-muted">カテゴリ</label>
-            <select id="search_product_category" name="search_product_category" class="form-select form-select-sm">
-              <option value="">すべて</option>
-              {% for cat in categories %}
-                <option value="{{ cat.id }}" {% if search_product_category == cat.id|stringformat:"s" %}selected{% endif %}>
-                  {{ cat.product_category_name }}
-                </option>
-              {% endfor %}
-            </select>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label small text-muted">単価（下限〜上限）</label>
-            <div class="input-group input-group-sm">
-              <input type="number" name="search_unit_price_min" class="form-control" value="{{ search_unit_price_min }}" placeholder="下限">
-              <span class="input-group-text">〜</span>
-              <input type="number" name="search_unit_price_max" class="form-control" value="{{ search_unit_price_max }}" placeholder="上限">
-            </div>
-          </div>
-
-          <div class="col-md-1">
-            <label class="form-label small text-muted">単位</label>
-            <input type="text" name="search_unit" class="form-control form-control-sm"
-                   value="{{ search_unit }}" placeholder="例：個、箱、kgなど">
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {% include 'product_mst/search_form.html' with form=form %}
 </form>
+
 {# カテゴリ管理 #}
-<div class="card mt-4 border-0 shadow-sm mb-3">
-  <div class="card-header bg-secondary-subtle border-bottom fw-bold text-dark">
-    <a class="text-decoration-none text-dark d-block" 
-      data-bs-toggle="collapse" href="#categoryArea" role="button"
-      aria-expanded="false" aria-controls="categoryArea">
-      <i class="bi bi-tags-fill me-1 text-primary"></i> 商品カテゴリ管理（クリックで開閉）
-    </a>
-  </div>
-  <div class="collapse {% if request.GET.category_open %}show{% endif %}" id="categoryArea">
-    <div class="card-body">
-      <form method="post" action="{% url 'product_mst:category_save' %}">
-        {% csrf_token %}
-        <div class="row g-2 mb-2">
-          <div class="col-auto">
-            <select id="categoryId" name="category_id" class="form-select form-select-sm">
-              <option value="">--- 新規作成 ---</option>
-              {% for c in categories %}
-                <option value="{{ c.id }}">{{ c.product_category_name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col">
-            <input type="text" id="categoryName" name="category_name"
-                   class="form-control form-control-sm" placeholder="カテゴリ名を入力">
-          </div>
-        </div>
+{% include 'product_mst/category_mst.html' %}
 
-        <div class="d-flex">
-          <button type="submit" name="action" value="save" class="btn btn-outline-primary btn-sm">
-            保存
-          </button>
-          <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm ms-2">
-            削除
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-{# 件数表示 + 並び替え #}
 <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
+  {# 件数表示 #}
   <p class="text-muted small mb-0">
     {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
   </p>
-
-  {# 並び替えドロップダウン #}
+  {# 並び替え #}
   <div class="d-flex align-items-center gap-2">
-    <select id="form-select" name="sort" class="form-select form-select-sm">
-      <option value="">並び替え</option>
-      <optgroup label="単価">
-        <option value="unit_price" {% if request.GET.sort == 'unit_price' %}selected{% endif %}>
-          単価：昇順 ▲
-        </option>
-        <option value="-unit_price" {% if request.GET.sort == '-unit_price' %}selected{% endif %}>
-          単価：降順 ▼
-        </option>
-      </optgroup>
-    </select>
+    {{ form.sort }}
   </div>
 </div>
 

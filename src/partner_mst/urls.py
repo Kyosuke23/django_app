@@ -4,9 +4,9 @@ from . import views
 app_name = 'partner_mst'
 
 urlpatterns = [
-    # -----------------
+    #--------------
     # 取引先マスタ
-    # -----------------
+    #--------------
     path('', views.PartnerListView.as_view(), name='list'),
     path('<int:pk>/delete/', views.PartnerDeleteView.as_view(), name='delete'),
     path("import/csv", views.ImportCSV.as_view(), name='import_csv'),

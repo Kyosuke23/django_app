@@ -16,9 +16,9 @@ class Common:
     
     @classmethod
     def set_pagination(cls, context, url_params):
-        """
+        '''
         ページング部品の値をコンテキストに設定
-        """
+        '''
         page: Page = context['page_obj']
         context['paginator_range'] = page.paginator.get_elided_page_range(
             page.number
@@ -46,9 +46,9 @@ class Common:
     
     @classmethod
     def get_common_columns(cls, rec):
-        """
+        '''
         出力データの共通カラム部分を取得
-        """
+        '''
         create_user = ''
         if rec.create_user:
             create_user = rec.create_user.username

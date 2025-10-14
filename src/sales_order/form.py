@@ -1,12 +1,131 @@
 from django import forms
 from django.forms import inlineformset_factory
 from django.forms.models import BaseInlineFormSet
+from partner_mst.models import Partner
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from .models import SalesOrder, SalesOrderDetail
-from .constants import STATUS_CODE_DRAFT
+from .constants import STATUS_CODE_DRAFT, STATUS_CHOICES
 
 User = get_user_model()
+
+class SalesOrderSearchForm(forms.Form):
+    '''
+    受注管理画面 検索フォーム
+    '''
+
+    # -----------------------------
+    # 基本検索
+    # -----------------------------
+    search_keyword = forms.CharField(
+        required=False,
+        label='キーワード検索',
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'placeholder': '受注番号 / 取引先 / 担当者など',
+            }
+        )
+    )
+
+    # -----------------------------
+    # 詳細検索
+    # -----------------------------
+    search_sales_order_no = forms.CharField(
+        required=False,
+        label='受注番号',
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
+    )
+
+    search_partner = forms.ModelChoiceField(
+        required=False,
+        label='取引先',
+        queryset=Partner.objects.filter(is_deleted=False),
+        empty_label='すべて',
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+    )
+
+    search_status_code = forms.ChoiceField(
+        required=False,
+        label='ステータス',
+        choices=[('', 'すべて')] + list(STATUS_CHOICES),
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+    )
+
+    search_sales_order_date = forms.DateField(
+        required=False,
+        label='受注日',
+        widget=forms.DateInput(
+            attrs={'type': 'date', 'class': 'form-control form-control-sm'},
+            format='%Y-%m-%d',
+        ),
+    )
+
+    search_delivery_due_date = forms.DateField(
+        required=False,
+        label='納入予定日',
+        widget=forms.DateInput(
+            attrs={'type': 'date', 'class': 'form-control form-control-sm'},
+            format='%Y-%m-%d',
+        ),
+    )
+
+    search_delivery_place = forms.CharField(
+        required=False,
+        label='納入場所',
+        widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
+    )
+
+    # -----------------------------
+    # 並び替え (optgroup構造)
+    # -----------------------------
+    SORT_GROUPS = {
+        '受注番号': [
+            ('sales_order_no', '受注番号：昇順 ▲'),
+            ('-sales_order_no', '受注番号：降順 ▼'),
+        ],
+        '受注日': [
+            ('sales_order_date', '受注日：昇順 ▲'),
+            ('-sales_order_date', '受注日：降順 ▼'),
+        ],
+        '納入予定日': [
+            ('delivery_due_date', '納入予定日：昇順 ▲'),
+            ('-delivery_due_date', '納入予定日：降順 ▼'),
+        ],
+        '合計金額': [
+            ('total_amount', '合計金額：昇順 ▲'),
+            ('-total_amount', '合計金額：降順 ▼'),
+        ],
+    }
+
+    sort = forms.ChoiceField(
+        required=False,
+        label='並び替え',
+        choices=[],
+        widget=forms.Select(
+            attrs={
+                'id': 'form-select',
+                'class': 'form-select form-select-sm',
+            }
+        ),
+    )
+
+    # -----------------------------
+    # 初期化処理
+    # -----------------------------
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # optgroup構造を構築
+        choices = [('', '並び替え')]
+        for group_label, options in self.SORT_GROUPS.items():
+            choices.append((group_label, [(val, lbl) for val, lbl in options]))
+        self.fields['sort'].choices = choices
+
+        # 共通フィールドスタイル適用（除外指定付き）
+        for name, field in self.fields.items():
+            if name not in ['search_keyword', 'sort']:
+                field.widget.attrs.setdefault('class', 'form-control form-control-sm')
 
 
 class SalesOrderForm(forms.ModelForm):
@@ -61,12 +180,12 @@ class SalesOrderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if user is not None:
-            # --- partner をテナント内に限定 ---
+            # partner をテナント内に限定
             self.fields['partner'].queryset = (
                 self.fields['partner'].queryset.filter(tenant=user.tenant)
             )
 
-            # --- reference_users: 同じテナント所属 & 管理者以上のユーザーを候補に ---
+            # reference_users: 同じテナント所属 & 管理者以上のユーザーを候補に
             queryset = User.objects.filter(
                 tenant=user.tenant,
                 privilege__lte=1
@@ -78,7 +197,7 @@ class SalesOrderForm(forms.ModelForm):
                 queryset = queryset.exclude(id=user.id)
             self.fields['reference_users'].queryset = queryset
 
-            # --- reference_groups: テナント紐づきグループがある場合 ---
+            # reference_groups: テナント紐づきグループがある場合
             if hasattr(user, 'tenant') and hasattr(user.tenant, 'groups'):
                 self.fields['reference_groups'].queryset = (
                     user.tenant.groups.all().order_by('name')

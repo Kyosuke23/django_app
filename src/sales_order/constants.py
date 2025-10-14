@@ -1,3 +1,6 @@
+#--------------------------
+# 受注ステータスコード
+#--------------------------
 STATUS_CODE_DRAFT = 'DRAFT'
 STATUS_CODE_QUOTATION_SUBMITTED = 'QUOTATION_SUBMITTED'
 STATUS_CODE_QUOTATION_APPROVED = 'QUOTATION_APPROVED'
@@ -13,6 +16,9 @@ STATUS_CODE_CANCELED = 'CANCELED'
 STATUS_CODE_QUOTATION_RETAKE = 'QUOTATION_RETAKE'
 STATUS_CODE_ORDER_RETAKE = 'ORDER_RETAKE'
 
+#--------------------------
+# 受注ステータスコード：受注ステータス名称
+#--------------------------
 STATUS_CHOICES = (
     (STATUS_CODE_DRAFT, '見積書：仮作成'),
     (STATUS_CODE_QUOTATION_SUBMITTED, '見積書：提出済'),
@@ -32,6 +38,9 @@ STATUS_CHOICES = (
     (STATUS_CODE_CANCELED, 'キャンセル'),
 )
 
+#--------------------------
+# アクション名称
+#--------------------------
 ACTION_CODE_OUTPUT_QUOTATION_IN = 'OUTPUT_QUOTATION_IN'
 ACTION_CODE_OUTPUT_QUOTATION_OUT = 'OUTPUT_QUOTATION_OUT'
 ACTION_CODE_OUTPUT_ORDER_IN = 'OUTPUT_ORDER_IN'
