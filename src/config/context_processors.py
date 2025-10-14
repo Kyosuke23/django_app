@@ -1,5 +1,12 @@
-from django.conf import settings
 from register import constants as register_const
+
+def app_name(request):
+    '''
+    サイト全体で共通利用するアプリ名を返す
+    '''
+    return {
+        'APP_NAME': 'Django App'
+    }
 
 
 def const_str(request):

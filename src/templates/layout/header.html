@@ -3,7 +3,7 @@
 
   {# 左側：アプリ名＋ユーザー情報 #}
   <div class="d-flex align-items-center text-white">
-    <span class="navbar-brand mb-0 h6 me-3">Company name</span>
+    <span class="navbar-brand mb-0 h6 me-3">{{ APP_NAME }}</span>
     <small>| {{ request.user.username }} さん / {{ request.user.tenant.tenant_name }} |</small>
   </div>
 

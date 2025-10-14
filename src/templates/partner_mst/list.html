@@ -3,8 +3,9 @@
 {% load static %}
 {% load humanize %}
 {% load formatters %}
-
+{% block title %}{{ APP_NAME }} | 取引先マスタ管理{% endblock %}
 {% block content %}
+
 <form id="search_form" method="get" action="{% url 'partner_mst:list' %}">
   {# タイトル・操作ボタン #}
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">

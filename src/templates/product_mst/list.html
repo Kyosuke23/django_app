@@ -2,6 +2,7 @@
 {% load django_bootstrap5 %}
 {% load static %}
 {% load humanize %}
+{% block title %}{{ APP_NAME }} | 商品マスタ管理{% endblock %}
 {% block content %}
 
 <form id="search_form" method="get" action="{% url 'product_mst:list' %}">
