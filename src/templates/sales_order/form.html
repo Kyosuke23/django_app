@@ -36,17 +36,23 @@
     {# 受注日 #}
     <div class="col-md-6">
       <label class="form-label">受注日</label>
-      <p class="form-control-plaintext">{{ form.instance.sales_order_date|default_if_none:'' }}</p>
+      {% render_field form.sales_order_date class="form-control" %}
     </div>
     {# 納入予定日 #}
     <div class="col-md-3 mb-2">
       <label class="form-label">納入予定日</label>
       {% render_field form.delivery_due_date class="form-control" %}
+      {% if form.delivery_due_date.help_text %}
+        <div class="form-text text-muted small">{{ form.delivery_due_date.help_text }}</div>
+      {% endif %}
     </div>
     {# 納入場所 #}
     <div class="col-md-9">
       <label class="form-label">納入場所</label>
       {% render_field form.delivery_place class="form-control" %}
+      {% if form.delivery_place.help_text %}
+        <div class="form-text text-muted small">{{ form.delivery_place.help_text }}</div>
+      {% endif %}
     </div>
     {# 取引先 #}
     <div class="col-md-12 mb-2">
@@ -80,6 +86,9 @@
     <div class="col-md-12 mb-2">
       <label for="{{ form.remarks.id_for_label }}" class="form-label">備考</label>
       {% render_field form.remarks class="form-control" rows="3" %}
+      {% if form.remarks.help_text %}
+        <div class="form-text text-muted small">{{ form.remarks.help_text }}</div>
+      {% endif %}
       {% if form.remarks.errors %}
         <div class="text-danger small">{{ form.remarks.errors }}</div>
       {% endif %}
@@ -93,18 +102,30 @@
     <div class="col-md-3 mb-2">
       <label class="form-label">見積書コメント（承認者）</label>
       {% render_field form.quotation_manager_comment class="form-control internal-comment" rows="3" %}
+      {% if form.quotation_manager_comment.help_text %}
+        <div class="form-text text-muted small">{{ form.quotation_manager_comment.help_text }}</div>
+      {% endif %}
     </div>
     <div class="col-md-3 mb-2">
       <label class="form-label">見積書コメント（顧客）</label>
       {% render_field form.quotation_customer_comment class="form-control internal-comment" rows="3" %}
+      {% if form.quotation_customer_comment.help_text %}
+        <div class="form-text text-muted small">{{ form.quotation_customer_comment.help_text }}</div>
+      {% endif %}
     </div>
     <div class="col-md-3 mb-2">
       <label class="form-label">注文書コメント（承認者）</label>
       {% render_field form.order_manager_comment class="form-control internal-comment" rows="3" %}
+      {% if form.order_manager_comment.help_text %}
+        <div class="form-text text-muted small">{{ form.order_manager_comment.help_text }}</div>
+      {% endif %}
     </div>
     <div class="col-md-3 mb-2">
       <label class="form-label">注文書コメント（顧客）</label>
       {% render_field form.order_customer_comment class="form-control internal-comment" rows="3" %}
+      {% if form.order_customer_comment.help_text %}
+        <div class="form-text text-muted small">{{ form.order_customer_comment.help_text }}</div>
+      {% endif %}
     </div>
   </div>
 </div>

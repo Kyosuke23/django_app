@@ -33,45 +33,120 @@ def generate_sales_order_no(tenant):
     return f'{prefix}{new_seq:06d}'
 
 class SalesOrder(BaseModel):
+    '''
+    受注ヘッダ
+    '''
     ROUNDING_CHOICES = [
         ('floor', '切り捨て'),
         ('ceil', '切り上げ'),
         ('round', '四捨五入'),
     ]
-    sales_order_no = models.CharField(max_length=20, verbose_name='受注番号')
+
+    sales_order_no = models.CharField(
+        max_length=20,
+        verbose_name='受注番号',
+    )
+
     status_code = models.CharField(
         max_length=50,
         choices=STATUS_CHOICES,
-        default='DRAFT'
+        default='DRAFT',
+        verbose_name='ステータス',
     )
-    sales_order_date = models.DateField(default=timezone.now, verbose_name='受注日')
-    delivery_due_date = models.DateField(null=True, blank=True, verbose_name='納入予定日')
-    delivery_place = models.CharField(max_length=100, null=True, blank=True, verbose_name='納入場所')
-    partner = models.ForeignKey('partner_mst.Partner', on_delete=models.SET_NULL, blank=True, null=True, verbose_name='取引先')
-    remarks = models.TextField(max_length=100,blank=True, null=True, verbose_name='備考')
-    quotation_manager_comment = models.TextField(max_length=100, blank=True, null=True, verbose_name='見積書_承認者コメント')
-    quotation_customer_comment = models.TextField(max_length=100,blank=True, null=True, verbose_name='見積書_顧客コメント')
-    order_manager_comment = models.TextField(max_length=100, blank=True, null=True, verbose_name='注文書_承認者コメント')
-    order_customer_comment = models.TextField(max_length=100, blank=True, null=True, verbose_name='注文書_顧客コメント')
-    rounding_method = models.CharField(  # 小数点以下の丸め方
+
+    sales_order_date = models.DateField(
+        default=timezone.now,
+        verbose_name='受注日',
+        help_text='受注日を選択してください。未指定の場合は当日が自動設定されます。'
+    )
+
+    delivery_due_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='納入予定日',
+        help_text='納入予定日を指定してください。（任意）'
+    )
+
+    delivery_place = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name='納入場所',
+        help_text='納入先の住所や場所名を100文字以内で入力してください。（任意）'
+    )
+
+    partner = models.ForeignKey(
+        'partner_mst.Partner',
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        verbose_name='取引先',
+    )
+
+    remarks = models.TextField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='備考',
+        help_text='特記事項や注意点を100文字以内で入力してください。（任意）'
+    )
+
+    quotation_manager_comment = models.TextField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='見積書_承認者コメント',
+        help_text='社内承認者が見積書に対して残すコメント（任意）'
+    )
+
+    quotation_customer_comment = models.TextField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='見積書_顧客コメント',
+        help_text='顧客からの見積書へのコメント（任意）'
+    )
+
+    order_manager_comment = models.TextField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='注文書_承認者コメント',
+        help_text='社内承認者が注文書に対して残すコメント（任意）'
+    )
+
+    order_customer_comment = models.TextField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name='注文書_顧客コメント',
+        help_text='顧客からの注文書へのコメント（任意）'
+    )
+
+    rounding_method = models.CharField(
         max_length=10,
         choices=ROUNDING_CHOICES,
         default='floor',
-        verbose_name='丸め方法'
+        verbose_name='丸め方法',
+        help_text='明細金額の端数処理方法を選択してください。'
     )
+
     reference_users = models.ManyToManyField(
         User,
         related_name='referenced_sales_orders',
         blank=True,
-        verbose_name='参照ユーザー'
+        verbose_name='参照ユーザー',
+        help_text='この受注を参照できる社内ユーザーを選択してください。（任意）'
     )
+
     reference_groups = models.ManyToManyField(
         Group,
         related_name='referenced_sales_orders',
         blank=True,
-        verbose_name='参照グループ'
+        verbose_name='参照グループ',
+        help_text='この受注を参照できるユーザーグループを選択してください。（任意）'
     )
-    
+
     class Meta:
         db_table = 'sales_order'
         verbose_name = '受注ヘッダ'
@@ -81,32 +156,26 @@ class SalesOrder(BaseModel):
         ]
 
     def save(self, *args, **kwargs):
-        # sales_order_no が未設定なら自動採番
         if not self.sales_order_no:
-            year = timezone.now().year
-            prefix = f'SO-{year}'
-            last = SalesOrder.objects.filter(sales_order_no__startswith=prefix).order_by('-sales_order_no').first()
-            if last:
-                last_seq = int(last.sales_order_no.split('-')[-1])
-                new_seq = last_seq + 1
-            else:
-                new_seq = 1
-            self.sales_order_no = f'{prefix}-{new_seq:06d}'
+            self.sales_order_no = generate_sales_order_no(self.tenant)
         super().save(*args, **kwargs)
-        
+
     @property
     def subtotal(self):
-        if not self.pk: return 0
+        if not self.pk:
+            return 0
         return sum([(d.quantity or 0) * (d.billing_unit_price or 0) for d in self.details.all()])
 
     @property
     def tax_total(self):
-        if not self.pk: return 0
+        if not self.pk:
+            return 0
         return sum([0 if d.is_tax_exempt else (d.quantity or 0) * (d.billing_unit_price or 0) * float(d.tax_rate) for d in self.details.all()])
 
     @property
     def grand_total(self):
-        if not self.pk: return 0
+        if not self.pk:
+            return 0
         return self.subtotal + self.tax_total
 
 class SalesOrderDetail(BaseModel):

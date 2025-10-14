@@ -46,6 +46,7 @@ class PartnerSearchForm(forms.Form):
 
     search_email = forms.CharField(
         required=False,
+        max_length=254,
         label='メールアドレス',
         widget=forms.TextInput(
             attrs={'class': 'form-control form-control-sm'}
