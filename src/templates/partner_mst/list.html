@@ -2,7 +2,6 @@
 {% load django_bootstrap5 %}
 {% load static %}
 {% load humanize %}
-{% load formatters %}
 {% block title %}{{ APP_NAME }} | 取引先マスタ管理{% endblock %}
 {% block content %}
 
@@ -73,10 +72,10 @@
           <td>{{ partner.get_partner_type_display }}</td>
           <td>{{ partner.contact_name|default_if_none:'' }}</td>
           <td>{{ partner.email|default_if_none:'' }}</td>
-          <td>{{ partner.tel_number|format_tel }}</td>
+          <td>{{ partner.tel_number }}</td>
           <td>
             {% if partner.postal_code %}〒{% endif %}
-            {{ partner.postal_code|format_postal }} {{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}
+            {{ partner.postal_code }} {{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}
           </td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
