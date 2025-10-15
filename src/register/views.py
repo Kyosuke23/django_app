@@ -61,6 +61,7 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
         context['GENDER_CHOICES'] = GENDER_CHOICES
         context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
         context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
+        context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
 
