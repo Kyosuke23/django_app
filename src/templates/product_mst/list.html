@@ -19,7 +19,7 @@
               data-action="{% url 'product_mst:export_csv' %}">
         <i class="bi bi-download"></i> Export
       </button>
-      {% if user.privilege <= PRIVILEGE_MANAGER %}
+      {% if user.privilege <= PRIVILEGE_EDITOR %}
       <a class="btn btn-outline-primary btn-sm"
          href="#"
          data-bs-toggle="modal"
@@ -39,7 +39,9 @@
 </form>
 
 {# カテゴリ管理 #}
-{% include 'product_mst/category_mst.html' %}
+{% if user.privilege <= PRIVILEGE_EDITOR %}
+  {% include 'product_mst/category_mst.html' %}
+{% endif %}
 
 <div class="d-flex justify-content-between align-items-center mb-2 mt-2">
   {# 件数表示 #}
@@ -59,7 +61,7 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-dark">
         <tr>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <th class="text-center"><input type="checkbox" id="check-all"></th>
           {% endif %}
           <th>商品名称</th>
@@ -67,7 +69,7 @@
           <th>単価</th>
           <th>単位</th>
           <th>説明文</th>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <th>操作</th>
           {% endif %}
         </tr>
@@ -75,7 +77,7 @@
       <tbody>
         {% for product in products %}
         <tr>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td class="text-center"><input type="checkbox" name="ids" value="{{ product.id }}"></td>
           {% endif %}
           <td>{{ product.product_name|default_if_none:'' }}</td>
@@ -83,7 +85,7 @@
           <td>{% if product.unit_price %}¥{% endif %}{{ product.unit_price|default_if_none:''|intcomma }}</td>
           <td>{{ product.unit|default_if_none:'' }}</td>
           <td>{{ product.description|default_if_none:'' }}</td>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
             <a href="#" class="btn btn-sm btn-outline-secondary"
                data-bs-toggle="modal"
