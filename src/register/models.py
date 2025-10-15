@@ -162,12 +162,6 @@ class UserGroup(BaseModel):
         verbose_name='グループ名',
         help_text='100文字以内で入力してください。'
     )
-    description = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name='説明',
-        help_text='グループの説明を入力してください。（任意）'
-    )
 
     class Meta:
         verbose_name = 'ユーザーグループ'
