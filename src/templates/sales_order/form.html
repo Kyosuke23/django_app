@@ -246,13 +246,11 @@
           <td>{{ detail_form.tax_rate }}</td>
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
           <td class="text-end amount">{{ detail_form.instance.amount|intcomma }}</td>
-          {% if is_editable %}
+          {% if is_submittable %}
           <td class="text-center">
             {% render_field detail_form.DELETE class="form-check-input d-none" %}
             <button type="button" class="btn btn-outline-danger btn-sm delete-row-btn">
-              <svg class="icon" width="16" height="16">
-                <use href="#trash"></use>
-              </svg>
+              <i class="bi bi-trash"></i>
             </button>
           </td>
           {% endif %}

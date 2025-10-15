@@ -59,7 +59,7 @@ class Product(BaseModel):
     )
 
     def __str__(self):
-        return f'{self.product_name}'
+        return f'{self.product_name}（{self.product_category}）'
 
     def get_absolute_url(self):
         return reverse('product_mst:update', kwargs={'pk': self.pk})

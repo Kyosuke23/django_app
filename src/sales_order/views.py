@@ -137,7 +137,7 @@ class SalesOrderCreateView(generic.CreateView):
         formset = SalesOrderDetailFormSet(request.POST, prefix='details')
         action_type = request.POST.get('action_type')
 
-        # ▼ バリデーション
+        # バリデーション
         if not (form.is_valid() and formset.is_valid()):
             html = render_to_string(
                 self.template_name,
@@ -173,13 +173,13 @@ class SalesOrderUpdateView(generic.UpdateView):
         form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
         formset = get_sales_order_detail_formset(instance=self.object)
         status_code = getattr(self.object, 'status_code', None)
-        create_user = getattr(self.object, 'create_user', None)
+        assignee = getattr(self.object, 'assignee', None)
         
         # ボタン操作可否判定
         is_submittable = get_submittable(user=request.user, form=form)
         
         # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
-        if not (status_code == STATUS_CODE_DRAFT and create_user == request.user):
+        if not (status_code == STATUS_CODE_DRAFT and assignee == request.user):
             for field in form.fields.values():
                 widget_type = field.widget.__class__.__name__
                 if widget_type in ['Select', 'SelectMultiple', 'CheckboxInput', 'RadioSelect']:

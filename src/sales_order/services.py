@@ -148,7 +148,7 @@ def apply_field_permissions(form, user):
         form.fields['remarks'].widget.attrs.pop('readonly', None)
         
     # 仮保存 = 作成者のみ備考の編集可
-    if status == STATUS_CODE_DRAFT and form.instance.create_user == user:
+    if status == STATUS_CODE_DRAFT and form.instance.assignee == user:
         form.fields['remarks'].widget.attrs.pop('readonly', None)
 
     # 見積書：提出済 = 承認権限者のみ見積書コメント（承認者）の編集可
