@@ -266,9 +266,20 @@ class ExportCSV(CSVExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        '''検索条件を適用したクエリセットを返す'''
-        queryset = super().get_queryset(request)
-        return filter_data(request=request, queryset=queryset).order_by('product_name')
+        form = ProductSearchForm(request.GET or None)
+        
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        queryset = Product.objects.filter(is_deleted=False, tenant=request.user.tenant)
+        
+        # フォームが有効なら検索条件を反映
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        # 並び替え
+        sort = form.cleaned_data.get('sort') if form.is_valid() else ''
+        queryset = set_table_sort(queryset=queryset, sort=sort)
+
+        return queryset
 
     def row(self, rec):
         '''1行分のデータを返す'''

@@ -210,8 +210,21 @@ class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        queryset = super().get_queryset(request)
-        return filter_data(request=request, queryset=queryset).order_by('partner_name')
+        req = self.request
+        form = PartnerSearchForm(req.GET or None)
+        
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        queryset = Partner.objects.filter(is_deleted=False, tenant=req.user.tenant)
+
+        # フォームが有効なら検索条件を反映
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        # 並び替え
+        sort = form.cleaned_data.get('sort') if form.is_valid() else ''
+        queryset = set_table_sort(queryset=queryset, sort=sort)
+
+        return queryset
 
     def row(self, rec):
         return get_row(rec)

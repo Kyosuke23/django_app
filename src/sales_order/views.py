@@ -819,20 +819,42 @@ class ExportCSV(CSVExportBaseView):
     headers = DATA_COLUMNS
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        return qs.select_related('sales_order', 'product', 'sales_order__partner') \
-                 .filter(
-                     is_deleted=False,
-                     sales_order__in=search_order_data(
-                         request=request,
-                         query_set=SalesOrder.objects.all()
-                     )
-                 ) \
-                 .order_by('sales_order__sales_order_no', 'line_no')
+        req = self.request
+        form = SalesOrderSearchForm(req.GET or None)
+
+        orders = SalesOrder.objects.filter(
+            is_deleted=False,
+            tenant=req.user.tenant
+        ).select_related('partner')
+
+        orders = orders.filter(
+            Q(assignee=req.user)
+            | (
+                (
+                    Q(reference_users=req.user)
+                    | Q(reference_groups__in=req.user.groups_custom.all())
+                )
+                & ~Q(status_code='DRAFT')
+            )
+        )
+
+        if form.is_valid():
+            orders = filter_data(form.cleaned_data, orders)
+            sort = form.cleaned_data.get('sort')
+            orders = set_table_sort(orders, sort)
+        else:
+            orders = orders.order_by('-sales_order_date')
+
+        details = SalesOrderDetail.objects.filter(
+            is_deleted=False,
+            sales_order__in=orders
+        ).select_related('sales_order', 'product')
+
+        return details
 
     def row(self, detail):
         # 明細1件を1行に整形
-        return [Common.format_for_csv(v) for v in get_order_detail_row(detail.sales_order, detail)]
+        return [Common.format_for_csv(v) for v in get_order_detail_row(header=detail.sales_order, detail=detail)]
 
 class OrderSheetPdfView(generic.DetailView):
     '''

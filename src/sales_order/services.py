@@ -12,20 +12,19 @@ def fill_formset(formset, min_forms=10):
         formset.forms.append(formset.empty_form)
     return formset
 
-def get_order_detail_row(sales_order, detail):
+def get_order_detail_row(header, detail):
     return [
-        sales_order.sales_order_no,
-        sales_order.partner.partner_name if sales_order.partner else '',
-        sales_order.sales_order_date,
-        sales_order.remarks,
+        header.sales_order_no,
+        header.partner.partner_name if header.partner else '',
+        header.sales_order_date,
+        header.remarks,
+        header.rounding_method if detail else '',
         detail.line_no if detail else '',
         detail.product.product_name if detail and detail.product else '',
         detail.quantity if detail else '',
-        detail.unit if detail else '',
         detail.billing_unit_price if detail else '',
         '1' if (detail and detail.is_tax_exempt) else '0',
         detail.tax_rate if detail else '',
-        detail.rounding_method if detail else '',
     ]
 
 def search_order_data(request, query_set):

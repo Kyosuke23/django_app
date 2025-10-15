@@ -1,13 +1,18 @@
 $(function () {
-    // エクスポートボタン
+    // Exportボタン
     $('.export-btn').on('click', function () {
-      const url = $(this).data('action');
-      if (url) {
-        window.location.href = url;
-      }
+        const url = $(this).data('action');
+        const $form = $('#search_form');
+        const query = $form.serialize();
+
+        // クエリがあればURLに付加
+        const fullUrl = query ? `${url}?${query}` : url;
+
+        // 画面遷移してダウンロード処理実行
+        window.location.href = fullUrl;
     });
 
-    // IMPORTボタン
+    // Importボタン
     $('#import-btn').on('click', function (e) {
         e.preventDefault();
         $('#file-input').click();
