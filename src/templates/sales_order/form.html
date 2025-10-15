@@ -185,9 +185,7 @@
   {% if form.instance.status_code == 'DRAFT' %}
   <div class="text-start mt-2 mb-2">
     <button type="button" id="add-row-btn" class="btn btn-outline-primary btn-sm">
-      <svg class="icon text-primary" width="16" height="16">
-        <use href="#plus-circle"></use>
-      </svg>  明細行を追加
+      <i class="bi bi-plus-circle me-1"></i>明細行を追加
     </button>
   </div>
   {% endif %}
@@ -287,40 +285,40 @@
     </template>
   </div>
   {# フッターボタン #}
-  <div class="d-flex justify-content-between gap-2 mt-3">
-    {% if is_submittable %}
-      {% if form.instance.status_code in 'DRAFT SUBMITTED' %}
-        <div>
+  {% if is_submittable %}
+    <div class="d-flex justify-content-between gap-2 mt-3">
+      {# 見積書・注文書確認ボタン #}
+      <div>
+        {% if form.instance.status_code in 'DRAFT SUBMITTED' %}
           <button type="submit" class="btn btn-primary" data-action="OUTPUT_QUOTATION_IN">見積書確認</button>
-        </div>
-      {% endif %}
-      {% if form.instance.status_code in 'ORDER_SUBMITTED QUOTATION_CONFIRMED' %}
-        <div>
+        {% endif %}
+        {% if form.instance.status_code in 'ORDER_SUBMITTED QUOTATION_CONFIRMED' %}
           <button type="submit" class="btn btn-primary" data-action="OUTPUT_ORDER_IN">注文書確認</button>
-        </div>
-      {% endif %}
+        {% endif %}
+      </div>
       <div class="d-flex gap-2">
-        {# 仮作成　#}
+        {# 見積書：仮作成 #}
         {% if form.instance.status_code == 'DRAFT' %}
           <button type="submit" class="btn btn-primary" data-action="DRAFT">下書き保存</button>
           <button type="submit" class="btn btn-success" data-action="QUOTATION_SUBMITTED">提出</button>
           {% if is_update %}
-            <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+            <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
+                  onsubmit="return confirm('本当に削除してよろしいですか？');">
               {% csrf_token %}
               <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
             </form>
           {% endif %}
         {% endif %}
-        {# 見積書：承認待ち #}
+        {# 見積書：提出済 #}
         {% if form.instance.status_code == 'QUOTATION_SUBMITTED' %}
           <button type="submit" class="btn btn-success" data-action="QUOTATION_APPROVED">承認</button>
           <button type="submit" class="btn btn-danger" data-action="QUOTATION_REJECTED_IN">却下</button>
         {% endif %}
         {# 見積書：社内却下 #}
         {% if form.instance.status_code == 'QUOTATION_REJECTED_IN' %}
-          <input type="hidden" name="action_type" id="actionTypeField" value="">
           <button type="submit" class="btn btn-primary" data-action="QUOTATION_RETAKE">再編集</button>
-          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
+                onsubmit="return confirm('本当に削除してよろしいですか？');">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
           </form>
@@ -328,7 +326,8 @@
         {# 見積書：顧客却下 #}
         {% if form.instance.status_code == 'QUOTATION_REJECTED_OUT' %}
           <button type="submit" class="btn btn-primary" data-action="QUOTATION_RETAKE">再編集</button>
-          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
+                onsubmit="return confirm('本当に削除してよろしいですか？');">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
           </form>
@@ -338,10 +337,16 @@
           <button type="submit" class="btn btn-success" data-action="ORDER_SUBMITTED">注文書提出</button>
           <button type="submit" class="btn btn-warning" data-action="CANCELED">キャンセル</button>
         {% endif %}
+        {# 注文書：提出済 #}
+        {% if form.instance.status_code == 'ORDER_SUBMITTED' %}
+          <button type="submit" class="btn btn-success" data-action="ORDER_APPROVED">承認</button>
+          <button type="submit" class="btn btn-danger" data-action="ORDER_REJECTED_IN">却下</button>
+        {% endif %}
         {# 注文書：社内却下 #}
         {% if form.instance.status_code == 'ORDER_REJECTED_IN' %}
           <button type="submit" class="btn btn-primary" data-action="ORDER_RETAKE">再編集</button>
-          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
+                onsubmit="return confirm('本当に削除してよろしいですか？');">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
           </form>
@@ -349,21 +354,18 @@
         {# 注文書：顧客却下 #}
         {% if form.instance.status_code == 'ORDER_REJECTED_OUT' %}
           <button type="submit" class="btn btn-primary" data-action="ORDER_RETAKE">再編集</button>
-          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}" onsubmit="return confirm('本当に削除してよろしいですか？');">
+          <form method="post" action="{% url 'sales_order:delete' pk=form.instance.pk %}"
+                onsubmit="return confirm('本当に削除してよろしいですか？');">
             {% csrf_token %}
             <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
           </form>
         {% endif %}
-        {# 注文書：承認待ち #}
-        {% if form.instance.status_code == 'ORDER_SUBMITTED' %}
-          <button type="submit" class="btn btn-success" data-action="ORDER_APPROVED">承認</button>
-          <button type="submit" class="btn btn-danger" data-action="ORDER_REJECTED_IN">却下</button>
-        {% endif %}
       </div>
-    {% else %}
-      <div class="alert alert-secondary text-center w-100 mb-0">
-        この受注は編集できません。
-      </div>
-    {% endif %}
+    </div>
+  {% else %}
+    <div class="alert alert-secondary text-center w-100 mb-0">
+      この受注は編集できません。
+    </div>
+  {% endif %}
   </div>
 </form>
