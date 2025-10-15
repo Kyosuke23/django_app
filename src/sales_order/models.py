@@ -7,7 +7,7 @@ from django.db.models import Max
 from decimal import Decimal, ROUND_FLOOR, ROUND_CEILING, ROUND_HALF_UP
 from .constants import STATUS_CHOICES
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from register.models import UserGroup
 
 User = get_user_model()
 
@@ -150,7 +150,7 @@ class SalesOrder(BaseModel):
     )
 
     reference_groups = models.ManyToManyField(
-        Group,
+        UserGroup,
         related_name='referenced_sales_orders',
         blank=True,
         verbose_name='参照グループ',

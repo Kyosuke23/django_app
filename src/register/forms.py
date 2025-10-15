@@ -116,7 +116,7 @@ class UserSearchForm(forms.Form):
 
 
 class SignUpForm(forms.ModelForm):
-    groups = forms.ModelMultipleChoiceField(
+    groups_custom = forms.ModelMultipleChoiceField(
         queryset=UserGroup.objects.filter(is_deleted=False).order_by('group_name'),
         required=False,
         widget=forms.SelectMultiple(attrs={
@@ -135,7 +135,7 @@ class SignUpForm(forms.ModelForm):
             'tel_number',
             'gender',
             'privilege',
-            'groups',
+            'groups_custom',
             
         )
 

@@ -3,7 +3,7 @@ from django.forms import inlineformset_factory
 from django.forms.models import BaseInlineFormSet
 from partner_mst.models import Partner
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
+from register.models import UserGroup
 from .models import SalesOrder, SalesOrderDetail
 from .constants import STATUS_CODE_DRAFT, STATUS_CHOICES
 
@@ -181,7 +181,7 @@ class SalesOrderForm(forms.ModelForm):
         label='参照ユーザー'
     )
     reference_groups = forms.ModelMultipleChoiceField(
-        queryset=Group.objects.all(),
+        queryset=UserGroup.objects.all(),
         required=False,
         widget=forms.SelectMultiple(attrs={'class': 'form-select'}),
         label='参照グループ'
@@ -252,7 +252,7 @@ class SalesOrderForm(forms.ModelForm):
                 )
             else:
                 # テナントとグループが未連携なら全グループから選択
-                self.fields['reference_groups'].queryset = Group.objects.all().order_by('name')
+                self.fields['reference_groups'].queryset = UserGroup.objects.all().order_by('group_name')
 
         if not self.instance.pk:
             self.fields['assignee'].initial = user

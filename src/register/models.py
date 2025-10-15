@@ -129,7 +129,7 @@ class CustomUser(AbstractUser, BaseModel):
         help_text='ユーザーの操作権限を選択してください。'
     )
     
-    groups = models.ManyToManyField(
+    groups_custom = models.ManyToManyField(
         'UserGroup',
         related_name='users',
         blank=True,
