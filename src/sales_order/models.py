@@ -254,3 +254,16 @@ class SalesOrderDetail(BaseModel):
 
         # 整数値にして返却
         return f'¥{int(value):,}'
+
+class ApprovalToken(models.Model):
+    token = models.CharField(max_length=255, unique=True)
+    sales_order = models.ForeignKey('sales_order.SalesOrder', on_delete=models.CASCADE)
+    partner_email = models.EmailField()
+    used = models.BooleanField(default=False)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    def mark_used(self):
+        self.used = True
+        self.used_at = timezone.now()
+        self.save(update_fields=['used', 'used_at'])

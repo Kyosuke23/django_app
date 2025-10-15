@@ -4,7 +4,7 @@ from django.urls import reverse_lazy, reverse
 from django.db.models import Q
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from .models import SalesOrder, SalesOrderDetail
+from .models import SalesOrder, SalesOrderDetail, ApprovalToken
 from partner_mst.models import Partner
 from product_mst.models import Product
 from .form import SalesOrderSearchForm, SalesOrderForm, SalesOrderDetailFormSet
@@ -303,6 +303,19 @@ class SalesOrderUpdateView(generic.UpdateView):
                     message = render_to_string('sales_order/mails/mail_approved.txt', context)
                     print(message)
                     print(url)
+                    
+                    # 古いトークンを無効化
+                    ApprovalToken.objects.filter(
+                        sales_order=self.object,
+                        partner_email=partner.email
+                    ).update(used=True, used_at=timezone.now())
+
+                    # 新しいトークンを登録
+                    ApprovalToken.objects.create(
+                        token=token,
+                        sales_order=self.object,
+                        partner_email=partner.email
+                    )
 
                     # send_mail(
                     #     subject,
@@ -386,6 +399,20 @@ class SalesOrderUpdateView(generic.UpdateView):
                     message = render_to_string('sales_order/mails/order_approved.txt', context)
                     print(message)
                     print(url)
+                    
+                    # 古いトークンを無効化
+                    ApprovalToken.objects.filter(
+                        sales_order=self.object,
+                        partner_email=partner.email
+                    ).update(used=True, used_at=timezone.now())
+
+                    # 新しいトークンを登録
+                    ApprovalToken.objects.create(
+                        token=token,
+                        sales_order=self.object,
+                        partner_email=partner.email
+                    )
+
                     # send_mail(
                     #     subject,
                     #     message.strip(),
@@ -464,8 +491,14 @@ class SalesOrderUpdateView(generic.UpdateView):
 
     def handle_customer_reply_quotation(self, request):
         '''
-        顧客による見積書回答後ののページ表示
+        顧客による見積書回答後の処理
         '''
+        # 古いトークンを無効化
+        ApprovalToken.objects.filter(
+            token=request.POST.get('token')
+        ).update(used=True, used_at=timezone.now())
+        
+        # データの更新
         action_type = request.POST.get('action_type')
         self.object.status_code = action_type
         self.object.quotation_customer_comment = request.POST.get('quotation_customer_comment', '').strip()
@@ -474,8 +507,14 @@ class SalesOrderUpdateView(generic.UpdateView):
     
     def handle_customer_reply_order(self, request):
         '''
-        顧客による注文書回答後ののページ表示
+        顧客による注文書回答後の処理
         '''
+        # 古いトークンを無効化
+        ApprovalToken.objects.filter(
+            token=request.POST.get('token')
+        ).update(used=True, used_at=timezone.now())
+        
+        # データの更新
         action_type = request.POST.get('action_type')
         self.object.status_code = action_type
         self.object.order_customer_comment = request.POST.get('order_customer_comment', '').strip()
@@ -555,6 +594,20 @@ class SalesOrderUpdateView(generic.UpdateView):
         print('=====================')
         print(url)
         print('=====================')
+        
+        # 古いトークンを無効化
+        ApprovalToken.objects.filter(
+            sales_order=self.object,
+            partner_email=partner.email
+        ).update(used=True, used_at=timezone.now())
+
+        # 新しいトークンを登録
+        ApprovalToken.objects.create(
+            token=token,
+            sales_order=self.object,
+            partner_email=partner.email
+        )
+
         context = {
             'partner': partner,
             'order': self.object,
@@ -639,6 +692,11 @@ class SalesOrderPublicConfirmView(generic.View):
         except Exception:
             return HttpResponseForbidden('リンクが無効です。')
         
+        # トークン存在＆未使用チェック
+        token_obj = ApprovalToken.objects.filter(token=token).first()
+        if not token_obj or token_obj.used:
+            return HttpResponseForbidden('このリンクはすでに使用されています。')
+        
         #---------------------------------------------------------
         # 対象受注データの取得
         #---------------------------------------------------------
@@ -662,7 +720,7 @@ class SalesOrderPublicConfirmView(generic.View):
         #---------------------------------------------------------
         # コンテキストをテンプレートに渡す
         #---------------------------------------------------------
-        context = {'order_id': order.pk,}
+        context = {'order_id': order.pk, 'signed_token': token}
         
         return render(request, self.template_name, context)
 
@@ -693,6 +751,11 @@ class SalesOrderPublicContractView(generic.View):
         except Exception:
             return HttpResponseForbidden('リンクが無効です。')
         
+        # トークン存在＆未使用チェック
+        token_obj = ApprovalToken.objects.filter(token=token).first()
+        if not token_obj or token_obj.used:
+            return HttpResponseForbidden('このリンクはすでに使用されています。')
+        
         #---------------------------------------------------------
         # 対象受注データの取得
         #---------------------------------------------------------
@@ -716,7 +779,7 @@ class SalesOrderPublicContractView(generic.View):
         #---------------------------------------------------------
         # コンテキストをテンプレートに渡す
         #---------------------------------------------------------
-        context = {'order_id': order.pk,}
+        context = {'order_id': order.pk, 'signed_token': token}
         
         return render(request, self.template_name, context)
     
