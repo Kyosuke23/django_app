@@ -13,5 +13,5 @@ urlpatterns = [
     path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     path('bulk_delete/', views.UserBulkDeleteView.as_view(), name='bulk_delete'),
-    path('group/', views.UserGroupManageView.as_view(), name='group_manage'),
+    path('group_manage/', views.UserGroupManageView.as_view(), name='group_manage'),
 ]
