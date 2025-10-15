@@ -7,6 +7,7 @@ $(function () {
             dropdownParent: $modal.closest('.modal'),
             placeholder: '選択してください',
         };
+        $modal.find('#id_header-assignee').select2({ ...opt, placeholder: '受注担当者を選択...' });
         $modal.find('select[id^="id_details-"][id$="-product"]').select2({ ...opt, placeholder: '商品を選択...' });
         $modal.find('#id_header-partner').select2({ ...opt, placeholder: '取引先を選択...' });
         $modal.find('#id_header-reference_users').select2({ ...opt, placeholder: 'ユーザーを選択...' });

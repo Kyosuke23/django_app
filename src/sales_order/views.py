@@ -52,9 +52,9 @@ class SalesOrderListView(generic.ListView):
             , tenant=req.user.tenant
         ).select_related('partner')
         
-        # 権限フィルタ：担当者（作成者）が自分または参照可能
+        # 権限フィルタ：担当者が自分、または参照可能
         queryset = queryset.filter(
-            Q(create_user=req.user) 
+            Q(assignee=req.user) 
             | Q(reference_users=req.user) & ~Q(status_code='DRAFT')
         )
 

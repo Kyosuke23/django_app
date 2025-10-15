@@ -38,6 +38,14 @@ class SalesOrderSearchForm(forms.Form):
         label='受注番号',
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
     )
+    
+    search_assignee = forms.ModelChoiceField(
+        required=False,
+        label='受注担当者',
+        queryset=User.objects.filter(is_deleted=False),
+        empty_label='すべて',
+        widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
+    )
 
     search_partner = forms.ModelChoiceField(
         required=False,
@@ -137,6 +145,14 @@ class SalesOrderForm(forms.ModelForm):
     - partner, remarks, rounding_method に加え
     - 提出時に参照可能なユーザー・グループを指定できる
     '''
+    assignee = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        required=True,  # DB上はNullを許可するが、入力は必須
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label='担当者',
+        help_text='この受注を担当する社内ユーザーを選択してください。（任意）'
+    )
+
     reference_users = forms.ModelMultipleChoiceField(
         queryset=User.objects.none(),
         required=False,
@@ -154,6 +170,7 @@ class SalesOrderForm(forms.ModelForm):
         model = SalesOrder
         fields = [
             'sales_order_date',
+            'assignee',
             'delivery_due_date',
             'delivery_place',
             'partner',
@@ -185,6 +202,11 @@ class SalesOrderForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
 
         if user is not None:
+            # テナント内のユーザーを取得（デフォルトは自分）
+            self.fields['assignee'].queryset = User.objects.filter(
+                tenant=user.tenant, is_deleted=False
+            ).order_by('username')
+
             # partner をテナント内に限定
             self.fields['partner'].queryset = (
                 self.fields['partner'].queryset.filter(tenant=user.tenant)
@@ -210,6 +232,9 @@ class SalesOrderForm(forms.ModelForm):
             else:
                 # テナントとグループが未連携なら全グループから選択
                 self.fields['reference_groups'].queryset = Group.objects.all().order_by('name')
+
+        if not self.instance.pk:
+            self.fields['assignee'].initial = user
 
     def clean(self):
         cleaned_data = super().clean()

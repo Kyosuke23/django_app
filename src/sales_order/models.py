@@ -59,6 +59,16 @@ class SalesOrder(BaseModel):
         verbose_name='受注日',
         help_text='受注日を指定してください。'
     )
+    
+    assignee = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='assigned_sales_orders',
+        verbose_name='担当者',
+        help_text='この受注を担当する社内ユーザーを選択してください。（任意）'
+    )
 
     delivery_due_date = models.DateField(
         null=True,

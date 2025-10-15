@@ -68,40 +68,40 @@ def get_submittable(user, form):
     # 受注データ情報
     instance = getattr(form, 'instance', None)
     status_code = getattr(instance, 'status_code', None)  # 受注ステータス
-    create_user = instance.create_user  # 作成者（担当者）
+    assignee = instance.assignee  # 受注担当者
     reference_users_manager = getattr(instance, 'reference_users', None)
     reference_users = reference_users_manager.all() if reference_users_manager else []  # 参照ユーザー
     
     # 新規作成：作成者未設定は新規作成とし、可
-    if not create_user:
+    if not instance.create_user:
         return True
     # 仮作成 = 担当者のみ可
     if status_code == STATUS_CODE_DRAFT:
-        return create_user == login_user
+        return assignee == login_user
     # 見積書：提出済 = 承認依頼先の人のみ可
     if status_code == STATUS_CODE_QUOTATION_SUBMITTED:
         return login_user in reference_users
     # 見積書：社内却下 = 担当者のみ可
     if status_code == STATUS_CODE_QUOTATION_REJECTED_IN:
-        return create_user == login_user
+        return assignee == login_user
     # 見積書：顧客却下 = 担当者のみ可
     if status_code == STATUS_CODE_QUOTATION_REJECTED_OUT:
-        return create_user == login_user
+        return assignee == login_user
     # 見積書：顧客承諾 = 担当者のみ可
     if status_code == STATUS_CODE_QUOTATION_CONFIRMED:
-        return create_user == login_user
+        return assignee == login_user
     # 注文書：提出済 = 承認依頼先の人のみ可
     if status_code == STATUS_CODE_ORDER_SUBMITTED:
         return login_user in reference_users
     # 注文書：社内却下 = 担当者のみ可
     if status_code == STATUS_CODE_ORDER_REJECTED_IN:
-        return create_user == login_user
+        return assignee == login_user
     # 注文書：顧客却下 = 担当者のみ可
     if status_code == STATUS_CODE_ORDER_REJECTED_OUT:
-        return create_user == login_user
+        return assignee == login_user
     # キャンセル：担当者のみ可
     if status_code == STATUS_CODE_CANCELED:
-        return create_user == login_user
+        return assignee == login_user
     return False
 
 def save_details(form, formset, user, action_type):

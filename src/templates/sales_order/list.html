@@ -14,7 +14,7 @@
               data-action="{% url 'sales_order:export_csv' %}">
         <i class="bi bi-download"></i> CSV
       </button>
-      {% if user.privilege <= PRIVILEGE_MANAGER %}
+      {% if user.privilege <= PRIVILEGE_EDITOR %}
       <a class="btn btn-outline-primary btn-sm"
          href="#"
          data-bs-toggle="modal"
@@ -112,7 +112,7 @@
         <td>{{ sales_order.create_user }}</td>
         <td>{{ sales_order.remarks|truncatechars:20 }}</td>
         <td>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <a href="#"
             class="btn btn-sm btn-outline-secondary"
             data-bs-toggle="modal"

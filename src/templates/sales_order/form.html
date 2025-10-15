@@ -36,10 +36,10 @@
     {# 受注担当者 #}
     <div class="col-md-9">
       <label class="form-label">受注担当者</label>
-      <p class="form-control-plaintext">
-        {{ form.instance.create_user|default_if_none:'' }}
-      </p>
-      {{ form.instance.create_user.as_hidden }}
+      {% render_field form.assignee class="form-control" %}
+      {% if form.assignee.help_text %}
+        <div class="form-text text-muted small">{{ form.assignee.help_text }}</div>
+      {% endif %}
     </div>
     {# 納入予定日 #}
     <div class="col-md-3 mb-2">

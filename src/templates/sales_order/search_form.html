@@ -45,6 +45,14 @@
           {{ form.search_sales_order_no }}
         </div>
 
+        <div class="col-md-1">
+          <label for="{{ form.search_assignee.id_for_label }}" class="form-label small text-muted">
+            {{ form.search_assignee.label }}
+          </label>
+          {{ form.search_assignee }}
+        </div>
+
+
         <div class="col-md-2">
           <label for="{{ form.search_partner.id_for_label }}" class="form-label small text-muted">
             {{ form.search_partner.label }}
@@ -59,14 +67,14 @@
           {{ form.search_status_code }}
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-1">
           <label for="{{ form.search_sales_order_date.id_for_label }}" class="form-label small text-muted">
             {{ form.search_sales_order_date.label }}
           </label>
           {{ form.search_sales_order_date }}
         </div>
 
-        <div class="col-md-2">
+        <div class="col-md-1">
           <label for="{{ form.search_delivery_due_date.id_for_label }}" class="form-label small text-muted">
             {{ form.search_delivery_due_date.label }}
           </label>
