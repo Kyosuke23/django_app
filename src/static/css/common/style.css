@@ -42,8 +42,8 @@ main.container-fluid {
  * ヘッダー
  * ======================================================= */
 header.navbar {
-  background-color: var(--color-bg-header) !important;
-  color: #fff;
+  background-color: var(--bs-navbar-bg, var(--color-bg-header));
+  color: var(--bs-navbar-color, #fff);
   border-bottom: 1px solid #2c3338;
   padding: 0.5rem 1rem;
   margin-bottom: 0;
@@ -56,11 +56,11 @@ header.navbar {
 
 header.navbar .navbar-brand {
   font-weight: bold;
-  color: #fff !important;
+  color: var(--bs-navbar-brand-color, #fff) !important;
 }
 
 header.navbar .text-white {
-  color: #f5f5f5 !important;
+  color: var(--bs-navbar-color, #f5f5f5) !important;
 }
 
 /* テーマ切り替えボタン */
@@ -74,6 +74,49 @@ header.navbar .text-white {
   opacity: 0.8;
 }
 
+/* =======================================================
+ * 権限別ナビバー色（Bootstrap変数で上書き）
+ * ======================================================= */
+.navbar.bg-system {
+  --bs-navbar-bg: #23282d;
+  --bs-navbar-color: #fff;
+  --bs-navbar-hover-color: #f8f9fa;
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.25);
+}
+
+.navbar.bg-manager {
+  --bs-navbar-bg: #d2691e;
+  --bs-navbar-color: #fff;
+  --bs-navbar-hover-color: #f8f9fa;
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.25);
+}
+
+.navbar.bg-editor {
+  --bs-navbar-bg: #008b8b;
+  --bs-navbar-color: #fff;
+  --bs-navbar-hover-color: #f8f9fa;
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.25);
+}
+
+.navbar.bg-viewer {
+  --bs-navbar-bg: #483d8b;
+  --bs-navbar-color: #fff;
+  --bs-navbar-hover-color: #f8f9fa;
+  --bs-navbar-brand-color: #fff;
+  --bs-navbar-toggler-border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* ブランドカラー調整 */
+.navbar .navbar-brand {
+  color: var(--bs-navbar-brand-color, #fff);
+}
+
+/* =======================================================
+ * モーダル
+ * ======================================================= */
 /* モーダル背景をコンテンツエリアと同じ色にする */
 .modal-content {
   background-color: var(--content-bg-color, #f8f9fa); /* ← コンテンツエリアの背景色に合わせる */
