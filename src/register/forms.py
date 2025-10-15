@@ -116,6 +116,16 @@ class UserSearchForm(forms.Form):
 
 
 class SignUpForm(forms.ModelForm):
+    groups = forms.ModelMultipleChoiceField(
+        queryset=UserGroup.objects.filter(is_deleted=False).order_by('group_name'),
+        required=False,
+        widget=forms.SelectMultiple(attrs={
+            'class': 'form-select select2',
+        }),
+        label='所属グループ',
+        help_text='ユーザーが所属するグループを選択してください。（複数選択可）'
+    )
+
     class Meta:
         model = CustomUser
         fields = (
@@ -125,6 +135,8 @@ class SignUpForm(forms.ModelForm):
             'tel_number',
             'gender',
             'privilege',
+            'groups',
+            
         )
 
     def __init__(self, *args, **kwargs):
@@ -183,7 +195,8 @@ class UserGroupForm(forms.ModelForm):
         widgets = {
             'group_name': forms.TextInput(attrs={
                 'id': 'groupName',
-                'class': 'form-control form-control-sm',
+                'class': 'form-select select2',
+                'multiple': 'multiple',
                 'placeholder': 'ユーザーグループ名を入力',
             }),
         }

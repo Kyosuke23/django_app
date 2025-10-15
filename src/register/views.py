@@ -93,6 +93,7 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
         self.object.update_user = self.request.user
         self.object.tenant = self.request.user.tenant
         self.object.save()
+        form.save_m2m()
         set_message(self.request, '登録', self.object.username)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
@@ -142,6 +143,7 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
             self.object = form.save(commit=False)
             self.object.update_user = request.user
             self.object.save()
+            form.save_m2m()
             set_message(request, '更新', self.object.username)
             return JsonResponse({'success': True})
         else:
