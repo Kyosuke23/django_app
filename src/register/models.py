@@ -156,7 +156,7 @@ class UserGroup(BaseModel):
     '''
     ユーザーグループマスタ
     '''
-    name = models.CharField(
+    group_name = models.CharField(
         max_length=100,
         unique=True,
         verbose_name='グループ名',
@@ -172,7 +172,7 @@ class UserGroup(BaseModel):
     class Meta:
         verbose_name = 'ユーザーグループ'
         verbose_name_plural = 'ユーザーグループマスタ'
-        ordering = ['name']
+        ordering = ['group_name']
 
     def __str__(self):
-        return self.name
+        return self.group_name

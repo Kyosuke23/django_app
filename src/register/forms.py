@@ -1,5 +1,5 @@
 from django.contrib.auth.forms import PasswordChangeForm
-from .models import CustomUser
+from .models import CustomUser, UserGroup
 from django import forms
 from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
 
@@ -164,3 +164,30 @@ class ChangePasswordForm(PasswordChangeForm):
         # エラーフィールドに警告色を付与
         for error in self.errors:
             self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
+            
+
+class UserGroupForm(forms.ModelForm):
+    selected_group = forms.ModelChoiceField(
+        queryset=UserGroup.objects.none(),
+        required=False,
+        label='既存グループ',
+        widget=forms.Select(attrs={
+            'id': 'groupId',
+            'class': 'form-select form-select-sm'
+        })
+    )
+
+    class Meta:
+        model = UserGroup
+        fields = ['group_name']
+        widgets = {
+            'group_name': forms.TextInput(attrs={
+                'id': 'groupName',
+                'class': 'form-control form-control-sm',
+                'placeholder': 'ユーザーグループ名を入力',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['selected_group'].queryset = UserGroup.objects.filter(is_deleted=False).order_by('group_name')

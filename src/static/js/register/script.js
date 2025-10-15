@@ -105,4 +105,13 @@ $(function () {
     $('#form-select').on('change', function() {
         $('#search_form').submit(); // 並び順変更時にフォーム送信
     });
+
+    // =====================================================
+    // ユーザーグループ管理：削除時 required 無効化
+    // =====================================================
+    $(document).on('click', 'form[id="group_form"] button[name="action"][value="delete"]', function () {
+        const $form = $(this).closest('form');
+        const $groupName = $form.find('#groupName');
+        $groupName.removeAttr('required');
+    });
 });

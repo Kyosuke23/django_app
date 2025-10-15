@@ -1,0 +1,36 @@
+{% load widget_tweaks %}
+<div class="card mt-4 border-0 shadow-sm mb-3">
+  <div class="card-header bg-secondary-subtle border-bottom fw-bold text-dark">
+    <a class="text-decoration-none text-dark d-block"
+       data-bs-toggle="collapse" href="#groupArea" role="button"
+       aria-expanded="false" aria-controls="groupArea">
+      <i class="bi bi-people-fill me-1 text-primary"></i> ユーザーグループ管理（クリックで開閉）
+    </a>
+  </div>
+
+  <div class="collapse {% if request.GET.group_open %}show{% endif %}" id="groupArea">
+    <div class="card-body">
+      <form id="group_form" method="post" action="{% url 'register:group_manage' %}">
+        {% csrf_token %}
+
+        <div class="row g-2 mb-2">
+          <div class="col-auto">
+            {{ user_group_form.selected_group }}
+          </div>
+          <div class="col">
+            {{ user_group_form.group_name }}
+          </div>
+        </div>
+
+        <div class="d-flex">
+          <button type="submit" name="action" value="save" class="btn btn-outline-primary btn-sm">
+            保存
+          </button>
+          <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm ms-2">
+            削除
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
