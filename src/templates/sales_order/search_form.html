@@ -36,58 +36,61 @@
     {# 詳細検索 #}
     <div class="collapse mt-3" id="detailSearch">
       <hr class="text-muted">
-      <div class="row g-3">
 
-        <div class="col-md-1">
-          <label for="{{ form.search_sales_order_no.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_sales_order_no.label }}
-          </label>
+      <!-- 1行目 -->
+      <div class="row g-3">
+        <div class="col-md-2">
+          <label class="form-label small text-muted">受注番号</label>
           {{ form.search_sales_order_no }}
         </div>
 
         <div class="col-md-1">
-          <label for="{{ form.search_assignee.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_assignee.label }}
-          </label>
+          <label class="form-label small text-muted">受注担当者</label>
           {{ form.search_assignee }}
         </div>
 
-
         <div class="col-md-2">
-          <label for="{{ form.search_partner.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_partner.label }}
-          </label>
+          <label class="form-label small text-muted">取引先</label>
           {{ form.search_partner }}
         </div>
 
         <div class="col-md-1">
-          <label for="{{ form.search_status_code.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_status_code.label }}
-          </label>
+          <label class="form-label small text-muted">受注ステータス</label>
           {{ form.search_status_code }}
         </div>
+      </div>
 
-        <div class="col-md-1">
-          <label for="{{ form.search_sales_order_date.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_sales_order_date.label }}
-          </label>
-          {{ form.search_sales_order_date }}
-        </div>
-
-        <div class="col-md-1">
-          <label for="{{ form.search_delivery_due_date.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_delivery_due_date.label }}
-          </label>
-          {{ form.search_delivery_due_date }}
+      <!-- 2行目 -->
+      <div class="row g-3 mt-1">
+        <div class="col-md-2">
+          <label class="form-label small text-muted">受注日（下限〜上限）</label>
+          <div class="input-group input-group-sm">
+            {{ form.search_sales_order_date_from }}
+            <span class="input-group-text">〜</span>
+            {{ form.search_sales_order_date_to }}
+          </div>
         </div>
 
         <div class="col-md-2">
-          <label for="{{ form.search_delivery_place.id_for_label }}" class="form-label small text-muted">
-            {{ form.search_delivery_place.label }}
-          </label>
-          {{ form.search_delivery_place }}
+          <label class="form-label small text-muted">納入予定日（下限〜上限）</label>
+          <div class="input-group input-group-sm">
+            {{ form.search_delivery_due_date_from }}
+            <span class="input-group-text">〜</span>
+            {{ form.search_delivery_due_date_to }}
+          </div>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label small text-muted">合計金額（下限〜上限）</label>
+          <div class="input-group input-group-sm">
+            {{ form.search_total_amount_from }}
+            <span class="input-group-text">〜</span>
+            {{ form.search_total_amount_to }}
+          </div>
         </div>
       </div>
     </div>
+
+
   </div>
 </div>

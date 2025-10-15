@@ -14,9 +14,9 @@ class SalesOrderSearchForm(forms.Form):
     受注管理画面 検索フォーム
     '''
 
-    # -----------------------------
+    #--------------------------
     # 基本検索
-    # -----------------------------
+    #--------------------------
     search_keyword = forms.CharField(
         required=False,
         max_length=255,
@@ -24,14 +24,14 @@ class SalesOrderSearchForm(forms.Form):
         widget=forms.TextInput(
             attrs={
                 'class': 'form-control',
-                'placeholder': '受注番号 / 取引先 / 担当者など',
+                'placeholder': '受注番号 / 取引先 / 受注担当者など',
             }
         )
     )
 
-    # -----------------------------
+    #--------------------------
     # 詳細検索
-    # -----------------------------
+    #--------------------------
     search_sales_order_no = forms.CharField(
         required=False,
         max_length=50,
@@ -62,24 +62,6 @@ class SalesOrderSearchForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'}),
     )
 
-    search_sales_order_date = forms.DateField(
-        required=False,
-        label='受注日',
-        widget=forms.DateInput(
-            attrs={'type': 'date', 'class': 'form-control form-control-sm'},
-            format='%Y-%m-%d',
-        ),
-    )
-
-    search_delivery_due_date = forms.DateField(
-        required=False,
-        label='納入予定日',
-        widget=forms.DateInput(
-            attrs={'type': 'date', 'class': 'form-control form-control-sm'},
-            format='%Y-%m-%d',
-        ),
-    )
-
     search_delivery_place = forms.CharField(
         required=False,
         max_length=100,
@@ -87,9 +69,48 @@ class SalesOrderSearchForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
     )
 
-    # -----------------------------
+    # 日付範囲
+    search_sales_order_date_from = forms.DateField(
+        required=False,
+        label='受注日（下限）',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+    )
+    search_sales_order_date_to = forms.DateField(
+        required=False,
+        label='受注日（上限）',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+    )
+
+    search_delivery_due_date_from = forms.DateField(
+        required=False,
+        label='納入予定日（下限）',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+    )
+    search_delivery_due_date_to = forms.DateField(
+        required=False,
+        label='納入予定日（上限）',
+        widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control form-control-sm'}),
+    )
+
+    # 合計金額範囲
+    search_total_amount_from = forms.DecimalField(
+        required=False,
+        label='合計金額（下限）',
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm text-end'}),
+    )
+    search_total_amount_to = forms.DecimalField(
+        required=False,
+        label='合計金額（上限）',
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm text-end'}),
+    )
+
+    #--------------------------
     # 並び替え (optgroup構造)
-    # -----------------------------
+    #--------------------------
     SORT_GROUPS = {
         '受注番号': [
             ('sales_order_no', '受注番号：昇順 ▲'),
@@ -121,9 +142,9 @@ class SalesOrderSearchForm(forms.Form):
         ),
     )
 
-    # -----------------------------
+    #--------------------------
     # 初期化処理
-    # -----------------------------
+    #--------------------------
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
