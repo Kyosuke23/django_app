@@ -77,6 +77,21 @@ $(function () {
             form.attr("action", saveUrl);
         }
     });
+
+    // ユーザーグループ選択時に入力欄へ反映
+    $(document).on('change', '#groupId', function () {
+        const selectedText = $(this).find('option:selected').text();
+        const selectedValue = $(this).val();
+
+        if (selectedValue) {
+            // 既存グループ選択時 → 名前を入力欄に反映
+            $('#groupName').val(selectedText);
+        } else {
+            // 新規作成選択時 → 入力欄をクリア
+            $('#groupName').val('');
+        }
+    });
+
     // =====================================================
     // モーダルフォーム共通処理
     // =====================================================
