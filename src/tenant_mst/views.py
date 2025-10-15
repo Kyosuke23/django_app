@@ -21,7 +21,7 @@ class TenantEditView(generic.UpdateView):
         return self.request.user.tenant
 
     def get_success_url(self):
-        messages.success(self.request, 'プロフィールを更新しました')
+        messages.success(self.request, 'テナント情報を更新しました')
         return reverse('tenant_mst:edit')
 
     def form_valid(self, form):
@@ -30,12 +30,3 @@ class TenantEditView(generic.UpdateView):
     
     def form_invalid(self, form):
         pass
-
-    
-#--------------------------
-# 共通関数
-#--------------------------
-
-def set_message(request, action, nm):
-    '''更新後のメッセージ'''
-    messages.success(request, f'テナント「{nm}」を{action}しました。')

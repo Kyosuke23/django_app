@@ -2,6 +2,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
+from django.core.validators import RegexValidator
 
 class Tenant(models.Model):
     '''
@@ -16,54 +17,71 @@ class Tenant(models.Model):
         editable=False,
         verbose_name='テナントコード'
     )
+
     tenant_name = models.CharField(
         max_length=255,
         verbose_name='テナント名',
         help_text='企業名や団体名'
     )
+
     representative_name = models.CharField(
         max_length=255,
         verbose_name='代表者名',
         help_text='企業や団体の代表者名'
     )
+
     contact_email = models.EmailField(
         verbose_name='代表メールアドレス'
     )
-    tel_number = models.CharField(
-        max_length=15,
+
+    contact_tel_number = models.CharField(
+        max_length=20,
+        validators=[RegexValidator(r'^[0-9\-]+$', '数字とハイフンのみ使用できます。')],
         blank=True,
         null=True,
-        verbose_name='代表電話番号'
+        verbose_name='電話番号',
+        help_text='半角数字とハイフンのみ使用できます。例：090-1234-5678（任意）'
     )
+
     postal_code = models.CharField(
-        max_length=7,
+        max_length=10,
+        validators=[RegexValidator(r'^\d{3}-?\d{4}$', '郵便番号の形式が正しくありません。')],
         blank=True,
         null=True,
-        verbose_name='郵便番号'
+        verbose_name='郵便番号',
+        help_text='ハイフンあり、またはなしで入力可能です。例：123-4567（任意）'
     )
+
     state = models.CharField(
-        max_length=5,
+        max_length=10,
         blank=True,
         null=True,
-        verbose_name='都道府県'
+        verbose_name='都道府県',
+        help_text='都道府県名を10文字以内で入力してください。（任意）'
     )
+
     city = models.CharField(
-        max_length=255,
+        max_length=50,
         blank=True,
         null=True,
-        verbose_name='市区町村'
+        verbose_name='市区町村',
+        help_text='市区町村名を50文字以内で入力してください。（任意）'
     )
+
     address = models.CharField(
-        max_length=255,
+        max_length=100,
         blank=True,
         null=True,
-        verbose_name='住所'
+        verbose_name='住所',
+        help_text='番地などを100文字以内で入力してください。（任意）'
     )
+
     address2 = models.CharField(
-        max_length=255,
+        max_length=150,
         blank=True,
         null=True,
-        verbose_name='住所2'
+        verbose_name='住所2',
+        help_text='建物名・部屋番号などを150文字以内で入力してください。（任意）'
     )
     
     # Tenantモデルだけは共通クラスの継承をしない
