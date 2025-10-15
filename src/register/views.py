@@ -8,8 +8,8 @@ from django.template.loader import render_to_string
 from django.shortcuts import redirect, get_object_or_404
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
-from .models import CustomUser
-from .forms import UserSearchForm, SignUpForm, ChangePasswordForm
+from .models import CustomUser, UserGroup
+from .forms import UserSearchForm, SignUpForm, ChangePasswordForm, UserGroupForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
@@ -57,9 +57,11 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
         context = super().get_context_data(**kwargs)
         form = UserSearchForm(self.request.GET or None)
         context['form'] = form
+        context['user_group_form'] = UserGroupForm(self.request.GET or None)
         context['GENDER_CHOICES'] = GENDER_CHOICES
         context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
         context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
+        context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
 
@@ -92,6 +94,7 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
         self.object.update_user = self.request.user
         self.object.tenant = self.request.user.tenant
         self.object.save()
+        form.save_m2m()
         set_message(self.request, '登録', self.object.username)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
@@ -141,6 +144,7 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
             self.object = form.save(commit=False)
             self.object.update_user = request.user
             self.object.save()
+            form.save_m2m()
             set_message(request, '更新', self.object.username)
             return JsonResponse({'success': True})
         else:
@@ -239,6 +243,59 @@ class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
         else:
             messages.warning(request, '削除対象が選択されていません')
         return redirect('register:list')
+
+
+class UserGroupManageView(generic.FormView):
+    '''
+    ユーザーグループ管理（新規作成・更新・削除）
+    '''
+    template_name = 'register/user_group_mst.html'
+    form_class = UserGroupForm
+    success_url = reverse_lazy('register:group_manage')
+    
+    def post(self, request, *args, **kwargs):
+        '''グループ名がnullでもバリデーションを通すための処理'''
+        if request.POST.get('action') == 'delete':
+            form = self.get_form()
+            if not form.is_valid():
+                form.cleaned_data = form.cleaned_data if hasattr(form, 'cleaned_data') else {}
+            return self.form_valid(form)
+        else:
+            return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        req = self.request
+        action = req.POST.get('action')
+        selected_group = form.cleaned_data.get('selected_group')
+        name = form.cleaned_data.get('group_name')
+
+        if action == 'save':
+            if not name:
+                messages.warning(req, 'グループ名を入力してください。')
+            elif selected_group:
+                selected_group.group_name = name
+                selected_group.update_user = req.user
+                selected_group.save(update_fields=['group_name', 'update_user', 'updated_at'])
+                messages.success(req, f'グループ「{name}」を更新しました。')
+            else:
+                UserGroup.objects.create(group_name=name, tenant_id=req.user.tenant.id, create_user=req.user, update_user=req.user)
+                messages.success(req, f'グループ「{name}」を新規作成しました。')
+
+        elif action == 'delete' and selected_group:
+            selected_group.delete()
+            messages.success(req, f'グループ「{selected_group.group_name}」を削除しました。')
+
+        return redirect(f"{reverse('register:list')}?group_open=1")
+
+    def form_invalid(self, form):
+        messages.error(self.request, '入力内容に誤りがあります。')
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = self.get_form()  # ← これで初期表示にもフォームが確実に渡る
+        context['groups'] = UserGroup.objects.filter(is_deleted=False).order_by('group_name')
+        return context
 
 
 #--------------------------

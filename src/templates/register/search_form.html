@@ -84,15 +84,3 @@
     </div>
   </div>
 </div>
-
-<div class="d-flex justify-content-between align-items-center mb-2 mt-2">
-  {# 件数表示 #}
-  <p class="text-muted small mb-0">
-    {{ paginator.count }}件中 {{ page_obj.start_index }}〜{{ page_obj.end_index }}件を表示
-  </p>
-
-  {# 並び替え #}
-  <div class="d-flex align-items-center gap-2">
-    {{ form.sort }}
-  </div>
-</div>

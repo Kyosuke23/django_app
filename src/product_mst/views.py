@@ -1,7 +1,7 @@
 from django.views import generic
 from django.urls import reverse_lazy, reverse
 from .models import Product, ProductCategory
-from .form import ProductSearchForm, ProductForm
+from .form import ProductSearchForm, ProductForm, ProductCategoryForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
@@ -56,6 +56,7 @@ class ProductListView(generic.ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = ProductSearchForm(self.request.GET or None)
+        context['product_category_form'] = ProductCategoryForm(self.request.GET or None)
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -180,66 +181,55 @@ class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
         else:
             messages.warning(request, '削除対象が選択されていません')
         return redirect('product_mst:list')
-
-
-class ProductCategoryEditView(PrivilegeRequiredMixin, generic.View):
-    '''
-    商品カテゴリ編集処理
-    - 登録・編集・削除
-    '''
+    
+    
+class ProductCategoryManageView(generic.FormView):
+    template_name = 'product_mst/category_mst.html'
+    form_class = ProductCategoryForm
+    success_url = reverse_lazy('product_mst:category_manage')
+    
     def post(self, request, *args, **kwargs):
-        action = request.POST.get('action')
-        category_id = request.POST.get('category_id')
-        name = request.POST.get('category_name')
-
-        # 削除処理
-        if action == 'delete':
-            if not category_id:
-                messages.error(request, '削除対象を選択してください')
-                return redirect('product_mst:list')
-            category = get_object_or_404(ProductCategory, pk=category_id, tenant=request.user.tenant)
-            try:
-                cname = category.product_category_name
-                category.delete()
-                messages.success(request, f'カテゴリ「{cname}」を削除しました')
-            except ProtectedError:
-                messages.error(request, f'使用中の商品は削除できません')
-            return redirect(f"{reverse('product_mst:list')}?category_open=1")
-
-        # 入力値チェック
-        if not name:
-            messages.error(request, 'カテゴリ名を入力してください')
-            return redirect(f"{reverse('product_mst:list')}?category_open=1")
-        
-        # 既存チェック
-        exists = ProductCategory.objects.filter(
-            tenant=request.user.tenant,
-            product_category_name=name
-        )
-        if category_id:
-            exists = exists.exclude(pk=category_id)
-        if exists.exists():
-            messages.error(request, f'カテゴリ「{name}」は既に存在します')
-            return redirect(f"{reverse('product_mst:list')}?category_open=1")
-
-        # 更新処理
-        if category_id:
-            category = get_object_or_404(ProductCategory, pk=category_id, tenant=request.user.tenant)
-            category.product_category_name = name
-            category.update_user = request.user
-            category.save()
-            messages.success(request, f'カテゴリ「{name}」を更新しました')
-        # 登録処理
+        '''カテゴリ名がnullでもバリデーションを通すための処理'''
+        if request.POST.get('action') == 'delete':
+            form = self.get_form()
+            if not form.is_valid():
+                form.cleaned_data = form.cleaned_data if hasattr(form, 'cleaned_data') else {}
+            return self.form_valid(form)
         else:
-            ProductCategory.objects.create(
-                product_category_name=name,
-                tenant=request.user.tenant,
-                create_user=request.user,
-                update_user=request.user
-            )
-            messages.success(request, f'カテゴリ「{name}」を登録しました')
+            return super().post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        req = self.request
+        action = req.POST.get('action')
+        selected = form.cleaned_data.get('selected_category')
+        name = form.cleaned_data.get('product_category_name')
+
+        if action == 'save':
+            if not name:
+                messages.warning(req, 'カテゴリ名を入力してください。')
+            elif selected:
+                selected.product_category_name = name
+                selected.update_user = req.user
+                selected.save(update_fields=['product_category_name', 'update_user', 'updated_at'])
+                messages.success(req, f'カテゴリ「{name}」を更新しました。')
+            else:
+                ProductCategory.objects.create(product_category_name=name, tenant_id=req.user.tenant.id, create_user=req.user, update_user=req.user)
+                messages.success(req, f'カテゴリ「{name}」を新規作成しました。')
+
+        elif action == 'delete':
+            if selected:
+                selected.delete()
+                messages.success(req, f'カテゴリ「{selected.product_category_name}」を削除しました。')
+            else:
+                messages.warning(req, '削除対象のカテゴリを選択してください。')
 
         return redirect(f"{reverse('product_mst:list')}?category_open=1")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = self.get_form()
+        return context
+
 
 
 #--------------------------

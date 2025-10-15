@@ -77,6 +77,21 @@ $(function () {
             form.attr("action", saveUrl);
         }
     });
+
+    // ユーザーグループ選択時に入力欄へ反映
+    $(document).on('change', '#groupId', function () {
+        const selectedText = $(this).find('option:selected').text();
+        const selectedValue = $(this).val();
+
+        if (selectedValue) {
+            // 既存グループ選択時 → 名前を入力欄に反映
+            $('#groupName').val(selectedText);
+        } else {
+            // 新規作成選択時 → 入力欄をクリア
+            $('#groupName').val('');
+        }
+    });
+
     // =====================================================
     // モーダルフォーム共通処理
     // =====================================================
@@ -84,6 +99,7 @@ $(function () {
         // 適用先フォームの取得
         const genders  = $modal.find('#id_gender');
         const privileges = $modal.find('#id_privilege');
+        const groups = $modal.find('#id_groups');
 
         // Select2のオプション設定
         const opt = {
@@ -97,6 +113,7 @@ $(function () {
         // Select2を適用
         genders.select2({ ...opt, placeholder: '性別を選択...' });
         privileges.select2({ ...opt, placeholder: '権限を選択...' });
+        groups.select2({ ...opt });
     });
 
     // =====================================================
@@ -104,5 +121,14 @@ $(function () {
     // ===================================================
     $('#form-select').on('change', function() {
         $('#search_form').submit(); // 並び順変更時にフォーム送信
+    });
+
+    // =====================================================
+    // ユーザーグループ管理：削除時 required 無効化
+    // =====================================================
+    $(document).on('click', 'form[id="group_form"] button[name="action"][value="delete"]', function () {
+        const $form = $(this).closest('form');
+        const $groupName = $form.find('#groupName');
+        $groupName.removeAttr('required');
     });
 });

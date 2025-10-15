@@ -132,4 +132,13 @@ $(function () {
         // そのURLへ遷移（＝GET送信）
         window.location.href = baseUrl.toString();
     });
+
+    // =====================================================
+    // 商品カテゴリ管理：削除時 required 無効化
+    // =====================================================
+    $(document).on('click', 'form[id="category_form"] button[name="action"][value="delete"]', function () {
+        const $form = $(this).closest('form');
+        const $groupName = $form.find('#categoryName');
+        $groupName.removeAttr('required');
+    });
 });

@@ -128,6 +128,14 @@ class CustomUser(AbstractUser, BaseModel):
         verbose_name='権限',
         help_text='ユーザーの操作権限を選択してください。'
     )
+    
+    groups_custom = models.ManyToManyField(
+        'UserGroup',
+        related_name='users',
+        blank=True,
+        verbose_name='所属グループ',
+        help_text='ユーザーが所属するグループを選択してください。（複数選択可）'
+    )
 
     class Meta:
         verbose_name = 'ユーザー'
@@ -143,3 +151,22 @@ class CustomUser(AbstractUser, BaseModel):
     @property
     def is_employed(self):
         return self.employment_status == '1' and (self.employment_end_date is None)
+    
+class UserGroup(BaseModel):
+    '''
+    ユーザーグループマスタ
+    '''
+    group_name = models.CharField(
+        max_length=100,
+        unique=True,
+        verbose_name='グループ名',
+        help_text='100文字以内で入力してください。'
+    )
+
+    class Meta:
+        verbose_name = 'ユーザーグループ'
+        verbose_name_plural = 'ユーザーグループマスタ'
+        ordering = ['group_name']
+
+    def __str__(self):
+        return self.group_name
