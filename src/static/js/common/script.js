@@ -258,4 +258,35 @@ $(function () {
             $icon.attr('class', next === 'dark' ? 'bi bi-sun' : 'bi bi-moon');
         }
     });
+
+    // ----------------------------------------------------------
+    // 詳細検索フォームの開閉状態維持＋サイドバー遷移時リセット
+    // ----------------------------------------------------------
+    const $collapse = $('#detailSearch');
+    if ($collapse.length) {
+        // 初期化（保存状態を反映）
+        const savedState = localStorage.getItem('advancedSearchOpen');
+        if (savedState === 'true') {
+            $collapse.addClass('show');
+        }
+
+        // 開閉イベント監視
+        $collapse.on('shown.bs.collapse', function () {
+            localStorage.setItem('advancedSearchOpen', 'true');
+        });
+        $collapse.on('hidden.bs.collapse', function () {
+            localStorage.setItem('advancedSearchOpen', 'false');
+        });
+
+        // 検索フォーム送信時、状態を維持
+        $('#search_form').on('submit', function () {
+            const isOpen = $collapse.hasClass('show');
+            localStorage.setItem('advancedSearchOpen', isOpen ? 'true' : 'false');
+        });
+    }
+
+    // サイドバーリンククリック時に状態リセット
+    $('#sidebar a, .sidebar a').on('click', function () {
+        localStorage.setItem('advancedSearchOpen', 'false');
+    });
 });
