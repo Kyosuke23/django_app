@@ -57,7 +57,7 @@ class SalesOrder(BaseModel):
     sales_order_date = models.DateField(
         default=timezone.now,
         verbose_name='受注日',
-        help_text='受注日を選択してください。未指定の場合は当日が自動設定されます。'
+        help_text='受注日を指定してください。'
     )
 
     delivery_due_date = models.DateField(

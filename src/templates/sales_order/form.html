@@ -21,22 +21,25 @@
 
   <div class="row mb-2">
     {# ステータス #}
-    <div class="col-md-3">
+    <div class="col-md-12">
       <label class="form-label">ステータス</label>
       <p class="form-control-plaintext">{{ form.instance.get_status_code_display }}</p>
     </div>
-    {# 受注担当者 #}
+    {# 受注日 #}
     <div class="col-md-3">
+      <label class="form-label">受注日</label>
+      {% render_field form.sales_order_date class="form-control" %}
+      {% if form.sales_order_date.help_text %}
+        <div class="form-text text-muted small">{{ form.sales_order_date.help_text }}</div>
+      {% endif %}
+    </div>
+    {# 受注担当者 #}
+    <div class="col-md-9">
       <label class="form-label">受注担当者</label>
       <p class="form-control-plaintext">
         {{ form.instance.create_user|default_if_none:'' }}
       </p>
       {{ form.instance.create_user.as_hidden }}
-    </div>
-    {# 受注日 #}
-    <div class="col-md-6">
-      <label class="form-label">受注日</label>
-      {% render_field form.sales_order_date class="form-control" %}
     </div>
     {# 納入予定日 #}
     <div class="col-md-3 mb-2">
