@@ -1,37 +1,30 @@
+{% load widget_tweaks %}
+
 <div class="card mt-4 border-0 shadow-sm mb-3">
   <div class="card-header bg-secondary-subtle border-bottom fw-bold text-dark">
     <a class="text-decoration-none text-dark d-block" 
-      data-bs-toggle="collapse" href="#categoryArea" role="button"
-      aria-expanded="false" aria-controls="categoryArea">
+       data-bs-toggle="collapse" href="#categoryArea" role="button"
+       aria-expanded="false" aria-controls="categoryArea">
       <i class="bi bi-tags-fill me-1 text-primary"></i> 商品カテゴリ管理（クリックで開閉）
     </a>
   </div>
+
   <div class="collapse {% if request.GET.category_open %}show{% endif %}" id="categoryArea">
     <div class="card-body">
-      <form method="post" action="{% url 'product_mst:category_save' %}">
+      <form id="category_form" method="post" action="{% url 'product_mst:category_manage' %}">
         {% csrf_token %}
         <div class="row g-2 mb-2">
           <div class="col-auto">
-            <select id="categoryId" name="category_id" class="form-select form-select-sm">
-              <option value="">--- 新規作成</option>
-              {% for c in categories %}
-                <option value="{{ c.id }}">{{ c.product_category_name }}</option>
-              {% endfor %}
-            </select>
+            {{ product_category_form.selected_category }}
           </div>
           <div class="col">
-            <input type="text" id="categoryName" name="category_name"
-                   class="form-control form-control-sm" placeholder="カテゴリ名を入力">
+            {{ product_category_form.product_category_name }}
           </div>
         </div>
 
         <div class="d-flex">
-          <button type="submit" name="action" value="save" class="btn btn-outline-primary btn-sm">
-            保存
-          </button>
-          <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm ms-2">
-            削除
-          </button>
+          <button type="submit" name="action" value="save" class="btn btn-outline-primary btn-sm">保存</button>
+          <button type="submit" name="action" value="delete" class="btn btn-outline-danger btn-sm ms-2">削除</button>
         </div>
       </form>
     </div>

@@ -116,3 +116,30 @@ class ProductForm(forms.ModelForm):
         if user is not None:
             # 商品カテゴリをテナント内に限定
             self.fields['categories'].queryset = (self.fields['categories'].queryset.filter(tenant=user.tenant))
+
+
+class ProductCategoryForm(forms.ModelForm):
+    selected_category = forms.ModelChoiceField(
+        queryset=ProductCategory.objects.none(),
+        required=False,
+        label='既存カテゴリ',
+        widget=forms.Select(attrs={
+            'id': 'categoryId',
+            'class': 'form-select form-select-sm'
+        })
+    )
+
+    class Meta:
+        model = ProductCategory
+        fields = ['product_category_name']
+        widgets = {
+            'product_category_name': forms.TextInput(attrs={
+                'id': 'categoryName',
+                'class': 'form-control form-control-sm',
+                'placeholder': 'カテゴリ名を入力',
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['selected_category'].queryset = ProductCategory.objects.filter(is_deleted=False).order_by('product_category_name')

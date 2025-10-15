@@ -263,10 +263,10 @@ class UserGroupManageView(generic.FormView):
             return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
-        action = self.request.POST.get('action')
+        req = self.request
+        action = req.POST.get('action')
         selected_group = form.cleaned_data.get('selected_group')
         name = form.cleaned_data.get('group_name')
-        req = self.request
 
         if action == 'save':
             if not name:
