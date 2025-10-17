@@ -78,7 +78,7 @@
         {% for product in products %}
         <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-          <td class="text-center"><input type="checkbox" name="ids" value="{{ product.id }}"></td>
+          <td class="text-center"><input type="checkbox" class="check-item" name="ids" value="{{ product.id }}"></td>
           {% endif %}
           <td>{{ product.product_name|default_if_none:'' }}</td>
           <td>{{ product.product_category.product_category_name|default_if_none:'' }}</td>

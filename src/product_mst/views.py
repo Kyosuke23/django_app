@@ -9,16 +9,19 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.shortcuts import redirect
-from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 
+# 出力カラム定義
+HEADER_MAP = {
+    '商品名': 'product_name',
+    '商品カテゴリ': 'product_category',
+    '単価': 'unit_price',
+    '単位': 'unit',
+    '説明': 'description',
+}
 
-# CSV/Excel の共通出力カラム定義
-# アプリ固有のカラムに加え、共通カラムも連結
-DATA_COLUMNS = [
-    'product_name', 'product_category', 'unit_price', 'description'
-]
+# 出力ファイル名定義
 FILENAME_PREFIX = 'product_mst'
 
 
@@ -243,7 +246,7 @@ class ExportExcel(ExcelExportBaseView):
     '''
     model_class = Product
     filename_prefix = FILENAME_PREFIX
-    headers = DATA_COLUMNS
+    headers = list(HEADER_MAP.keys())
 
     def get_queryset(self, request):
         '''検索条件を適用したクエリセットを返す'''
@@ -263,7 +266,7 @@ class ExportCSV(CSVExportBaseView):
     '''
     model_class = Product
     filename_prefix = FILENAME_PREFIX
-    headers = DATA_COLUMNS
+    headers = list(HEADER_MAP.keys())
 
     def get_queryset(self, request):
         form = ProductSearchForm(request.GET or None)
@@ -292,41 +295,57 @@ class ImportCSV(CSVImportBaseView):
     - ヘッダ検証と1行ごとのバリデーション
     - 正常データをProductオブジェクトに変換
     '''
-    expected_headers = DATA_COLUMNS
+    expected_headers = list(HEADER_MAP.keys())
     model_class = Product
     unique_field = 'product_name'
+    HEADER_MAP = HEADER_MAP
 
     def validate_row(self, row, idx, existing, request):
-        '''1行ごとのバリデーション処理'''
-        product_name = row.get('product_name')
-        if not product_name:
-            return None, f'{idx}行目: product_name が空です'
-        if product_name in existing:
-            return None, f'{idx}行目: product_name "" は既に存在します'
+        data = row.copy()
+        
+        # ------------------------------------------------------
+        # 商品カテゴリチェック
+        # ------------------------------------------------------
+        category_name = data.get('product_category')
+        if category_name:
+            try:
+                category = ProductCategory.objects.get(
+                    product_category_name=category_name,
+                    tenant=request.user.tenant
+                )
+                data['product_category'] = category.id
+            except ProductCategory.DoesNotExist:
+                return None, f'{idx}行目: 商品カテゴリ「{category_name}」が存在しません'
+        else:
+            data['product_category'] = None
+        
+        # ------------------------------------------------------
+        # Djangoフォームバリデーション
+        # ------------------------------------------------------
+        form = ProductForm(data=data)
+        if not form.is_valid():
+            error_text = '; '.join(
+                [f"{field}: {','.join(errors)}" for field, errors in form.errors.items()]
+            )
+            return None, f'{idx}行目: {error_text}'
 
-        # カテゴリの変換
-        category_name = row.get('product_category')
-        try:
-            category = ProductCategory.objects.get(product_category_name=category_name)
-        except ProductCategory.DoesNotExist:
-            return None, f'{idx}行目: product_category "{category_name}" が存在しません'
+        # ------------------------------------------------------
+        # 重複チェック（tenant + product_name）
+        # ------------------------------------------------------
+        product_name = data.get('product_name')
+        key = (request.user.tenant_id, product_name)
+        if key in existing:
+            return None, f'{idx}行目: 商品名称「{product_name}」は既に存在します。'
+        existing.add(key)
+        
+        # ------------------------------------------------------
+        # Productオブジェクト作成
+        # ------------------------------------------------------
+        obj = form.save(commit=False)
+        obj.tenant = request.user.tenant
+        obj.create_user = request.user
+        obj.update_user = request.user
 
-        # 価格の変換
-        unit_price_val = row.get('unit_price')
-        try:
-            unit_price_val = int(unit_price_val) if unit_price_val else 0
-        except ValueError:
-            return None, f'{idx}行目: unit_price "{unit_price_val}" は数値である必要があります'
-
-        # Product オブジェクト生成
-        obj = Product(
-            product_name=row.get('product_name'),
-            product_category=category,
-            description=row.get('description') or '',
-            unit_price=unit_price_val,
-            create_user=request.user,
-            update_user=request.user
-        )
         return obj, None
 
 
@@ -339,6 +358,7 @@ def get_row(rec):
         rec.product_name,
         rec.product_category.product_category_name if rec.product_category else '',
         rec.unit_price,
+        rec.unit,
         rec.description,
     ]
     

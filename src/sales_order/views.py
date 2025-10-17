@@ -7,12 +7,14 @@ from django.template.loader import render_to_string
 from .models import SalesOrder, SalesOrderDetail, ApprovalToken
 from partner_mst.models import Partner
 from product_mst.models import Product
+from register.models import CustomUser, UserGroup
 from .form import SalesOrderSearchForm, SalesOrderForm, SalesOrderDetailFormSet
 from config.common import Common
-from config.base import CSVExportBaseView, ExcelExportBaseView
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from .services import *
 from django.db import transaction
 from .constants import *
+from django.utils.dateparse import parse_date
 from django.core.mail import send_mail
 from django.urls import reverse
 from django.utils import timezone
@@ -23,15 +25,38 @@ from django.core.signing import TimestampSigner, BadSignature, SignatureExpired
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from weasyprint import HTML
+from django.contrib.auth.mixins import LoginRequiredMixin
 import tempfile
+import io, csv
 
 
-DATA_COLUMNS = [
-    'sales_order_no', 'partner', 'sales_order_date', 'remarks',
-    'line_no', 'product', 'quantity', 'unit', 'master_unit_price', 'billing_unit_price',
-    'is_tax_exempt', 'tax_rate', 'rounding_method'
-]
+# 出力カラム定義
+HEADER_MAP = {
+    '受注番号': 'sales_order_no',
+    '取引先': 'partner',
+    '受注日': 'sales_order_date',
+    '受注担当者': 'assignee',
+    '納入予定日': 'delivery_due_date',
+    '納入場所': 'delivery_place',
+    '備考': 'remarks',
+    '見積書_承認者コメント': 'quotation_manager_comment',
+    '見積書_顧客コメント': 'quotation_customer_comment',
+    '注文書_承認者コメント': 'order_manager_comment',
+    '注文書_顧客コメント': 'order_customer_comment',
+    '端数処理方法': 'rounding_method',
+    '行番号': 'line_no',
+    '商品': 'product',
+    '数量': 'quantity',
+    '原単価': 'master_unit_price',
+    '請求単価': 'billing_unit_price',
+    '課税対象外': 'is_tax_exempt',
+    '税率': 'tax_rate',
+    '参照ユーザー': 'reference_users',
+    '参照グループ': 'reference_groups',
+}
 
+# 出力ファイル名定義
+FILENAME_PREFIX = 'sales_order'
 
 #--------------------------
 # 一覧表示
@@ -795,7 +820,7 @@ class SalesOrderPublicContractView(generic.View):
 class ExportExcel(ExcelExportBaseView):
     model_class = SalesOrderDetail
     filename_prefix = 'sales_order'
-    headers = DATA_COLUMNS
+    headers = HEADER_MAP
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -810,51 +835,207 @@ class ExportExcel(ExcelExportBaseView):
                  .order_by('sales_order__sales_order_no', 'line_no')
 
     def row(self, detail):
-        return get_order_detail_row(detail.sales_order, detail)
+        return get_row(detail.sales_order, detail)
 
 
 class ExportCSV(CSVExportBaseView):
     model_class = SalesOrderDetail
-    filename_prefix = 'sales_order'
-    headers = DATA_COLUMNS
+    filename_prefix = FILENAME_PREFIX
+    headers = list(HEADER_MAP.keys())
 
     def get_queryset(self, request):
         req = self.request
         form = SalesOrderSearchForm(req.GET or None)
 
+        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         orders = SalesOrder.objects.filter(
             is_deleted=False,
             tenant=req.user.tenant
         ).select_related('partner')
-
-        orders = orders.filter(
-            Q(assignee=req.user)
-            | (
-                (
-                    Q(reference_users=req.user)
-                    | Q(reference_groups__in=req.user.groups_custom.all())
-                )
-                & ~Q(status_code='DRAFT')
-            )
-        )
-
+        
+        # フォームが有効なら検索条件を反映
         if form.is_valid():
-            orders = filter_data(form.cleaned_data, orders)
-            sort = form.cleaned_data.get('sort')
-            orders = set_table_sort(orders, sort)
-        else:
-            orders = orders.order_by('-sales_order_date')
+            orders = filter_data(cleaned_data=form.cleaned_data, queryset=orders)
 
+        # 並び替え
+        sort = form.cleaned_data.get('sort') if form.is_valid() else ''
+        orders = set_table_sort(queryset=orders, sort=sort)
+
+        # 明細データ粒度で取得
         details = SalesOrderDetail.objects.filter(
             is_deleted=False,
+            tenant=req.user.tenant,
             sales_order__in=orders
         ).select_related('sales_order', 'product')
 
         return details
 
     def row(self, detail):
-        # 明細1件を1行に整形
-        return [Common.format_for_csv(v) for v in get_order_detail_row(header=detail.sales_order, detail=detail)]
+        return get_row(header=detail.sales_order, detail=detail)
+    
+
+class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
+    '''
+    受注データ（ヘッダ＋明細）CSVインポート
+    ExportCSVの出力フォーマットに対応
+    '''
+    expected_headers = list(HEADER_MAP.keys())
+    model_class = SalesOrderDetail
+    HEADER_MAP = HEADER_MAP
+    unique_field = None  # 重複チェックは受注明細行単位で実施
+    
+    def post(self, request, *args, **kwargs):
+        '''
+        unique_fieldがNoneの場合はexistingを空セットで初期化
+        '''
+        file = request.FILES.get('file')
+        if not file:
+            return JsonResponse({'error': 'ファイルが選択されていません'}, status=400)
+
+        # Baseのpost()と同じ流れを維持
+        decoded_file = io.TextIOWrapper(file.file, encoding='utf-8')
+        reader = csv.DictReader(decoded_file)
+        headers = reader.fieldnames
+
+        # ヘッダチェック
+        if headers != self.expected_headers:
+            return JsonResponse({'error': 'CSVヘッダが一致しません。'}, status=400)
+
+        existing = set()  # unique_fieldがNoneなので空集合にする
+
+        # 通常のvalidate_row呼び出し
+        objects = []
+        errors = []
+        for idx, row in enumerate(reader, start=2):
+            obj, err = self.validate_row(row, idx, existing, request)
+            if err:
+                errors.append(err)
+            elif obj:
+                objects.append(obj)
+
+        if errors:
+            return JsonResponse({'error': '\n'.join(errors)}, status=400)
+
+        self.model_class.objects.bulk_create(objects)
+        return JsonResponse({'success': f'{len(objects)}件を登録しました。'})
+
+    @transaction.atomic
+    def validate_row(self, row, idx, existing, request):
+        data = row.copy()
+        tenant = request.user.tenant
+        # ------------------------------------------------------
+        # 受注担当者の解決
+        # ------------------------------------------------------
+        assignee = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'assignee'))
+        try:
+            cuser = CustomUser.objects.get(tenant=tenant, username=assignee)
+        except CustomUser.DoesNotExist:
+            return None, f'{idx}行目: ユーザー「{assignee}」が存在しません。'
+
+        # ------------------------------------------------------
+        # 取引先の解決
+        # ------------------------------------------------------
+        partner_name = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'partner'))
+        try:
+            partner = Partner.objects.get(tenant=tenant, partner_name=partner_name)
+        except Partner.DoesNotExist:
+            return None, f'{idx}行目: 取引先「{partner_name}」が存在しません。'
+        
+        # ------------------------------------------------------
+        # 受注ヘッダ生成または再利用
+        # ------------------------------------------------------
+        sales_order_no = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'sales_order_no'))
+        sales_order_date = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'sales_order_date'))
+        delivery_due_date = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'delivery_due_date'))
+        delivery_place = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'delivery_place'))
+        quotation_manager_comment = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'quotation_manager_comment'))
+        quotation_customer_comment = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'quotation_customer_comment'))
+        order_manager_comment = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'order_manager_comment'))
+        order_customer_comment = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'order_customer_comment'))
+        remarks = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'remarks'))
+        rounding_method = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'rounding_method'))
+        header_data = {
+            'tenant': tenant,
+            'partner': partner,
+            'sales_order_no': sales_order_no,
+            'assignee': cuser,
+            'sales_order_date': parse_date(sales_order_date),
+            'delivery_place': delivery_place,
+            'delivery_due_date': parse_date(delivery_due_date),
+            'quotation_manager_comment': quotation_manager_comment or '',
+            'quotation_customer_comment': quotation_customer_comment or '',
+            'order_manager_comment': order_manager_comment or '',
+            'order_customer_comment': order_customer_comment or '',
+            'remarks': remarks or '',
+            'rounding_method': get_rounding_code(label=rounding_method),
+        }
+
+        header_obj, created = SalesOrder.objects.get_or_create(
+            tenant=tenant,
+            sales_order_no=sales_order_no,
+            defaults={
+                **header_data,
+                'create_user': request.user,
+                'update_user': request.user,
+            }
+        )
+
+        if not created:
+            # 既存の受注を更新
+            for k, v in header_data.items():
+                setattr(header_obj, k, v)
+            header_obj.update_user = request.user
+            header_obj.save()
+            
+        # ------------------------------------------------------
+        # 参照ユーザー / グループ設定
+        # ------------------------------------------------------
+        ref_users_text = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'reference_users'))
+        ref_groups_text = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'reference_groups'))
+        if ref_users_text:
+            user_names = [name.strip() for name in ref_users_text.split(',') if name.strip()]
+            users = CustomUser.objects.filter(username__in=user_names, is_deleted=False)
+            header_obj.reference_users.set(users)
+
+        if ref_groups_text:
+            group_names = [name.strip() for name in ref_groups_text.split(',') if name.strip()]
+            groups = UserGroup.objects.filter(group_name__in=group_names)
+            header_obj.reference_groups.set(groups)
+
+        # ------------------------------------------------------
+        # 商品（Product）の解決
+        # ------------------------------------------------------
+        product_name = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'product'))
+        try:
+            product = Product.objects.get(tenant=tenant, product_name=product_name)
+        except Product.DoesNotExist:
+            return None, f'{idx}行目: 商品「{product_name}」が存在しません。'
+
+        # ------------------------------------------------------
+        # SalesOrderDetail（明細）の作成
+        # ------------------------------------------------------
+        line_no = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'line_no'))
+        quantity = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'quantity'))
+        master_unit_price = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'master_unit_price'))
+        billing_unit_price = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'billing_unit_price'))
+        is_tax_exempt = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'is_tax_exempt'))
+        tax_rate = data.get(next(k for k, v in self.HEADER_MAP.items() if v == 'tax_rate'))
+        detail = SalesOrderDetail(
+            sales_order=header_obj,
+            line_no=line_no or 0,
+            product=product,
+            quantity=quantity or 0,
+            master_unit_price=master_unit_price or 0,
+            billing_unit_price=billing_unit_price or 0,
+            is_tax_exempt=(is_tax_exempt in ['非課税', 'True', '1']),
+            tax_rate=tax_rate or 0,
+            tenant=tenant,
+            create_user=request.user,
+            update_user=request.user,
+        )
+
+        return detail, None
+
 
 class OrderSheetPdfView(generic.DetailView):
     '''

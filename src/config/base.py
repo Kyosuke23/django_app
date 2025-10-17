@@ -94,19 +94,23 @@ class CSVExportBaseView(View):
 
 class CSVImportBaseView(View):
     '''
-    CSV Import機能の基底クラス
-    全データが正常と判断されてからトランザクション確定。エラー存在時はロールバック。
+    CSV Import機能の基底クラス（日本語・英語ヘッダ両対応）
+    expected_headers: 日本語ヘッダのリスト
+    HEADER_MAP: 日本語→英語の辞書
     '''
-    expected_headers: list[str] = []  # サブクラスで設定
-    model_class = None  # bulk_create対象のモデル
-    unique_field = None  # 重複チェックに使うフィールド名
+    expected_headers: list[str] = []
+    model_class = None
+    unique_field = None
+    HEADER_MAP = {}
 
     def post(self, request, *args, **kwargs):
         file = request.FILES.get('file')
         if not file:
             return JsonResponse({'error': 'ファイルが選択されていません'}, status=400)
 
-        # decode
+        # ------------------------------------------------------------
+        # CSV読み込み
+        # ------------------------------------------------------------
         file_data = file.read()
         try:
             decoded_data = file_data.decode('utf-8-sig')
@@ -116,51 +120,86 @@ class CSVImportBaseView(View):
         decoded_file = decoded_data.splitlines()
         reader = csv.DictReader(decoded_file)
 
-        # ヘッダチェック
-        if reader.fieldnames is None or any(h not in reader.fieldnames for h in self.expected_headers):
+        # ------------------------------------------------------------
+        # ヘッダチェック（日本語・英語両対応）
+        # ------------------------------------------------------------
+        if reader.fieldnames is None:
+            return JsonResponse({'error': 'CSVにヘッダ行が存在しません。'}, status=400)
+
+        normalize = lambda x: x.strip().replace('　', '')
+        normalized_actual = [normalize(h) for h in reader.fieldnames]
+        normalized_expected = [normalize(h) for h in self.expected_headers]
+
+        # HEADER_MAPが日本語→英語の想定なので、両方許可
+        allowed_headers = set(normalized_expected) | set(self.HEADER_MAP.values())
+
+        # 不足チェック（expected_headers または HEADER_MAP の値に対応）
+        missing = [h for h in normalized_expected if h not in normalized_actual and self.HEADER_MAP.get(h) not in normalized_actual]
+        if missing:
             return JsonResponse({
                 'error': 'CSVヘッダが正しくありません。',
-                'details': f'期待: {self.expected_headers}, 実際: {reader.fieldnames}'
+                'details': f'不足: {missing} / 期待: {self.expected_headers} / 実際: {reader.fieldnames}'
             }, status=400)
 
-        # バリデーション
+        # 想定外チェック
+        unexpected = [h for h in normalized_actual if h not in allowed_headers]
+        if unexpected:
+            return JsonResponse({
+                'error': '想定外のヘッダが含まれています。',
+                'details': f'不要: {unexpected} / 許可: {list(allowed_headers)}'
+            }, status=400)
+
+        # ------------------------------------------------------------
+        # 重複チェックデータ準備
+        # ------------------------------------------------------------
         if isinstance(self.unique_field, (list, tuple)):
             existing = set(self.model_class.objects.values_list(*self.unique_field))
         else:
             existing = set(self.model_class.objects.values_list(self.unique_field, flat=True))
 
-        objects_to_create = []
-        errors = []
+        # ------------------------------------------------------------
+        # 行ごとのバリデーション
+        # ------------------------------------------------------------
+        objects_to_create, errors = [], []
+        for idx, row in enumerate(reader, start=2):
+            normalized_row = {}
+            for key, value in row.items():
+                key_norm = normalize(key)
 
-        for idx, row in enumerate(reader, start=2):  # 2行目以降がデータ
-            obj, err = self.validate_row(row=row, idx=idx, existing=existing, request=request)
+                # 日本語ヘッダ → 英語キーに変換
+                if key_norm in self.HEADER_MAP:
+                    normalized_row[self.HEADER_MAP[key_norm]] = value
+
+                # 英語ヘッダ → そのまま使う
+                elif key_norm in self.HEADER_MAP.values():
+                    normalized_row[key_norm] = value
+
+                # それ以外はスキップ
+                else:
+                    continue
+
+            # ここで normalized_row は英語フィールド名の辞書
+            obj, err = self.validate_row(row=normalized_row, idx=idx, existing=existing, request=request)
             if err:
                 errors.append(err)
-                continue
-            if obj:
+            elif obj:
                 objects_to_create.append(obj)
 
         if errors:
             return JsonResponse({'error': 'CSVに問題があります。', 'details': errors}, status=400)
 
-        # bulk insert
         try:
             with transaction.atomic():
                 self.model_class.objects.bulk_create(objects_to_create)
         except IntegrityError as e:
-            return JsonResponse({
-                'error': '登録中にDBエラーが発生しました。',
-                'details': [str(e)]
-            }, status=500)
+            return JsonResponse({'error': '登録中にDBエラーが発生しました。', 'details': [str(e)]}, status=500)
 
         return JsonResponse({'message': f'{len(objects_to_create)}件をインポートしました。'})
 
     def validate_row(self, row: dict, idx: int, existing: set, request):
-        '''
-        サブクラスで必ず実装すること
-        戻り値: (modelインスタンス or None, エラーメッセージ or None)
-        '''
         raise NotImplementedError
+
+
 
 class BaseModel(models.Model):
     '''

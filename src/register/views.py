@@ -16,12 +16,17 @@ from django.contrib.auth.views import PasswordChangeView
 from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
 
 
-# CSV/Excel の共通出力カラム
-DATA_COLUMNS = [
-    'username', 'email', 'gender', 'tel_number'
-    'employment_status', 'employment_end_date', 'privilege'
-]
+# 出力カラム定義
+HEADER_MAP = {
+    'ユーザー名': 'username',
+    'メールアドレス': 'email',
+    '性別': 'gender',
+    '電話番号': 'tel_number',
+    '雇用形態': 'employment_status',
+    '権限': 'privilege',
+}
 
+# 出力ファイル名定義
 FILENAME_PREFIX = 'user_mst'
 
 #--------------------------
@@ -304,7 +309,7 @@ class UserGroupManageView(generic.FormView):
 class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
-    headers = DATA_COLUMNS
+    headers = HEADER_MAP
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -314,17 +319,21 @@ class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
         return get_row(rec)
 
 
-class ExportCSV(PrivilegeRequiredMixin, CSVExportBaseView):
+class ExportCSV(CSVExportBaseView):
+    '''
+    ユーザーマスタのCSV出力
+    - 共通の get_row を利用
+    - 検索条件を適用
+    '''
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
-    headers = DATA_COLUMNS
+    headers = list(HEADER_MAP.keys())
 
     def get_queryset(self, request):
-        req = self.request
-        form = UserSearchForm(req.GET or None)
+        form = UserSearchForm(request.GET or None)
         
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
-        queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
+        queryset = CustomUser.objects.filter(is_deleted=False, tenant=request.user.tenant)
         
         # フォームが有効なら検索条件を反映
         if form.is_valid():
@@ -342,7 +351,7 @@ class ExportCSV(PrivilegeRequiredMixin, CSVExportBaseView):
 
 
 class ImportCSV(PrivilegeRequiredMixin, CSVImportBaseView):
-    expected_headers = DATA_COLUMNS
+    expected_headers = HEADER_MAP
     model_class = CustomUser
     unique_field = 'email'
 
@@ -374,11 +383,10 @@ def get_row(rec):
     return [
         rec.username,
         rec.email,
-        rec.gender,
+        rec.get_gender_display(),
         rec.tel_number,
         rec.employment_status,
-        rec.employment_end_date,
-        rec.privilege,
+        rec.get_privilege_display(),
     ]
 
 def filter_data(cleaned_data, queryset):

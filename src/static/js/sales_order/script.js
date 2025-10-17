@@ -15,9 +15,9 @@ $(function () {
     }
 
     // =====================================================
-    // エクスポートボタン
+    // Export
     // =====================================================
-    // Exportボタン
+    // ボタン押下時
     $('.export-btn').on('click', function () {
         const url = $(this).data('action');
         const $form = $('#search_form');
@@ -28,6 +28,22 @@ $(function () {
 
         // 画面遷移してダウンロード処理実行
         window.location.href = fullUrl;
+    });
+
+    // =====================================================
+    // Import
+    // =====================================================
+    // ボタン押下時
+    $('#import-btn').on('click', function (e) {
+        e.preventDefault();
+        $('#file-input').click();
+    });
+
+    // ファイル選択時
+    $('#file-input').on('change', function () {
+        if (!this.files.length) return;
+        $().import_data(this);
+        $(this).val(''); // 同一ファイル再選択時にも発火するようにリセット
     });
 
     // =====================================================

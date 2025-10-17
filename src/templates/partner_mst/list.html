@@ -65,7 +65,7 @@
         {% for partner in partners %}
         <tr>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
-          <td class="text-center"><input type="checkbox" name="ids" value="{{ partner.id }}"></td>
+          <td class="text-center"><input type="checkbox" class="check-item" name="ids" value="{{ partner.id }}"></td>
           {% endif %}
           <td>{{ partner.partner_name|default_if_none:'' }}</td>
           <td>{{ partner.partner_name_kana|default_if_none:'' }}</td>

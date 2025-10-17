@@ -13,6 +13,7 @@ urlpatterns = [
     path('<int:pk>/update/', views.SalesOrderUpdateView.as_view(), name='update'),
     path('<int:pk>/delete/', views.SalesOrderDeleteView.as_view(), name='delete'),
     path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
+    path('import/csv', views.ImportCSV.as_view(), name='import_csv'),
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     
     # マスタ情報取得

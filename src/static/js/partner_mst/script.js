@@ -1,5 +1,8 @@
 $(function () {
-    // Exportボタン
+    // =====================================================
+    // Export
+    // =====================================================
+    // ボタン押下時
     $('.export-btn').on('click', function () {
         const url = $(this).data('action');
         const $form = $('#search_form');
@@ -12,7 +15,10 @@ $(function () {
         window.location.href = fullUrl;
     });
 
-    // Importボタン
+    // =====================================================
+    // Import
+    // =====================================================
+    // ボタン押下時
     $('#import-btn').on('click', function (e) {
         e.preventDefault();
         $('#file-input').click();
@@ -23,7 +29,9 @@ $(function () {
         $().import_data(this); // 既存の処理
     });
 
+    // =====================================================
     // 一括削除処理
+    // =====================================================
     $('#check-all').checkAll('.check-item');
     $(document).on('click', '#bulk-delete-btn', function() {
         $('#bulk-delete-btn').call_bulk_delete('/partner_mst/bulk_delete/', '取引先');

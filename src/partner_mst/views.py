@@ -12,12 +12,22 @@ from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.mixins import LoginRequiredMixin
 
-# CSV/Excel の共通出力カラム定義
-DATA_COLUMNS = [
-    'partner_name', 'partner_name_kana', 'partner_type', 'contact_name',
-    'email', 'tel_number', 'postal_code', 'state', 'city', 'address', 'address2'
-]
+# 出力カラム定義
+HEADER_MAP = {
+    '取引先名称' : 'partner_name',
+    '取引先名称（カナ）': 'partner_name_kana',
+    '取引先区分': 'partner_type',
+    '担当者名': 'contact_name',
+    'メールアドレス': 'email',
+    '電話番号': 'tel_number',
+    '郵便番号': 'postal_code',
+    '都道府県': 'state',
+    '市区町村': 'city',
+    '住所１': 'address',
+    '住所２': 'address2',
+}
 
+# 出力ファイル名定義
 FILENAME_PREFIX = 'partner_mst'
 
 #-------------------------
@@ -194,7 +204,7 @@ class PartnerBulkDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.
 class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
     model_class = Partner
     filename_prefix = FILENAME_PREFIX
-    headers = DATA_COLUMNS
+    headers = list(HEADER_MAP.values())
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
@@ -207,7 +217,7 @@ class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
 class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     model_class = Partner
     filename_prefix = FILENAME_PREFIX
-    headers = DATA_COLUMNS
+    headers = list(HEADER_MAP.keys())
 
     def get_queryset(self, request):
         req = self.request
@@ -231,31 +241,42 @@ class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
 
 
 class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
-    expected_headers = DATA_COLUMNS
+    expected_headers = list(HEADER_MAP.keys())
     model_class = Partner
     unique_field = ('tenant_id', 'partner_name', 'email')
+    HEADER_MAP = HEADER_MAP
 
     def validate_row(self, row, idx, existing, request):
-        form = PartnerForm(data=row)
+        data = row.copy()
 
+        # ------------------------------------------------------
+        # Djangoフォームバリデーション
+        # ------------------------------------------------------
+        form = PartnerForm(data=data)
         if not form.is_valid():
             error_text = '; '.join(
                 [f"{field}: {','.join(errors)}" for field, errors in form.errors.items()]
             )
             return None, f'{idx}行目: {error_text}'
 
-        partner_name = row['partner_name']
-        email = row['email']
+        # ------------------------------------------------------
+        # 重複チェック（tenant + name + email）
+        # ------------------------------------------------------
+        partner_name = data.get('partner_name')
+        email = data.get('email')
         key = (request.user.tenant_id, partner_name, email)
-
         if key in existing:
-            return None, f'{idx}行目: tenant_id + partner_name + email "{partner_name}, {email}" は既に存在します。'
+            return None, f'{idx}行目: 取引先名称＋メールアドレス「{partner_name}, {email}」は既に存在します。'
         existing.add(key)
 
+        # ------------------------------------------------------
+        # Partner オブジェクト作成
+        # ------------------------------------------------------
         obj = form.save(commit=False)
         obj.tenant = request.user.tenant
         obj.create_user = request.user
         obj.update_user = request.user
+
         return obj, None
 
 

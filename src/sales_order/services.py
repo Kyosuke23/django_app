@@ -12,20 +12,38 @@ def fill_formset(formset, min_forms=10):
         formset.forms.append(formset.empty_form)
     return formset
 
-def get_order_detail_row(header, detail):
+def get_row(header, detail):
     return [
         header.sales_order_no,
-        header.partner.partner_name if header.partner else '',
-        header.sales_order_date,
-        header.remarks,
-        header.rounding_method if detail else '',
-        detail.line_no if detail else '',
-        detail.product.product_name if detail and detail.product else '',
-        detail.quantity if detail else '',
-        detail.billing_unit_price if detail else '',
-        '1' if (detail and detail.is_tax_exempt) else '0',
-        detail.tax_rate if detail else '',
+        header.partner.partner_name,
+        header.sales_order_date.strftime('%Y-%m-%d'),
+        header.assignee,
+        header.delivery_due_date.strftime('%Y-%m-%d'),
+        header.delivery_place,
+        header.remarks or '',
+        header.quotation_manager_comment or '',
+        header.quotation_customer_comment or '',
+        header.order_manager_comment or '',
+        header.order_customer_comment or '',
+        get_rounding_label(method=header.rounding_method),
+        detail.line_no,
+        detail.product.product_name,
+        detail.quantity,
+        detail.master_unit_price,
+        detail.billing_unit_price,
+        '非課税' if detail.is_tax_exempt else '課税',
+        detail.tax_rate,
+        ', '.join([u.username for u in header.reference_users.all()]) if hasattr(header, 'reference_users') else '',
+        ', '.join([g.group_name for g in header.reference_groups.all()]) if hasattr(header, 'reference_groups') else '',
     ]
+
+def get_rounding_label(method):
+    choices_dict = dict(SalesOrder.ROUNDING_CHOICES)
+    return choices_dict.get(method, method or '')
+
+def get_rounding_code(label):
+    choices_dict = {v: k for k, v in SalesOrder.ROUNDING_CHOICES}
+    return choices_dict.get(label, label)
 
 def search_order_data(request, query_set):
     keyword = request.GET.get('search_sales_order_no') or ''

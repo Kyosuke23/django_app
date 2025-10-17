@@ -10,9 +10,14 @@
   <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2 mb-0"><i class="bi bi-file-earmark-check me-4"></i>受注管理</h1>
     <div class="d-flex gap-2">
+      <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+      <button type="button" id="import-btn" class="btn btn-outline-secondary btn-sm"
+              data-action="{% url 'sales_order:import_csv' %}">
+        <i class="bi bi-upload"></i> Import
+      </button>
       <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
               data-action="{% url 'sales_order:export_csv' %}">
-        <i class="bi bi-download"></i> CSV
+        <i class="bi bi-download"></i> Export
       </button>
       {% if user.privilege <= PRIVILEGE_EDITOR %}
       <a class="btn btn-outline-primary btn-sm"
@@ -26,6 +31,7 @@
     </div>
   </div>
 
+  {# フラッシュメッセージ #}
   {% include 'layout/message.html' %}
 
   {# 検索フォーム #}
