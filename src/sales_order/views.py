@@ -91,7 +91,7 @@ class SalesOrderListView(generic.ListView):
 
         # 検索フォームが有効な場合のみフィルタ
         if form.is_valid():
-            queryset = filter_data(form.cleaned_data, queryset)
+            queryset = filter_data(form.cleaned_data, queryset).distinct()
 
             # 並び替え処理
             sort = form.cleaned_data.get('sort')
