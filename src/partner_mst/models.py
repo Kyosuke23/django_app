@@ -55,7 +55,6 @@ class Partner(BaseModel):
     email = models.EmailField(
         max_length=254,
         verbose_name='メールアドレス',
-        unique=True,
         error_messages={
             'invalid': 'メールアドレスの形式が正しくありません。',
             'unique': 'このメールアドレスは既に登録されています。',
