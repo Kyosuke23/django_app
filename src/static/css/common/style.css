@@ -228,6 +228,49 @@ label:has(+ input[required])::after {
   padding-top: 0.75rem;
 }
 
+/* デフォルトレイアウト */
+.d-flex {
+  display: flex;
+}
+
+/* 共通: レイアウト */
+.d-flex {
+  display: flex;
+}
+
+/* サイドバー基本設定 */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background-color: #f8f9fa;
+  height: 100vh;
+  transition: all 0.3s ease;
+  border-right: 1px solid #ddd;
+}
+
+/* メインエリア */
+main.container-fluid {
+  flex: 1;
+  transition: all 0.3s ease;
+}
+
+/* ========= iPad以下: サイドバーをオフキャンバス専用にする ========= */
+@media (max-width: 1180px) {
+  /* .sidebar自体は残す（offcanvasが動作するため） */
+  .sidebar {
+    width: 0;
+    min-width: 0;
+    border: none;
+    position: static;
+  }
+
+  /* mainを全幅に拡張 */
+  main.container-fluid {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
+
 /* =======================================================
  * テーブル
  * ======================================================= */
