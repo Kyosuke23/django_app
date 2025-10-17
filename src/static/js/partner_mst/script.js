@@ -26,7 +26,9 @@ $(function () {
 
     // ファイル選択時
     $('#file-input').on('change', function () {
-        $().import_data(this); // 既存の処理
+        if (!this.files.length) return;
+        $().import_data(this);
+        $(this).val(''); // 同一ファイル再選択時にも発火するようにリセ
     });
 
     // =====================================================

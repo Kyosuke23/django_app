@@ -287,7 +287,7 @@ def get_row(rec):
     return [
         rec.partner_name,
         rec.partner_name_kana,
-        rec.partner_type,
+        rec.get_partner_type_display(),
         rec.contact_name,
         rec.email,
         rec.tel_number,

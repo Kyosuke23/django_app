@@ -200,7 +200,6 @@ class CSVImportBaseView(View):
         raise NotImplementedError
 
 
-
 class BaseModel(models.Model):
     '''
     共通基底クラス
