@@ -6,7 +6,7 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
@@ -42,7 +42,7 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
     def get_queryset(self):
         req = self.request
         form = PartnerSearchForm(req.GET or None)
-        
+
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Partner.objects.filter(is_deleted=False, tenant=req.user.tenant)
 
@@ -86,7 +86,7 @@ class PartnerCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Crea
             request
         )
         return JsonResponse({'success': True, 'html': html})
-    
+
     def get_form(self, form_class=None):
         # フォームのインスタンスに tenant を最初から入れておく -> 同一テナント内での重複チェックのため
         form = super().get_form(form_class)
@@ -128,8 +128,21 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
     form_class = PartnerForm
     template_name = 'partner_mst/form.html'
 
+    # def get_object(self, queryset=None):
+    #     '''存在しない or 削除済みデータの取得時に例外を出す'''
+    #     try:
+    #         obj = super(PartnerUpdateView, self).get_object(queryset)
+    #     except Http404:
+    #         return
+    #     return obj
+
     def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
+        try:
+            self.object = self.get_object()
+        except Http404:
+            messages.error(request, 'この取引先は既に削除されています。')
+            return JsonResponse({'success': False}, status=404)
+
         form = self.get_form()
         html = render_to_string(
             self.template_name,
@@ -222,7 +235,7 @@ class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     def get_queryset(self, request):
         req = self.request
         form = PartnerSearchForm(req.GET or None)
-        
+
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Partner.objects.filter(is_deleted=False, tenant=req.user.tenant)
 

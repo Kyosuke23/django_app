@@ -66,7 +66,7 @@ class Partner(BaseModel):
 
     postal_code = models.CharField(
         max_length=10,
-        validators=[RegexValidator(r'^\d{3}-?\d{4}$', '郵便番号の形式が正しくありません。')],
+        validators=[RegexValidator(r'^[0-9\-]+$', '郵便番号の形式が正しくありません。')],
         blank=True,
         null=True,
         verbose_name='郵便番号',

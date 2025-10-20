@@ -129,7 +129,7 @@ class PartnerForm(forms.ModelForm):
         widgets = {
             'partner_name': forms.TextInput(attrs={'class': 'form-control'}),
             'partner_name_kana': forms.TextInput(attrs={'class': 'form-control'}),
-            'partner_type': forms.Select(attrs={'class': 'form-control'}),
+            'partner_type': forms.Select(attrs={'class': 'form-control',}),
             'contact_name': forms.TextInput(attrs={'class': 'form-control'}),
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'tel_number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -146,10 +146,12 @@ class PartnerForm(forms.ModelForm):
         tenant = self.initial.get('tenant') or getattr(self.instance, 'tenant', None)
         partner_name = cleaned_data.get('partner_name')
         email = cleaned_data.get('email')
-        
+
+        self.fields['partner_type'].required = True
+
         # 同一テナント内で同じ取引先・メールアドレスの組み合わせを禁止
         if tenant and partner_name and email:
-            qs = Partner.objects.filter(tenant=tenant, partner_name=partner_name)
+            qs = Partner.objects.filter(tenant=tenant, partner_name=partner_name, email=email)
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():

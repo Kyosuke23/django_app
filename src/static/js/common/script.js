@@ -103,16 +103,13 @@ $(function () {
                 dataType: 'json',
             })
             .done(function (data) {
+                // 問題なければモーダルを開く
                 $modal.find('.modal-body').html(data.html);
                 afterLoadCallback($modal);
             })
             .fail(function () {
-                $('#flash_message_area').flash_message({
-                    text: 'フォームの読込に失敗しました',
-                    class_name: 'error',
-                    how: 'append',
-                    time: 4000
-                });
+                // データが削除されていたらリロードしてフラッシュメッセージが表示される
+                location.reload();
             });
         });
 
