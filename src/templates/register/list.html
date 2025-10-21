@@ -42,7 +42,7 @@
 </form>
 
 {# ユーザーグループ管理 #}
-{% if user.privilege <= PRIVILEGE_EDITOR %}
+{% if user.privilege < PRIVILEGE_EDITOR %}
   {% include 'register/user_group_mst.html' %}
 {% endif %}
 

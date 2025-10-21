@@ -11,7 +11,7 @@
       data-delete-url="{% if form.instance.pk %}{% url 'register:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
 
-  {% if not form.instance.pk or request.user.privilege|add:0 == PRIVILEGE_SYSTEM|add:0 %}
+  {% if not form.instance.pk or request.user.privilege == PRIVILEGE_SYSTEM %}
     {# ------------------------------------------------ #}
     {# 登録時（新規）→ 全フォーム入力可               #}
     {# ------------------------------------------------ #}
@@ -21,7 +21,7 @@
     {# ------------------------------------------------ #}
     {# 更新時                                           #}
     {# ------------------------------------------------ #}
-    {% if request.user.privilege|add:0 >= PRIVILEGE_EDITOR|add:0 %}
+    {% if request.user.privilege >= PRIVILEGE_EDITOR %}
       {# 権限2以上 → 全項目テキスト表示（縦配置） #}
       {% for field in form %}
         <div class="mb-3">
@@ -47,7 +47,7 @@
         </div>
       {% endfor %}
 
-    {% elif request.user.privilege|add:0 == PRIVILEGE_MANAGER|add:0 %}
+    {% elif request.user.privilege == PRIVILEGE_MANAGER %}
       {# 権限1以下 → privilege, groups_customのみ編集可 #}
       {% for field in form %}
         {% if field.name == "privilege" or field.name == "groups_custom" %}
@@ -88,7 +88,7 @@
     {% if not form.instance.pk %}
       <button type="submit" class="btn btn-primary" data-action="save">登録</button>
 
-    {% elif request.user.privilege|add:0 <= 1 %}
+    {% elif request.user.privilege <= 1 %}
       <button type="submit" class="btn btn-primary" data-action="save">保存</button>
       {% if form.instance.pk != request.user.pk %}
         <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
