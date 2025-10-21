@@ -90,7 +90,7 @@ class CSVExportBaseView(View):
     def row(self, rec):
         '''サブクラスで1行分のリストを返す'''
         raise NotImplementedError('サブクラスで row() を実装してください')
-    
+
 
 class CSVImportBaseView(View):
     '''
@@ -107,6 +107,12 @@ class CSVImportBaseView(View):
         file = request.FILES.get('file')
         if not file:
             return JsonResponse({'error': 'ファイルが選択されていません'}, status=400)
+
+        # ------------------------------------------------------------
+        # ファイルサイズチェック
+        # ------------------------------------------------------------
+        if file.size > settings.MAX_FILE_SIZE:
+            return JsonResponse({'error': 'ファイルサイズが上限を超えています。'}, status=400)
 
         # ------------------------------------------------------------
         # CSV読み込み
@@ -229,7 +235,7 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
-        
+
 class PrivilegeRequiredMixin():
     '''
     一般権限以下のユーザーのアクセスを制限する
@@ -240,4 +246,4 @@ class PrivilegeRequiredMixin():
         if int(request.user.privilege) > int(PRIVILEGE_EDITOR):
             return HttpResponseForbidden('アクセス権限がありません')
         return super().dispatch(request, *args, **kwargs)
-    
+

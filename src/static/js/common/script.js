@@ -95,6 +95,7 @@ $(function () {
     $.fn.modal_form = function (modalSelector, afterLoadCallback) {
         const $modal = $(modalSelector);
 
+        /* モーダルを開く処理 */
         $modal.on('show.bs.modal', function (e) {
             const url = $(e.relatedTarget).data('url');
             $.ajax({
@@ -102,17 +103,18 @@ $(function () {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 dataType: 'json',
             })
+            // 問題なければモーダル画面を開く
             .done(function (data) {
-                // 問題なければモーダルを開く
                 $modal.find('.modal-body').html(data.html);
                 afterLoadCallback($modal);
             })
+            // 対象データが存在しない => 画面をリロードしてフラッシュメッセージ表示
             .fail(function () {
-                // データが削除されていたらリロードしてフラッシュメッセージが表示される
                 location.reload();
             });
         });
 
+        /* 保存・削除処理 */
         $modal.on('submit', 'form', function (e) {
             e.preventDefault();
             const $form = $(this);
@@ -126,21 +128,12 @@ $(function () {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 dataType: 'json'
             })
+            // 処理成功時も失敗時も画面をリロードしてフラッシュメッセージ表示
             .done(function (data) {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    $modal.find('.modal-body').html(data.html);
-                    afterLoadCallback($modal);
-                }
+                location.reload();
             })
             .fail(function () {
-                $('#flash_message_area').flash_message({
-                    text: 'サーバー通信に失敗しました',
-                    class_name: 'error',
-                    how: 'append',
-                    time: 4000
-                });
+                location.reload();
             });
         });
 
@@ -203,7 +196,12 @@ $(function () {
         return this;
     };
 
-    // 一括削除
+    /**
+     * 一括削除処理
+     * @param {} url
+     * @param {*} target_nm
+     * @returns
+     */
     $.fn.call_bulk_delete = function (url, target_nm) {
         let ids = $('.check-item:checked').map(function () {
             return $(this).val();
@@ -222,13 +220,17 @@ $(function () {
                 ids: ids,
                 csrfmiddlewaretoken: $('[name=csrfmiddlewaretoken]').val()
             },
-            traditional: true,
-            success: function (jqXHR) {
-                alert(jqXHR.message);
+            traditional: true
+        })
+        .done(function (data) {
+            alert(data.message);
+            location.reload();
+        })
+        .fail(function (xhr) {
+            if (xhr.responseJSON?.error) {
+                alert([xhr.responseJSON.error || '', xhr.responseJSON.details || ''].join('\n'));
+            } else {
                 location.reload();
-            },
-            error: function (jqXHR) {
-                alert([jqXHR.responseJSON?.error || '', jqXHR.responseJSON?.details || ''].join('\n'));
             }
         });
     };

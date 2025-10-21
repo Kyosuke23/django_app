@@ -1,4 +1,6 @@
 import json
+import csv
+import io
 from django.test import TestCase, Client, RequestFactory
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -9,7 +11,11 @@ from django.utils import timezone
 from tenant_mst.models import Tenant
 from partner_mst.views import HEADER_MAP
 from django.contrib.messages.storage.fallback import FallbackStorage
-from partner_mst.views import PartnerUpdateView
+from partner_mst.views import PartnerUpdateView, PartnerBulkDeleteView
+from sales_order.models import SalesOrder
+from django.conf import settings
+from django.contrib import messages
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 
 class PartnerViewTests(TestCase):
@@ -910,14 +916,1200 @@ class PartnerViewTests(TestCase):
         # View実行
         response = PartnerUpdateView.as_view()(request, pk=99999)
 
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 404)
-
         # JSONレスポンス構造確認
         self.assertJSONEqual(response.content, {'success': False})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 404)
 
         # メッセージ内容確認
         storage = list(messages)
         self.assertEqual(len(storage), 1)
         self.assertEqual(storage[0].message, 'この取引先は既に削除されています。')
         self.assertEqual(storage[0].level_tag, 'error')
+
+    def test_V32(self):
+        '''
+        更新処理（異常系：存在しないデータの更新）
+        '''
+        url = reverse('partner_mst:update', args=[99999])
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_name_kana': 'テストカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '山田太郎',
+            'tel_number': '0312345678',
+            'email': 'test@example.com',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '千代田区',
+            'address': '丸の内1-1-1',
+            'address2': 'ビル3F',
+        }
+
+        # RequestFactoryでPOSTリクエスト生成
+        request = self.factory.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = self.user
+        setattr(request, 'session', self.client.session)
+
+        # メッセージストレージをリクエストに付与
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        # View呼び出し
+        response = PartnerUpdateView.as_view()(request, pk=99999)
+
+        # JSONレスポンス構造確認
+        self.assertJSONEqual(response.content, {'success': False})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 404)
+
+        # messages.error 確認
+        storage = list(messages)
+        self.assertEqual(len(storage), 1)
+        self.assertEqual(storage[0].message, 'この取引先は既に削除されています。')
+        self.assertEqual(storage[0].level_tag, 'error')
+
+    #----------------
+    # DeleteView
+    #----------------
+    def test_V33(self):
+        '''
+        削除処理（正常系）
+        '''
+        # 取引先のテストデータ
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='テスト株式会社',
+            email='delete@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 受注テストデータ
+        sales_order = SalesOrder.objects.create(
+            tenant=self.user.tenant,
+            partner=partner,
+            sales_order_no='SO-001',
+            sales_order_date='2025-09-30',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        url = reverse('partner_mst:delete', args=[partner.id])
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        self.assertEqual(response.status_code, 200)
+        res_json = response.json()
+        self.assertTrue(res_json['success'])
+
+        # 取引先の削除確認
+        self.assertFalse(Partner.objects.filter(id=partner.id).exists())
+
+        # 受注データの取引先がNullになっていること
+        sales_order.refresh_from_db()
+        self.assertIsNone(sales_order.partner)
+
+    def test_V34(self):
+        '''削除処理（異常系：権限不足）'''
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        # 事前データ作成
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='ログイン株式会社',
+            partner_type='supplier',
+            email='login@example.com',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 更新処理のURL作成
+        url = reverse('partner_mst:update', args=[partner.id])
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_V35(self):
+        '''削除処理（異常系：未ログイン）'''
+        # 事前データ作成
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='ログイン株式会社',
+            partner_type='supplier',
+            email='login@example.com',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 更新処理のURL作成
+        url = reverse('partner_mst:delete', args=[partner.id])
+
+        # ログアウト
+        self.client.logout()
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # 遷移後の画面確認
+        self.assertRedirects(response, f'/login/?next=/partner_mst/{partner.id}/delete/')
+
+    def test_V36(self):
+        '''
+        削除処理（異常系：存在しないデータの削除）
+        '''
+        url = reverse('partner_mst:delete', args=[99999])
+
+        # RequestFactoryでPOSTリクエスト生成
+        request = self.factory.post(url,  HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+        request.user = self.user
+        setattr(request, 'session', self.client.session)
+
+        # メッセージストレージをリクエストに付与
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        # View呼び出し
+        response = PartnerUpdateView.as_view()(request, pk=99999)
+
+        # JSONレスポンス構造確認
+        self.assertJSONEqual(response.content, {'success': False})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 404)
+
+        # messages.error 確認
+        storage = list(messages)
+        self.assertEqual(len(storage), 1)
+        self.assertEqual(storage[0].message, 'この取引先は既に削除されています。')
+        self.assertEqual(storage[0].level_tag, 'error')
+
+    def test_V37(self):
+        '''
+        一括削除（正常系）
+        '''
+        # 削除対象データ作成
+        partner1 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象1',
+            email='p1@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        partner2 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象2',
+            email='p2@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 受注データ作成
+        sales_order_1 = SalesOrder.objects.create(
+            tenant=self.user.tenant,
+            partner=partner1,
+            sales_order_no='SO-001',
+            sales_order_date='2025-09-30',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 受注データ作成
+        sales_order_2 = SalesOrder.objects.create(
+            tenant=self.user.tenant,
+            partner=partner2,
+            sales_order_no='SO-002',
+            sales_order_date='2025-09-30',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 処理実行
+        url = reverse('partner_mst:bulk_delete')
+        response = self.client.post(
+            url,
+            {'ids': [partner1.id, partner2.id]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # レスポンス確認
+        self.assertEqual(response.status_code, 200)
+        res_json = response.json()
+        self.assertIn('件削除しました', res_json['message'])
+        self.assertIn('2件削除しました', res_json['message'])
+
+        # DB確認
+        self.assertFalse(Partner.objects.filter(id=partner1.id).exists())
+        self.assertFalse(Partner.objects.filter(id=partner2.id).exists())
+
+        # 受注データの取引先がすべてNullになっていること
+        sales_order_1.refresh_from_db()
+        sales_order_2.refresh_from_db()
+        self.assertIsNone(sales_order_1.partner)
+        self.assertIsNone(sales_order_2.partner)
+
+    def test_V38(self):
+        '''
+        一括削除（異常系：指定なし）
+        '''
+        # 削除対象データ作成
+        partner1 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象1',
+            email='p1@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        partner2 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象2',
+            email='p2@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        url = reverse('partner_mst:bulk_delete')
+        response = self.client.post(url, {})  # idなし
+
+        # リダイレクト確認
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse('partner_mst:list'))
+
+        # メッセージがセットされていることを確認
+        storage = list(messages.get_messages(response.wsgi_request))
+        self.assertTrue(any('削除対象が選択されていません' in str(m) for m in storage))
+
+        # DB確認（削除されていない）
+        self.assertTrue(Partner.objects.filter(id=partner1.id).exists())
+        self.assertTrue(Partner.objects.filter(id=partner2.id).exists())
+
+    def test_V39(self):
+        '''一括削除処理（異常系：権限不足）'''
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        # 削除対象データ作成
+        partner1 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象1',
+            email='p1@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        partner2 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象2',
+            email='p2@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 処理実行
+        url = reverse('partner_mst:bulk_delete')
+        response = self.client.post(
+            url,
+            {'ids': [partner1.id, partner2.id]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_V40(self):
+        '''
+        一括削除（異常系：未ログイン）
+        '''
+        # 削除対象データ作成
+        partner1 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象1',
+            email='p1@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        partner2 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象2',
+            email='p2@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # ログアウト
+        self.client.logout()
+
+        # 処理実行
+        url = reverse('partner_mst:bulk_delete')
+        response = self.client.post(
+            url,
+            {'ids': [partner1.id, partner2.id]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/bulk_delete/')
+
+        # DB確認
+        self.assertTrue(Partner.objects.filter(id=partner1.id).exists())
+        self.assertTrue(Partner.objects.filter(id=partner2.id).exists())
+
+    def test_V41(self):
+        '''一括削除処理（異常系：存在しないID指定）'''
+
+        # テスト用データ作成（1件だけ存在）
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='テスト削除',
+            email='test@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+    )
+
+        # 実在するIDと存在しないIDを混ぜる
+        valid_id = str(partner.id)
+        nonexistent_id = str(partner.id + 9999)
+        ids = [valid_id, nonexistent_id]
+
+        # RequestFactory で Ajax POST リクエスト作成
+        url = reverse('partner_mst:bulk_delete')
+        request = self.factory.post(
+            url,
+            {'ids': ids},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+        request.user = self.user
+        setattr(request, 'session', self.client.session)
+
+        # メッセージストレージを付与
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        # View呼び出し
+        response = PartnerBulkDeleteView.as_view()(request)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 404)
+
+        # JSONレスポンス内容確認
+        self.assertJSONEqual(response.content, {'success': False})
+
+        # メッセージ内容確認
+        storage = list(messages)
+        self.assertEqual(len(storage), 1)
+        self.assertEqual(storage[0].message, 'すでに削除されている取引先が含まれています。')
+        self.assertEqual(storage[0].level_tag, 'error')
+
+        # 削除が実行されていないこと（ロールバック確認）
+        self.assertTrue(Partner.objects.filter(id=partner.id).exists())
+
+    #----------------
+    # ExportCSV
+    #----------------
+    def _request_and_parse(self, url: str):
+        '''エクスポートを叩いてレスポンスとCSV行を返す共通処理'''
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+
+        # 文字コード確認
+        try:
+            content = response.content.decode('utf-8')
+        except UnicodeDecodeError:
+            self.fail('CSVファイルの文字コードがutf-8ではありません。')
+
+        # BOMがある場合も想定して除去
+        if content.startswith('\ufeff'):
+            content = content.lstrip('\ufeff')
+
+        reader = csv.reader(io.StringIO(content))
+        rows = list(reader)
+
+        # ヘッダ確認
+        self.assertEqual(rows[0], list(HEADER_MAP.keys()))
+        return rows
+
+    def _assert_csv_matches_queryset(self, rows, queryset):
+        '''CSVの行とクエリセットを突き合わせ'''
+        field_names = list(HEADER_MAP.values())
+
+        # 並び順一致確認（id順 or order_by指定順）
+        csv_first_column_values = [r[0] for r in rows[1:]]
+        queryset_first_column_values = [
+            str(getattr(p, field_names[0])) if getattr(p, field_names[0]) is not None else ''
+            for p in queryset
+        ]
+        self.assertEqual(
+            csv_first_column_values,
+            queryset_first_column_values,
+            'CSVの並び順がクエリセットと一致しません。',
+        )
+
+        # 内容一致確認
+        for row, partner in zip(rows[1:], queryset):
+            expected = []
+            for field in field_names:
+                display_method = f'get_{field}_display'
+                if hasattr(partner, display_method):
+                    value = getattr(partner, display_method)()
+                else:
+                    value = getattr(partner, field)
+                expected.append(str(value) if value is not None else '')
+
+            self.assertEqual(row, expected)
+
+    def test_V42(self):
+        '''CSVエクスポート（正常系：n件）'''
+        url = reverse('partner_mst:export_csv')
+        rows = self._request_and_parse(url)
+
+        # 件数チェック（事前に8件のデータがある想定）
+        self.assertEqual(len(rows) - 1, 8)
+
+        partners = Partner.objects.filter(
+            tenant=self.user.tenant,
+            is_deleted=False
+        ).order_by('id')
+
+        self._assert_csv_matches_queryset(rows, partners)
+
+    def test_V43(self):
+        '''CSVエクスポート（正常系：取引先名称検索）'''
+        target = '株式会社アルファ'
+        url = reverse('partner_mst:export_csv') + f'?search_partner_name={target}'
+        rows = self._request_and_parse(url)
+        partners = Partner.objects.filter(
+            partner_name__icontains=target,
+            tenant=self.user.tenant,
+            is_deleted=False
+        ).order_by('partner_name')
+        self.assertEqual(len(rows) - 1, partners.count())
+        self._assert_csv_matches_queryset(rows, partners)
+
+    def test_V44(self):
+        '''CSVエクスポート（正常系：0件）'''
+        Partner.objects.all().delete()
+        url = reverse('partner_mst:export_csv')
+        rows = self._request_and_parse(url)
+        # ヘッダのみ
+        self.assertEqual(len(rows), 1)
+
+    def test_V45(self):
+        '''CSVエクスポート（正常系：参照ユーザー）'''
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        url = reverse('partner_mst:export_csv')
+        rows = self._request_and_parse(url)
+
+        # 件数チェック（事前に8件のデータがある想定）
+        self.assertEqual(len(rows) - 1, 8)
+
+        partners = Partner.objects.filter(
+            tenant=self.user.tenant,
+            is_deleted=False
+        ).order_by('id')
+
+        self._assert_csv_matches_queryset(rows, partners)
+
+    def test_V46(self):
+        '''CSVエクスポート（正常系：参照ユーザー）'''
+        url = reverse('partner_mst:export_csv')
+
+        # ログアウト
+        self.client.logout()
+
+        # アクセス実行
+        response = self.client.get(url)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/export/csv')
+
+        # CSVが返却されていないことを確認
+        if 'Content-Type' in response:
+            self.assertNotEqual(response['Content-Type'], 'text/csv')
+
+    def _create_partners(self, n):
+        partners = []
+        for i in range(n):
+            p = Partner.objects.create(
+                tenant=self.user.tenant,
+                partner_name=f"取引先{i}",
+                partner_name_kana=f"トリヒキサキ{i}",
+                contact_name=f"担当者{i}",
+                email=f"user{i}@example.com",
+                is_deleted=False,
+            )
+            partners.append(p)
+        return partners
+
+    def test_V47(self):
+        '''CSVエクスポート（正常系：上限数以上）'''
+        self._create_partners(settings.MAX_EXPORT_ROWS + 1)
+        url = reverse('partner_mst:export_check')
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertIn('warning', data)
+        self.assertEqual('出力件数が上限（10,000件）を超えています。先頭10,000件のみを出力します。', data['warning'])
+        self.assertNotIn('ok', data)
+
+    #----------------
+    # ImportCSV
+    #----------------
+    def _make_csv_file(self, rows, encoding='utf-8', header=None):
+        '''
+        テスト用CSVファイルの作成
+        '''
+        if header is None:
+            fieldnames = [
+                'partner_name', 'partner_name_kana', 'partner_type',
+                'contact_name', 'email', 'tel_number', 'postal_code',
+                'state', 'city', 'address', 'address2'
+            ]
+        else:
+            fieldnames = header
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+        output.seek(0)
+        return io.BytesIO(output.getvalue().encode(encoding=encoding))
+
+    def test_V48(self):
+        '''CSVインポート（正常系：n件）'''
+        url = reverse('partner_mst:import_csv')
+
+        # 取引先データを全削除
+        Partner.objects.all().delete()
+
+        rows = [
+            {
+                'partner_name': 'テスト株式会社',
+                'partner_name_kana': 'テストカブシキガイシャ',
+                'partner_type': 'customer',
+                'contact_name': '山田太郎',
+                'email': 'test1@example.com',
+                'tel_number': '0312345678',
+                'postal_code': '1000001',
+                'state': '東京都',
+                'city': '千代田区',
+                'address': '丸の内1-1-1',
+                'address2': 'ビル3F',
+            },
+            {
+                'partner_name': 'サンプル商事',
+                'partner_name_kana': 'サンプルショウジ',
+                'partner_type': 'supplier',
+                'contact_name': '佐藤花子',
+                'email': 'test2@example.com',
+                'tel_number': '0459876543',
+                'postal_code': '2200002',
+                'state': '神奈川県',
+                'city': '横浜市西区',
+                'address': 'みなとみらい2-2-2',
+                'address2': 'ランドタワー10F',
+            },
+            {
+                'partner_name': 'グローバル合同会社',
+                'partner_name_kana': 'グローバルゴウドウガイシャ',
+                'partner_type': 'both',
+                'contact_name': '鈴木一郎',
+                'email': 'test3@example.com',
+                'tel_number': '0521234567',
+                'postal_code': '4500003',
+                'state': '愛知県',
+                'city': '名古屋市中村区',
+                'address': '名駅3-3-3',
+                'address2': 'サウスタワー5F',
+            },
+            {
+                'partner_name': '未来産業株式会社',
+                'partner_name_kana': 'ミライサンギョウカブシキガイシャ',
+                'partner_type': 'customer',
+                'contact_name': '高橋次郎',
+                'email': 'test4@example.com',
+                'tel_number': '0665432109',
+                'postal_code': '5300004',
+                'state': '大阪府',
+                'city': '大阪市北区',
+                'address': '梅田4-4-4',
+                'address2': 'グランビル8F',
+            },
+            {
+                'partner_name': 'クリエイト有限会社',
+                'partner_name_kana': 'クリエイトユウゲンガイシャ',
+                'partner_type': 'supplier',
+                'contact_name': '田中三郎',
+                'email': 'test5@example.com',
+                'tel_number': '0753456789',
+                'postal_code': '6000005',
+                'state': '京都府',
+                'city': '京都市下京区',
+                'address': '四条通5-5-5',
+                'address2': '中央ビル2F',
+            },
+        ]
+
+        # CSVファイルの作成
+        file = self._make_csv_file(rows)
+
+        # レスポンス取得
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+        # メッセージ確認
+        self.assertEqual('5件をインポートしました。', res_json['message'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 5)
+
+        # 登録値の確認
+        partners = Partner.objects.order_by('email')  # email で並べて rows と突き合わせやすくする
+        for row, partner in zip(sorted(rows, key=lambda x: x['email']), partners):
+            self.assertEqual(partner.partner_name, row['partner_name'])
+            self.assertEqual(partner.partner_name_kana, row['partner_name_kana'])
+            self.assertEqual(partner.partner_type, row['partner_type'])
+            self.assertEqual(partner.contact_name, row['contact_name'])
+            self.assertEqual(partner.email, row['email'])
+            self.assertEqual(partner.tel_number, row['tel_number'])
+            self.assertEqual(partner.postal_code, row['postal_code'])
+            self.assertEqual(partner.state, row['state'])
+            self.assertEqual(partner.city, row['city'])
+            self.assertEqual(partner.address, row['address'])
+            self.assertEqual(partner.address2, row['address2'])
+            self.assertEqual(partner.create_user, self.user)
+            self.assertEqual(partner.update_user, self.user)
+            self.assertEqual(partner.tenant, self.user.tenant)
+            self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
+            self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_V49(self):
+        '''CSVインポート（正常系：shift-jis）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        rows = [
+            {
+                'partner_name': 'テスト株式会社',
+                'partner_name_kana': 'テストカブシキガイシャ',
+                'partner_type': 'customer',
+                'contact_name': '山田太郎',
+                'email': 'test1@example.com',
+                'tel_number': '0312345678',
+                'postal_code': '1000001',
+                'state': '東京都',
+                'city': '千代田区',
+                'address': '丸の内1-1-1',
+                'address2': 'ビル3F',
+            }
+        ]
+        # CSVファイルの作成
+        file = self._make_csv_file(rows=rows, encoding='cp932')
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # メッセージ確認
+        self.assertEqual('1件をインポートしました。', res_json['message'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 1)
+
+        # 登録値の確認
+        partner = Partner.objects.first()
+        self.assertEqual(partner.partner_name, 'テスト株式会社')
+        self.assertEqual(partner.partner_name_kana, 'テストカブシキガイシャ')
+        self.assertEqual(partner.partner_type, 'customer')
+        self.assertEqual(partner.contact_name, '山田太郎')
+        self.assertEqual(partner.email, 'test1@example.com')
+        self.assertEqual(partner.tel_number, '0312345678')
+        self.assertEqual(partner.postal_code, '1000001')
+        self.assertEqual(partner.state, '東京都')
+        self.assertEqual(partner.city, '千代田区')
+        self.assertEqual(partner.address, '丸の内1-1-1')
+        self.assertEqual(partner.address2, 'ビル3F')
+        self.assertEqual(partner.create_user, self.user)
+        self.assertEqual(partner.update_user, self.user)
+        self.assertEqual(partner.tenant, self.user.tenant)
+        self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_V50(self):
+        '''CSVインポート（正常系：改行混在 CRLF/LF）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        rows = [
+            {
+                'partner_name': '改行混在株式会社',
+                'partner_name_kana': 'カイコウコンザイカブシキガイシャ',
+                'partner_type': 'customer',
+                'contact_name': '佐々木進',
+                'email': 'crlf@example.com',
+                'tel_number': '0312349999',
+                'postal_code': '1000001',
+                'state': '東京都',
+                'city': '港区',
+                'address': '芝公園1-1-1',
+                'address2': '',
+            },
+        ]
+
+        # 改行混在CSVを手動で生成（\r\n + \n）
+        header = list(rows[0].keys())
+        lines = [','.join(header)] + [','.join(r.values()) for r in rows]
+        csv_content = '\r\n'.join(lines[:-1]) + '\n' + lines[-1]
+        file = io.BytesIO(csv_content.encode('utf-8'))
+
+        response = self.client.post(url, {'file': file})
+        self.assertEqual(response.status_code, 200)
+        res_json = json.loads(response.content)
+        self.assertEqual('1件をインポートしました。', res_json['message'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 1)
+
+        # 登録値の確認
+        partner = Partner.objects.first()
+        self.assertEqual(partner.partner_name, '改行混在株式会社')
+        self.assertEqual(partner.partner_name_kana, 'カイコウコンザイカブシキガイシャ')
+        self.assertEqual(partner.partner_type, 'customer')
+        self.assertEqual(partner.contact_name, '佐々木進')
+        self.assertEqual(partner.email, 'crlf@example.com')
+        self.assertEqual(partner.tel_number, '0312349999')
+        self.assertEqual(partner.postal_code, '1000001')
+        self.assertEqual(partner.state, '東京都')
+        self.assertEqual(partner.city, '港区')
+        self.assertEqual(partner.address, '芝公園1-1-1')
+        self.assertEqual(partner.address2, None)
+        self.assertEqual(partner.create_user, self.user)
+        self.assertEqual(partner.update_user, self.user)
+        self.assertEqual(partner.tenant, self.user.tenant)
+        self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_V51(self):
+        '''CSVインポート（正常系：空行スキップ）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # データの作成
+        rows = [
+            {'partner_name': '空行スキップ株式会社', 'partner_name_kana': 'クウギョウスキップカブシキガイシャ',
+             'partner_type': 'customer', 'contact_name': '田原正義', 'email': 'skip@example.com',
+             'tel_number': '0311111111', 'postal_code': '1000001', 'state': '東京都',
+             'city': '千代田区', 'address': '丸の内1-1-1', 'address2': ''}
+        ]
+        file = self._make_csv_file(rows)
+        file = io.BytesIO((file.getvalue() + b'\n\n').strip())  # 空行を追加
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # メッセージ確認
+        self.assertEqual('1件をインポートしました。', res_json['message'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 1)
+
+        # 登録値の確認
+        partner = Partner.objects.first()
+        self.assertEqual(partner.partner_name, '空行スキップ株式会社')
+        self.assertEqual(partner.partner_name_kana, 'クウギョウスキップカブシキガイシャ')
+        self.assertEqual(partner.partner_type, 'customer')
+        self.assertEqual(partner.contact_name, '田原正義')
+        self.assertEqual(partner.email, 'skip@example.com')
+        self.assertEqual(partner.tel_number, '0311111111')
+        self.assertEqual(partner.postal_code, '1000001')
+        self.assertEqual(partner.state, '東京都')
+        self.assertEqual(partner.city, '千代田区')
+        self.assertEqual(partner.address, '丸の内1-1-1')
+        self.assertEqual(partner.address2, None)
+        self.assertEqual(partner.create_user, self.user)
+        self.assertEqual(partner.update_user, self.user)
+        self.assertEqual(partner.tenant, self.user.tenant)
+        self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_V52(self):
+        '''CSVインポート（正常系：ヘッダ順入替え）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # データの作成
+        header = ['email', 'partner_name', 'partner_type', 'partner_name_kana', 'contact_name',
+                  'tel_number', 'postal_code', 'state', 'city', 'address', 'address2']
+        rows = [
+            {
+                'partner_name': '順序入替株式会社',
+                'partner_name_kana': 'ジュンジョイレカエカブシキガイシャ',
+                'partner_type': 'supplier',
+                'contact_name': '並木優',
+                'email': 'order@example.com',
+                'tel_number': '0422222222',
+                'postal_code': '1800001',
+                'state': '東京都',
+                'city': '武蔵野市',
+                'address': '吉祥寺1-2-3',
+                'address2': '順序ビル5F',
+            },
+        ]
+        file = self._make_csv_file(rows, header=header)
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # メッセージ確認
+        self.assertEqual('1件をインポートしました。', res_json['message'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 1)
+
+        # 登録値確認
+        partner = Partner.objects.first()
+        self.assertEqual(partner.partner_name, '順序入替株式会社')
+        self.assertEqual(partner.partner_name_kana, 'ジュンジョイレカエカブシキガイシャ')
+        self.assertEqual(partner.partner_type, 'supplier')
+        self.assertEqual(partner.contact_name, '並木優')
+        self.assertEqual(partner.email, 'order@example.com')
+        self.assertEqual(partner.tel_number, '0422222222')
+        self.assertEqual(partner.postal_code, '1800001')
+        self.assertEqual(partner.state, '東京都')
+        self.assertEqual(partner.city, '武蔵野市')
+        self.assertEqual(partner.address, '吉祥寺1-2-3')
+        self.assertEqual(partner.address2, '順序ビル5F')
+        self.assertEqual(partner.create_user, self.user)
+        self.assertEqual(partner.update_user, self.user)
+        self.assertEqual(partner.tenant, self.user.tenant)
+        self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_V54(self):
+        '''CSVインポート（正常系：住所に改行含む）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # CSVファイルの作成
+        rows = [{
+            'partner_name': '改行住所株式会社',
+            'partner_name_kana': 'カイギョウジュウショカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '改行一郎',
+            'email': 'newline@example.com',
+            'tel_number': '0333333333',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '中央区',
+            'address': '日本橋1-1-1\nオフィスA',
+            'address2': '',
+        }]
+        file = self._make_csv_file(rows)
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # エラーメッセージ確認
+        self.assertEqual('1件をインポートしました。', res_json['message'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 1)
+
+        # 登録値の確認
+        partner = Partner.objects.first()
+        self.assertEqual(partner.address, '日本橋1-1-1オフィスA')
+        self.assertEqual(partner.partner_name, '改行住所株式会社')
+        self.assertEqual(partner.partner_type, 'customer')
+        self.assertEqual(partner.email, 'newline@example.com')
+        self.assertEqual(partner.create_user, self.user)
+        self.assertEqual(partner.update_user, self.user)
+        self.assertEqual(partner.tenant, self.user.tenant)
+        self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_V55(self):
+        '''CSVインポート（正常系：部分成功時ロールバック）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # CSVファイルの作成
+        rows = [
+            {'partner_name': '正常株式会社', 'partner_name_kana': 'セイジョウカブシキガイシャ',
+             'partner_type': 'customer', 'contact_name': '正常太郎',
+             'email': 'ok@example.com', 'tel_number': '0312345678',
+             'postal_code': '1000001', 'state': '東京都', 'city': '千代田区',
+             'address': '丸の内1-1-1', 'address2': ''},
+            {'partner_name': '', 'partner_name_kana': '', 'partner_type': '',
+             'contact_name': '', 'email': 'ng@example.com', 'tel_number': '',
+             'postal_code': '', 'state': '', 'city': '', 'address': '', 'address2': ''}
+        ]
+        file = self._make_csv_file(rows)
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # エラーメッセージ確認
+        self.assertEqual('CSVに問題があります。', res_json['error'])
+        self.assertTrue(any('必須' in s for s in res_json['details']))
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_V56(self):
+        '''CSVインポート（異常系：重複エラー）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # 先行データ
+        Partner.objects.create(
+            tenant=self.user.tenant, partner_name='既存株式会社',
+            email='dup@example.com', partner_type='customer',
+            contact_name='既存太郎', create_user=self.user, update_user=self.user
+        )
+
+        # 重複発生用データ
+        rows = [{
+            'partner_name': '既存株式会社',
+            'partner_name_kana': 'キゾンカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '新太郎',
+            'email': 'dup@example.com',
+            'tel_number': '0312340000',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '港区',
+            'address': '芝1-1-1',
+            'address2': ''
+        }]
+
+        # CSVファイルを作成する
+        file = self._make_csv_file(rows)
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # メッセージ確認
+        self.assertEqual('CSVに問題があります。', res_json['error'])
+        self.assertTrue(any('既に存在' in s for s in res_json['details']))
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 1)
+
+    def test_V57(self):
+        '''CSVインポート（異常系：余分ヘッダ列）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # ヘッダ指定でデータ作成
+        header = ['partner_name','email','tenant','partner_type']
+        rows = [{'partner_name':'余分列株式会社','email':'extra@example.com','partner_type':'customer','tenant':'X'}]
+
+        # CSVファイルの作成
+        file = self._make_csv_file(rows, header=header)
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # エラーメッセージ確認
+        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_V58(self):
+        '''CSVインポート（異常系：重複ヘッダ）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+         # CSVファイルの作成
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(['partner_name','partner_name','partner_type'])
+        writer.writerow(['重複ヘッダ株式会社','customer','supplier'])
+        file = io.BytesIO(output.getvalue().encode('utf-8'))
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # エラーメッセージ確認
+        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_V59(self):
+        '''CSVインポート（異常系：拡張子不正）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+         # CSVファイルの作成
+        file = SimpleUploadedFile('test.txt', b'dummy text', content_type='text/plain')
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # エラーメッセージ確認
+        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_V60(self):
+        '''CSVインポート（異常系：サイズ超過）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # サイズ超過分のデータ値作成
+        large_content = b'a' * (settings.MAX_FILE_SIZE + 1)
+
+        # CSVファイルの作成
+        file = SimpleUploadedFile('large.csv', large_content, content_type='text/csv')
+
+        # レスポンス取得
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # エラーメッセージ確認
+        self.assertEqual('ファイルサイズが上限を超えています。', res_json['error'])
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_V61(self):
+        '''CSVインポート（異常系：権限不足）'''
+        # 現在ログイン中ユーザーをviewer権限に変更
+        self.user.privilege = '3'
+        self.user.save()
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # テストデータ
+        rows = [{
+            'partner_name': '権限不足株式会社',
+            'partner_name_kana': 'ケンゲンフソクカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '制限太郎',
+            'email': 'viewer@example.com',
+            'tel_number': '0300000000',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '港区',
+            'address': '芝公園1-1-1',
+            'address2': ''
+        }]
+
+        # CSVファイルの作成
+        file = self._make_csv_file(rows)
+
+        # レスポンスを取得
+        response = self.client.post(url, {'file': file})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+        # 登録されていないことを確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_V62(self):
+        '''CSVインポート（異常系：未ログイン）'''
+        self.client.logout()
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # CSVファイルの作成
+        file = self._make_csv_file([{'partner_name':'未ログイン株式会社','partner_type':'customer','email':'nologin@example.com'}])
+
+        # レスポンスを取得
+        response = self.client.post(url, {'file': file})
+
+        # 登録されていないことを確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # リダイレクト先を確認
+        self.assertRedirects(response, r'/login/?next=/partner_mst/import/csv')

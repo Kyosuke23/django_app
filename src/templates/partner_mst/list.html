@@ -17,7 +17,8 @@
         <i class="bi bi-upload"></i> Import
       </button>
       <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
-              data-action="{% url 'partner_mst:export_csv' %}">
+            data-action="{% url 'partner_mst:export_csv' %}"
+            data-check-action="{% url 'partner_mst:export_check' %}">
         <i class="bi bi-download"></i> Export
       </button>
       {% if user.privilege <= PRIVILEGE_EDITOR %}

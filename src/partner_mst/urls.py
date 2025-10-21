@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/delete/', views.PartnerDeleteView.as_view(), name='delete'),
     path("import/csv", views.ImportCSV.as_view(), name='import_csv'),
     path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
+    path('export/check/', views.ExportCheckView.as_view(), name='export_check'),
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     path('create/', views.PartnerCreateView.as_view(), name='create'),
     path('<int:pk>/update/', views.PartnerUpdateView.as_view(), name='update'),

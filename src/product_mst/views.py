@@ -11,6 +11,7 @@ from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
+from django.conf import settings
 
 # 出力カラム定義
 HEADER_MAP = {
@@ -37,15 +38,15 @@ class ProductListView(generic.ListView):
     model = Product
     template_name = 'product_mst/list.html'
     context_object_name = 'products'
-    paginate_by = 20
+    paginate_by = settings.DEFAULT_PAGE_SIZE
 
     def get_queryset(self):
         req = self.request
         form = ProductSearchForm(req.GET or None)
-        
+
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Product.objects.filter(is_deleted=False, tenant=req.user.tenant)
-        
+
         # フォームが有効なら検索条件を反映
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
@@ -55,7 +56,7 @@ class ProductListView(generic.ListView):
         queryset = set_table_sort(queryset=queryset, sort=sort)
 
         return queryset
-    
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['form'] = ProductSearchForm(self.request.GET or None)
@@ -169,8 +170,8 @@ class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
         set_message(self.request, '削除', obj.product_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
-    
-    
+
+
 class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
     '''
     一括削除処理
@@ -184,13 +185,13 @@ class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
         else:
             messages.warning(request, '削除対象が選択されていません')
         return redirect('product_mst:list')
-    
-    
+
+
 class ProductCategoryManageView(generic.FormView):
     template_name = 'product_mst/category_mst.html'
     form_class = ProductCategoryForm
     success_url = reverse_lazy('product_mst:category_manage')
-    
+
     def post(self, request, *args, **kwargs):
         '''カテゴリ名がnullでもバリデーションを通すための処理'''
         if request.POST.get('action') == 'delete':
@@ -270,10 +271,10 @@ class ExportCSV(CSVExportBaseView):
 
     def get_queryset(self, request):
         form = ProductSearchForm(request.GET or None)
-        
+
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Product.objects.filter(is_deleted=False, tenant=request.user.tenant)
-        
+
         # フォームが有効なら検索条件を反映
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
@@ -302,7 +303,7 @@ class ImportCSV(CSVImportBaseView):
 
     def validate_row(self, row, idx, existing, request):
         data = row.copy()
-        
+
         # ------------------------------------------------------
         # 商品カテゴリチェック
         # ------------------------------------------------------
@@ -318,7 +319,7 @@ class ImportCSV(CSVImportBaseView):
                 return None, f'{idx}行目: 商品カテゴリ「{category_name}」が存在しません'
         else:
             data['product_category'] = None
-        
+
         # ------------------------------------------------------
         # Djangoフォームバリデーション
         # ------------------------------------------------------
@@ -337,7 +338,7 @@ class ImportCSV(CSVImportBaseView):
         if key in existing:
             return None, f'{idx}行目: 商品名称「{product_name}」は既に存在します。'
         existing.add(key)
-        
+
         # ------------------------------------------------------
         # Productオブジェクト作成
         # ------------------------------------------------------
@@ -361,7 +362,7 @@ def get_row(rec):
         rec.unit,
         rec.description,
     ]
-    
+
 
 def filter_data(cleaned_data, queryset):
     keyword = cleaned_data.get('search_keyword', '').strip()

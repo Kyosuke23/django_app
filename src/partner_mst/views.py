@@ -1,4 +1,6 @@
 from django.views import generic
+from django.db import transaction
+from django.conf import settings
 from django.urls import reverse_lazy, reverse
 from .models import Partner
 from .form import PartnerSearchForm, PartnerForm
@@ -37,7 +39,7 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
     model = Partner
     template_name = 'partner_mst/list.html'
     context_object_name = 'partners'
-    paginate_by = 20
+    paginate_by = settings.DEFAULT_PAGE_SIZE
 
     def get_queryset(self):
         req = self.request
@@ -128,14 +130,6 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
     form_class = PartnerForm
     template_name = 'partner_mst/form.html'
 
-    # def get_object(self, queryset=None):
-    #     '''存在しない or 削除済みデータの取得時に例外を出す'''
-    #     try:
-    #         obj = super(PartnerUpdateView, self).get_object(queryset)
-    #     except Http404:
-    #         return
-    #     return obj
-
     def get(self, request, *args, **kwargs):
         try:
             self.object = self.get_object()
@@ -154,6 +148,20 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
             request
         )
         return JsonResponse({'success': True, 'html': html})
+
+    def post(self, request, *args, **kwargs):
+        try:
+            self.object = self.get_object()
+        except Http404:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'この取引先は既に削除されています。')
+                return JsonResponse({'success': False}, status=404)
+
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_invalid(form)
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=True)
@@ -190,7 +198,12 @@ class PartnerDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View
     success_url = reverse_lazy('product_mst:list')
 
     def post(self, request, *args, **kwargs):
-        obj = get_object_or_404(Partner, pk=kwargs['pk'])
+        try:
+            obj = get_object_or_404(Partner, pk=kwargs['pk'])
+        except Http404:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'この取引先は既に削除されています。')
+                return JsonResponse({'success': False})
         obj.delete()
         set_message(self.request, '削除', obj.partner_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -203,12 +216,42 @@ class PartnerBulkDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.
     '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
-        if ids:
-            Partner.objects.filter(id__in=ids).delete()
-            return JsonResponse({'message': f'{len(ids)}件削除しました'})
-        else:
+
+        if not ids:
             messages.warning(request, '削除対象が選択されていません')
-        return redirect('partner_mst:list')
+            return redirect('partner_mst:list')
+
+        try:
+            with transaction.atomic():
+                # 対象取得
+                partners = Partner.objects.filter(id__in=ids)
+
+                # 存在しないIDを検出
+                found_ids = set(str(p.id) for p in partners)
+                missing_ids = set(ids) - found_ids
+
+                if missing_ids:
+                    messages.error(request, 'すでに削除されている取引先が含まれています。')
+                    return JsonResponse({'success': False}, status=404)
+
+                # 物理削除実行
+                deleted_count, _ = partners.delete()
+
+            return JsonResponse({'message': f'{deleted_count}件削除しました'})
+
+        except ValueError as e:
+            # トランザクションは自動ロールバック
+            messages.error(request, str(e))
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': str(e)}, status=400)
+            return redirect('partner_mst:list')
+
+        except Exception:
+            # 想定外エラー（DBエラーなど）
+            messages.error(request, '削除処理中にエラーが発生しました。')
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': '削除処理中にエラーが発生しました。'}, status=500)
+            return redirect('partner_mst:list')
 
 
 #-------------------------
@@ -226,34 +269,62 @@ class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
     def row(self, rec):
         return get_row(rec)
 
+class ExportCheckView(LoginRequiredMixin, generic.View):
+    '''CSV出力前の件数チェック'''
+    def get(self, request):
+        form = PartnerSearchForm(request.GET or None)
+        queryset = Partner.objects.filter(is_deleted=False, tenant=request.user.tenant)
+
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        count = queryset.count()
+        if count > settings.MAX_EXPORT_ROWS:
+            return JsonResponse({
+                'warning': f"出力件数が上限（{settings.MAX_EXPORT_ROWS:,}件）を超えています。"
+                           f"先頭{settings.MAX_EXPORT_ROWS:,}件のみを出力します。"
+            })
+
+        return JsonResponse({'ok': True})
 
 class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     model_class = Partner
     filename_prefix = FILENAME_PREFIX
     headers = list(HEADER_MAP.keys())
 
+
     def get_queryset(self, request):
         req = self.request
         form = PartnerSearchForm(req.GET or None)
 
-        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
+        # 初期クエリセット（削除フラグ：False, 所属テナント限定）
         queryset = Partner.objects.filter(is_deleted=False, tenant=req.user.tenant)
 
-        # フォームが有効なら検索条件を反映
+        # 検索フォーム有効時のフィルタ
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
 
-        # 並び替え
+        # 並び替え処理
         sort = form.cleaned_data.get('sort') if form.is_valid() else ''
         queryset = set_table_sort(queryset=queryset, sort=sort)
+
+        # 出力件数制限処理（n件超の場合はメッセージ＋上限件数まで）
+        total_count = queryset.count()
+        if total_count > settings.MAX_EXPORT_ROWS:
+            messages.warning(
+                req,
+                f"出力件数が上限（{settings.MAX_EXPORT_ROWS:,}件）を超えています。"
+                f"先頭{settings.MAX_EXPORT_ROWS:,}件のみを出力しました。"
+            )
+            queryset = queryset[:settings.MAX_EXPORT_ROWS]
 
         return queryset
 
     def row(self, rec):
-        return get_row(rec)
+        return get_row(rec=rec)
 
 
-class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
+class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
     expected_headers = list(HEADER_MAP.keys())
     model_class = Partner
     unique_field = ('tenant_id', 'partner_name', 'email')

@@ -13,6 +13,7 @@ from .forms import UserSearchForm, SignUpForm, ChangePasswordForm, UserGroupForm
 from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.contrib.auth.views import PasswordChangeView
+from django.conf import settings
 from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
 
 
@@ -39,15 +40,15 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
     model = CustomUser
     template_name = 'register/list.html'
     context_object_name = 'users'
-    paginate_by = 20
+    paginate_by = settings.DEFAULT_PAGE_SIZE
 
     def get_queryset(self):
         req = self.request
         form = UserSearchForm(req.GET or None)
-        
+
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
-        
+
         # フォームが有効なら検索条件を反映
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
@@ -185,11 +186,11 @@ class ProfileUpdateView(generic.UpdateView):
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=True)
         return super().form_valid(form)
-    
+
     def form_invalid(self, form):
         pass
 
-    
+
 class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
     '''
     パスワードの変更処理
@@ -257,7 +258,7 @@ class UserGroupManageView(generic.FormView):
     template_name = 'register/user_group_mst.html'
     form_class = UserGroupForm
     success_url = reverse_lazy('register:group_manage')
-    
+
     def post(self, request, *args, **kwargs):
         '''グループ名がnullでもバリデーションを通すための処理'''
         if request.POST.get('action') == 'delete':
@@ -331,10 +332,10 @@ class ExportCSV(CSVExportBaseView):
 
     def get_queryset(self, request):
         form = UserSearchForm(request.GET or None)
-        
+
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = CustomUser.objects.filter(is_deleted=False, tenant=request.user.tenant)
-        
+
         # フォームが有効なら検索条件を反映
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)

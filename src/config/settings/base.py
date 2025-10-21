@@ -18,7 +18,7 @@ INSTALLED_APPS = [
     'bootstrap_modal_forms',
     'widget_tweaks',
     'rest_framework',
-    'django.contrib.humanize', 
+    'django.contrib.humanize',
     'register.apps.RegisterConfig',
     'login.apps.LoginConfig',
     'dashboard.apps.DashboardConfig',
@@ -78,3 +78,12 @@ AUTH_USER_MODEL = 'register.CustomUser'
 
 # メッセージストレージ
 MESSAGE_STORAGE = 'django.contrib.messages.storage.cookie.CookieStorage'
+
+# 1ページあたりの表示件数
+DEFAULT_PAGE_SIZE = 20
+
+# CSVファイルの最大出力件数
+MAX_EXPORT_ROWS = 10000
+
+# インポートファイルのファイルサイズ上限
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB

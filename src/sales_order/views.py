@@ -65,7 +65,7 @@ class SalesOrderListView(generic.ListView):
     model = SalesOrder
     template_name = 'sales_order/list.html'
     context_object_name = 'sales_orders'
-    paginate_by = 20
+    paginate_by = settings.DEFAULT_PAGE_SIZE
 
     def get_queryset(self):
         req = self.request
@@ -76,7 +76,7 @@ class SalesOrderListView(generic.ListView):
             is_deleted=False
             , tenant=req.user.tenant
         ).select_related('partner')
-        
+
         # 権限フィルタ：担当者が自分、または参照可能（ユーザーまたはグループ単位）
         queryset = queryset.filter(
             Q(assignee=req.user)
@@ -141,11 +141,11 @@ class SalesOrderCreateView(generic.CreateView):
     def get(self, request, *args, **kwargs):
         self.object = None
         form = SalesOrderForm(prefix='header', user=request.user)
-        formset = fill_formset(get_sales_order_detail_formset())   
-        
+        formset = fill_formset(get_sales_order_detail_formset())
+
         # フィールド個別の操作制御
         form = apply_field_permissions(form=form, user=request.user)
-     
+
         html = render_to_string(
             self.template_name,
             {
@@ -205,10 +205,10 @@ class SalesOrderUpdateView(generic.UpdateView):
         formset = get_sales_order_detail_formset(instance=self.object)
         status_code = getattr(self.object, 'status_code', None)
         assignee = getattr(self.object, 'assignee', None)
-        
+
         # ボタン操作可否判定
         is_submittable = get_submittable(user=request.user, form=form)
-        
+
         # フィールドの一括制御（自分で作成した仮保存データ以外は編集不可）
         if not (status_code == STATUS_CODE_DRAFT and assignee == request.user):
             for field in form.fields.values():
@@ -224,7 +224,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                         field.widget.attrs['disabled'] = True
                     else:
                         field.widget.attrs['readonly'] = True
-                    
+
         # フィールド個別の操作制御
         form = apply_field_permissions(form=form, user=request.user)
 
@@ -236,7 +236,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                 'form_action': reverse('sales_order:update', kwargs={'pk': self.object.pk}),
                 'modal_title': f'受注更新: {self.object.sales_order_no}',
                 'is_update': True,
-                'is_submittable': is_submittable, 
+                'is_submittable': is_submittable,
             },
             request,
         )
@@ -248,7 +248,7 @@ class SalesOrderUpdateView(generic.UpdateView):
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         action_type = request.POST.get('action_type')
-        
+
         # アクション別ハンドラをディスパッチ
         handler_map = {
             ACTION_CODE_OUTPUT_QUOTATION_IN: self.handle_output_quotation_in,
@@ -272,7 +272,7 @@ class SalesOrderUpdateView(generic.UpdateView):
 
         handler = handler_map.get(action_type, self.handle_default)
         return handler(request)
-        
+
     # ============================================================
     # 個別ハンドラ群
     # ============================================================
@@ -285,10 +285,10 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object.status_code = STATUS_CODE_DRAFT
         self.object.update_user = request.user
         self.object.save(update_fields=['status_code', 'update_user'])
-        
+
         # モーダルを再描画
         return self.render_form(request)
-    
+
     def handle_order_retake(self, request):
         '''
         注文書再作成
@@ -298,7 +298,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         self.object.status_code = STATUS_CODE_QUOTATION_CONFIRMED
         self.object.update_user = request.user
         self.object.save(update_fields=['status_code', 'update_user'])
-        
+
         # モーダルを再描画
         return self.render_form(request)
 
@@ -334,7 +334,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                     message = render_to_string('sales_order/mails/mail_approved.txt', context)
                     print(message)
                     print(url)
-                    
+
                     # 古いトークンを無効化
                     ApprovalToken.objects.filter(
                         sales_order=self.object,
@@ -358,13 +358,13 @@ class SalesOrderUpdateView(generic.UpdateView):
                 except Exception as e:
                     # 処理後メッセージ
                     sales_order_message(request, '承認', self.object.sales_order_no)
-                    
+
                     # モーダルを閉じて一覧画面へ
                     return JsonResponse({'success': False})
 
         # 処理後メッセージ
         sales_order_message(request, '承認', self.object.sales_order_no)
-        
+
         # モーダルを閉じて一覧画面へ
         return JsonResponse({'success': True})
 
@@ -382,7 +382,7 @@ class SalesOrderUpdateView(generic.UpdateView):
 
         # 処理後メッセージ
         sales_order_message(request, '却下', self.object.sales_order_no)
-        
+
         # モーダルを閉じて一覧画面へ
         return JsonResponse({'success': True})
 
@@ -421,7 +421,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                     })
                     url = request.build_absolute_uri(reverse('sales_order:public_contract', kwargs={'token': token}))
                     self.object.subject = f"【発注書確認依頼】受注番号 {self.object.sales_order_no}"
-                    context = { 
+                    context = {
                         'partner': partner,
                         'order': self.object,
                         'url': url,
@@ -430,7 +430,7 @@ class SalesOrderUpdateView(generic.UpdateView):
                     message = render_to_string('sales_order/mails/order_approved.txt', context)
                     print(message)
                     print(url)
-                    
+
                     # 古いトークンを無効化
                     ApprovalToken.objects.filter(
                         sales_order=self.object,
@@ -470,7 +470,7 @@ class SalesOrderUpdateView(generic.UpdateView):
             self.object.update_user = request.user
             self.object.save(update_fields=['delivery_due_date', 'delivery_place', 'update_user'])
         return JsonResponse({'success': True})
-    
+
 
     def handle_output_quotation_out(self, request):
         '''
@@ -501,7 +501,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         - サーバサイドでは特に何もしない
         '''
         return JsonResponse({'success': True})
-    
+
     def handle_order_rejected_in(self, request):
         '''
         注文書却下（社内）
@@ -516,7 +516,7 @@ class SalesOrderUpdateView(generic.UpdateView):
 
         # 処理後メッセージ
         sales_order_message(request, '却下', self.object.sales_order_no)
-        
+
         # モーダルを閉じて一覧画面へ
         return JsonResponse({'success': True})
 
@@ -528,14 +528,14 @@ class SalesOrderUpdateView(generic.UpdateView):
         ApprovalToken.objects.filter(
             token=request.POST.get('token')
         ).update(used=True, used_at=timezone.now())
-        
+
         # データの更新
         action_type = request.POST.get('action_type')
         self.object.status_code = action_type
         self.object.quotation_customer_comment = request.POST.get('quotation_customer_comment', '').strip()
         self.object.save(update_fields=['status_code', 'quotation_customer_comment'])
         return redirect('sales_order:public_thanks')
-    
+
     def handle_customer_reply_order(self, request):
         '''
         顧客による注文書回答後の処理
@@ -544,7 +544,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         ApprovalToken.objects.filter(
             token=request.POST.get('token')
         ).update(used=True, used_at=timezone.now())
-        
+
         # データの更新
         action_type = request.POST.get('action_type')
         self.object.status_code = action_type
@@ -590,16 +590,16 @@ class SalesOrderUpdateView(generic.UpdateView):
         # フォームの情報を取得
         form = SalesOrderForm(instance=self.object, prefix='header', user=request.user)
         formset = get_sales_order_detail_formset(instance=self.object)
-        
+
         # ボタン操作の活性制御
         is_submittable = get_submittable(user=request.user, form=form)
-        
+
         # コメント欄の活性制御
         form.fields['quotation_manager_comment'].widget.attrs['readonly'] = True
         form.fields['order_manager_comment'].widget.attrs['readonly'] = True
         form.fields['quotation_customer_comment'].widget.attrs['readonly'] = True
         form.fields['order_customer_comment'].widget.attrs['readonly'] = True
-        
+
         html = render_to_string(
             self.template_name,
             {
@@ -625,7 +625,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         print('=====================')
         print(url)
         print('=====================')
-        
+
         # 古いトークンを無効化
         ApprovalToken.objects.filter(
             sales_order=self.object,
@@ -647,7 +647,7 @@ class SalesOrderUpdateView(generic.UpdateView):
         }
         message = render_to_string(template, context)
         print(f"[MAIL DEBUG]\n{message}\n{url}")  # TODO: logger.infoに変更予定
-    
+
 #--------------------------
 # 顧客回答後の画面表示
 #--------------------------
@@ -674,7 +674,7 @@ class ProductInfoView(generic.View):
             })
         except Product.DoesNotExist:
             return JsonResponse({'error': '商品が見つかりません'}, status=404)
-        
+
 #--------------------------
 # 取引先情報の取得処理
 #--------------------------
@@ -698,7 +698,7 @@ class PartnerInfoView(generic.View):
 
 #--------------------------
 # 見積書確認画面
-#--------------------------   
+#--------------------------
 class SalesOrderPublicConfirmView(generic.View):
     '''
     見積書確認画面
@@ -722,25 +722,25 @@ class SalesOrderPublicConfirmView(generic.View):
             return HttpResponseForbidden('リンクが不正または改ざんされています。')
         except Exception:
             return HttpResponseForbidden('リンクが無効です。')
-        
+
         # トークン存在＆未使用チェック
         token_obj = ApprovalToken.objects.filter(token=token).first()
         if not token_obj or token_obj.used:
             return HttpResponseForbidden('このリンクはすでに使用されています。')
-        
+
         #---------------------------------------------------------
         # 対象受注データの取得
         #---------------------------------------------------------
         order = SalesOrder.objects.select_related('partner').filter(pk=order_id).first()
         if not order:
             raise Http404('受注データが見つかりません。')
-        
+
         #---------------------------------------------------------
         # アクセス認可チェック（メールアドレス照合）
         #---------------------------------------------------------
         if not order.partner or order.partner.email.lower() != partner_email.lower():
             return HttpResponseForbidden('アクセス権限がありません。')
-        
+
         #---------------------------------------------------------
         # アクセスログ更新（任意）
         #---------------------------------------------------------
@@ -752,12 +752,12 @@ class SalesOrderPublicConfirmView(generic.View):
         # コンテキストをテンプレートに渡す
         #---------------------------------------------------------
         context = {'order_id': order.pk, 'signed_token': token}
-        
+
         return render(request, self.template_name, context)
 
 #--------------------------
 # 注文書確認画面
-#--------------------------   
+#--------------------------
 class SalesOrderPublicContractView(generic.View):
     '''
     注文書確認画面
@@ -781,25 +781,25 @@ class SalesOrderPublicContractView(generic.View):
             return HttpResponseForbidden('リンクが不正または改ざんされています。')
         except Exception:
             return HttpResponseForbidden('リンクが無効です。')
-        
+
         # トークン存在＆未使用チェック
         token_obj = ApprovalToken.objects.filter(token=token).first()
         if not token_obj or token_obj.used:
             return HttpResponseForbidden('このリンクはすでに使用されています。')
-        
+
         #---------------------------------------------------------
         # 対象受注データの取得
         #---------------------------------------------------------
         order = SalesOrder.objects.select_related('partner').filter(pk=order_id).first()
         if not order:
             raise Http404('受注データが見つかりません。')
-        
+
         #---------------------------------------------------------
         # アクセス認可チェック（メールアドレス照合）
         #---------------------------------------------------------
         if not order.partner or order.partner.email.lower() != partner_email.lower():
             return HttpResponseForbidden('アクセス権限がありません。')
-        
+
         #---------------------------------------------------------
         # アクセスログ更新（任意）
         #---------------------------------------------------------
@@ -811,9 +811,9 @@ class SalesOrderPublicContractView(generic.View):
         # コンテキストをテンプレートに渡す
         #---------------------------------------------------------
         context = {'order_id': order.pk, 'signed_token': token}
-        
+
         return render(request, self.template_name, context)
-    
+
 #--------------------------
 # Export / Import
 #--------------------------
@@ -852,7 +852,7 @@ class ExportCSV(CSVExportBaseView):
             is_deleted=False,
             tenant=req.user.tenant
         ).select_related('partner')
-        
+
         # フォームが有効なら検索条件を反映
         if form.is_valid():
             orders = filter_data(cleaned_data=form.cleaned_data, queryset=orders)
@@ -872,7 +872,7 @@ class ExportCSV(CSVExportBaseView):
 
     def row(self, detail):
         return get_row(header=detail.sales_order, detail=detail)
-    
+
 
 class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
     '''
@@ -883,7 +883,7 @@ class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
     model_class = SalesOrderDetail
     HEADER_MAP = HEADER_MAP
     unique_field = None  # 重複チェックは受注明細行単位で実施
-    
+
     def post(self, request, *args, **kwargs):
         '''
         unique_fieldがNoneの場合はexistingを空セットで初期化
@@ -940,7 +940,7 @@ class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
             partner = Partner.objects.get(tenant=tenant, partner_name=partner_name)
         except Partner.DoesNotExist:
             return None, f'{idx}行目: 取引先「{partner_name}」が存在しません。'
-        
+
         # ------------------------------------------------------
         # 受注ヘッダ生成または再利用
         # ------------------------------------------------------
@@ -986,7 +986,7 @@ class ImportCSV(LoginRequiredMixin, CSVImportBaseView):
                 setattr(header_obj, k, v)
             header_obj.update_user = request.user
             header_obj.save()
-            
+
         # ------------------------------------------------------
         # 参照ユーザー / グループ設定
         # ------------------------------------------------------
@@ -1054,7 +1054,7 @@ class OrderSheetPdfView(generic.DetailView):
 
     #----------------------------------------
     # POST処理
-    #----------------------------------------    
+    #----------------------------------------
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
@@ -1084,7 +1084,7 @@ class OrderSheetPdfView(generic.DetailView):
         response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
-    
+
 class QuatationSheetPdfView(generic.DetailView):
     '''
     見積書の発行処理
@@ -1102,7 +1102,7 @@ class QuatationSheetPdfView(generic.DetailView):
 
     #----------------------------------------
     # POST処理
-    #----------------------------------------    
+    #----------------------------------------
     def post(self, request, *args, **kwargs):
         self.object = self.get_object()
         return self.render_pdf()
@@ -1132,8 +1132,8 @@ class QuatationSheetPdfView(generic.DetailView):
         response = HttpResponse(pdf_data, content_type='application/pdf')
         response['Content-Disposition'] = f'inline; filename="{filename}"'
         return response
- 
-    
+
+
 def filter_data(cleaned_data, queryset):
     '''検索条件反映'''
     keyword = cleaned_data.get('search_keyword', '').strip()
