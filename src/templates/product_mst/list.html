@@ -34,6 +34,12 @@
   {# フラッシュメッセージ #}
   {% include 'layout/message.html' %}
 
+  {# 画面説明 #}
+  <p class="text-muted mb-4">
+      商品情報の登録や編集、検索ができます。<br>
+      登録されている商品情報は見積作成時に参照されます。
+  </p>
+
   {# 検索フォーム #}
   {% include 'product_mst/search_form.html' with form=form %}
 </form>

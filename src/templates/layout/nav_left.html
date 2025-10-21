@@ -55,7 +55,7 @@
 
         {% if user.privilege <= PRIVILEGE_MANAGER %}
         <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
-          <span>管理者メニュー</span>
+          <span>管理者限定メニュー</span>
         </h6>
         <ul class="nav flex-column mb-auto">
           <li class="nav-item">
@@ -70,10 +70,18 @@
               ユーザーマスタ管理
             </a>
           </li>
+        </ul>
+        {% endif %}
+
+        {% if user.privilege <= PRIVILEGE_SYSTEM %}
+        <h6 class="sidebar-heading d-flex justify-content-between align-items-center px-3 mt-4 mb-1 text-body-secondary text-uppercase">
+          <span>運用メンバー限定メニュー</span>
+        </h6>
+        <ul class="nav flex-column mb-auto">
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'login:access_log' %}">
-              <i class="bi bi-clock-history"></i>
-              ログイン履歴
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:initial_user_create' %}">
+              <i class="bi bi-person-plus"></i>
+              初期ユーザー登録
             </a>
           </li>
         </ul>
@@ -94,14 +102,6 @@
               パスワード変更
             </a>
           </li>
-          {% if user.privilege <= PRIVILEGE_SYSTEM %}
-          <li class="nav-item">
-            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:initial_user_create' %}">
-              <i class="bi bi-person-plus"></i>
-              初期ユーザー登録
-            </a>
-          </li>
-          {% endif %}
           <li class="nav-item">
             <form action="{% url 'logout' %}" method="POST" name="logout_form">
               {% csrf_token %}

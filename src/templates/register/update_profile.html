@@ -8,11 +8,20 @@
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2 mb-0"><i class="bi bi-person-circle me-4"></i>プロフィール編集</h1>
     </div>
+    <p class="text-muted mb-4">
+        ユーザー情報を入力し、「保存」ボタンを押してください。<br>
+        保存されたユーザー情報は、見積書や発注書の作成時に参照されます。<br>
+        パスワードは専用の
+        <a href="{% url 'register:change_password' %}" class="text-decoration-none fw-semibold">
+            「パスワード変更」
+        </a>
+        から行ってください。
+    </p>
     {# 検索フォーム #}
     <div class="col-md-4">
         {% csrf_token %}
         {% bootstrap_form form layout="vertical" %}
-        <button type="submit" class="btn btn-primary">更新</button>
+        <button type="submit" class="btn btn-primary">保存</button>
     </div>
 </form>
 {% endblock %}
