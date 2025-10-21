@@ -94,6 +94,14 @@
               パスワード変更
             </a>
           </li>
+          {% if user.privilege <= PRIVILEGE_SYSTEM %}
+          <li class="nav-item">
+            <a class="nav-link d-flex align-items-center gap-2" href="{% url 'register:initial_user_create' %}">
+              <i class="bi bi-person-plus"></i>
+              初期ユーザー登録
+            </a>
+          </li>
+          {% endif %}
           <li class="nav-item">
             <form action="{% url 'logout' %}" method="POST" name="logout_form">
               {% csrf_token %}

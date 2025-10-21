@@ -138,4 +138,33 @@ $(function () {
         const $groupName = $form.find('#groupName');
         $groupName.removeAttr('required');
     });
+
+    // =====================================================
+    // 初期ユーザー登録処理
+    // =====================================================
+    $(document).on('submit', '#initialUserForm', function(e) {
+        e.preventDefault();
+        var $form = $(this);
+
+        $.ajax({
+            url: $form.attr('action') || window.location.href,
+            type: 'POST',
+            data: new FormData(this),
+            processData: false,
+            contentType: false,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(data) {
+            if (data.success) {
+                // alert('メールを送信しました。');
+                // $form[0].reset();
+                location.reload();
+            } else {
+                alert(data.error || '送信に失敗しました。');
+            }
+            },
+                error: function() {
+                alert('通信エラーが発生しました。');
+            }
+        });
+    });
 });

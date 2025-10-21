@@ -247,3 +247,13 @@ class PrivilegeRequiredMixin():
             return HttpResponseForbidden('アクセス権限がありません')
         return super().dispatch(request, *args, **kwargs)
 
+class SystemUserOnlyMixin():
+    '''
+    システム管理者（privilege == '0'）のみアクセス可能
+    '''
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+        if request.user.privilege != '0':
+            return HttpResponseForbidden('アクセス権限がありません。')
+        return super().dispatch(request, *args, **kwargs)
