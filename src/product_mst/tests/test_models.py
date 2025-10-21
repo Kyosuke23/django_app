@@ -1,6 +1,5 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from django.contrib.auth import get_user_model
 from tenant_mst.models import Tenant
 from product_mst.models import Product, ProductCategory
