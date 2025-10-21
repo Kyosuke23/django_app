@@ -59,7 +59,7 @@ class SalesOrder(BaseModel):
         verbose_name='受注日',
         help_text='受注日を指定してください。'
     )
-    
+
     assignee = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -139,6 +139,12 @@ class SalesOrder(BaseModel):
         default='floor',
         verbose_name='丸め方法',
         help_text='明細金額の端数処理方法を選択してください。'
+    )
+
+    is_visible_all = models.BooleanField(
+        default=False,
+        verbose_name='全社参照可',
+        help_text='「全社参照可」にチェックを入れると、この受注を全社員が参照できます（参照ユーザー・グループ設定は無視されます）。',
     )
 
     reference_users = models.ManyToManyField(
@@ -230,7 +236,7 @@ class SalesOrderDetail(BaseModel):
 
     def __str__(self):
         return f'{self.sales_order.sales_order_no} - {self.line_no}: {self.product.product_name}'
-    
+
     @property
     def amount(self):
         # 商品のない行は処理しない

@@ -365,7 +365,7 @@ $(function () {
 
         // サーバ処理用のパラメータを準備
         $('#action_type').val(actionType);
-        
+
         // 見積書のPDF出力
         if (actionType === 'OUTPUT_QUOTATION_OUT' || actionType === 'OUTPUT_ORDER_OUT') {
             e.preventDefault(); // 見積書発行の時だけsubmit中止

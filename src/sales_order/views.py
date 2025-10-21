@@ -77,17 +77,15 @@ class SalesOrderListView(generic.ListView):
             , tenant=req.user.tenant
         ).select_related('partner')
 
-        # 権限フィルタ：担当者が自分、または参照可能（ユーザーまたはグループ単位）
+        # 権限フィルタ：担当者が自分、または参照可能グループに属する
         queryset = queryset.filter(
             Q(assignee=req.user)
+            | Q(is_visible_all=True)
             | (
-                (
-                    Q(reference_users=req.user)
-                    | Q(reference_groups__in=req.user.groups_custom.all())
-                )
-                & ~Q(status_code='DRAFT')
+                Q(reference_users=req.user)
+                | Q(reference_groups__in=req.user.groups_custom.all())
             )
-        )
+        ).distinct()
 
         # 検索フォームが有効な場合のみフィルタ
         if form.is_valid():

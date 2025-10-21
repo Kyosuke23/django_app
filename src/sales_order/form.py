@@ -38,7 +38,7 @@ class SalesOrderSearchForm(forms.Form):
         label='受注番号',
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'}),
     )
-    
+
     search_assignee = forms.ModelChoiceField(
         required=False,
         label='受注担当者',
@@ -201,6 +201,7 @@ class SalesOrderForm(forms.ModelForm):
             'quotation_customer_comment',
             'order_customer_comment',
             'rounding_method',
+            'is_visible_all',
             'reference_users',
             'reference_groups',
         ]
@@ -238,7 +239,7 @@ class SalesOrderForm(forms.ModelForm):
                 tenant=user.tenant,
                 privilege__lte=1
             ).order_by('username')
-            
+
             # 仮保存データのみ自分を除去
             status_code = getattr(self.instance, 'status_code', None)
             if status_code == STATUS_CODE_DRAFT:
@@ -265,7 +266,7 @@ class SalesOrderForm(forms.ModelForm):
         partner = cleaned_data.get('partner')
         if self.action_type != STATUS_CODE_DRAFT and not partner:
             self.add_error('partner', '取引先を選択してください。')
-        
+
         # 参照ユーザーとグループがどちらもNull（新規登録または仮保存時は許可）
         reference_users = cleaned_data.get('reference_users')
         reference_groups = cleaned_data.get('reference_groups')

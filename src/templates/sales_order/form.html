@@ -96,66 +96,78 @@
         <div class="text-danger small">{{ form.remarks.errors }}</div>
       {% endif %}
     </div>
-<div class="border border-danger-subtle rounded p-3 bg-danger bg-opacity-10 mt-4 mb-3">
-  <h6 class="text-danger fw-bold mb-3">
-    社内専用コメント欄
-    <small class="text-muted ms-2">(見積書・注文書には印字されません)</small>
-  </h6>
-  <div class="row">
-    <div class="col-md-3 mb-2">
-      <label class="form-label">見積書コメント（承認者）</label>
-      {% render_field form.quotation_manager_comment class="form-control internal-comment" rows="3" %}
-      {% if form.quotation_manager_comment.help_text %}
-        <div class="form-text text-muted small">{{ form.quotation_manager_comment.help_text }}</div>
-      {% endif %}
-    </div>
-    <div class="col-md-3 mb-2">
-      <label class="form-label">見積書コメント（顧客）</label>
-      {% render_field form.quotation_customer_comment class="form-control internal-comment" rows="3" %}
-      {% if form.quotation_customer_comment.help_text %}
-        <div class="form-text text-muted small">{{ form.quotation_customer_comment.help_text }}</div>
-      {% endif %}
-    </div>
-    <div class="col-md-3 mb-2">
-      <label class="form-label">注文書コメント（承認者）</label>
-      {% render_field form.order_manager_comment class="form-control internal-comment" rows="3" %}
-      {% if form.order_manager_comment.help_text %}
-        <div class="form-text text-muted small">{{ form.order_manager_comment.help_text }}</div>
-      {% endif %}
-    </div>
-    <div class="col-md-3 mb-2">
-      <label class="form-label">注文書コメント（顧客）</label>
-      {% render_field form.order_customer_comment class="form-control internal-comment" rows="3" %}
-      {% if form.order_customer_comment.help_text %}
-        <div class="form-text text-muted small">{{ form.order_customer_comment.help_text }}</div>
-      {% endif %}
-    </div>
-  </div>
-</div>
-    {# 参照ユーザー #}
-    <div class="col-md-6">
-      <label class="form-label">参照ユーザー</label>
-      {% if form.reference_users.errors %}
-        {% render_field form.reference_users class="form-select is-invalid" %}
-        <div class="invalid-feedback d-block">
-          {{ form.reference_users.errors|join:", " }}
+    <div class="border border-danger-subtle rounded p-3 bg-danger bg-opacity-10 mt-4 mb-3">
+      <h6 class="text-danger fw-bold mb-3">
+        社内専用コメント欄
+        <small class="text-muted ms-2">(見積書・注文書には印字されません)</small>
+      </h6>
+      <div class="row">
+        <div class="col-md-3 mb-2">
+          <label class="form-label">見積書コメント（承認者）</label>
+          {% render_field form.quotation_manager_comment class="form-control internal-comment" rows="3" %}
+          {% if form.quotation_manager_comment.help_text %}
+            <div class="form-text text-muted small">{{ form.quotation_manager_comment.help_text }}</div>
+          {% endif %}
         </div>
-      {% else %}
-        {% render_field form.reference_users class="form-select" %}
-      {% endif %}
-    </div>
-    {# 参照ユーザーグループ #}
-    <div class="col-md-6">
-      <label class="form-label">参照グループ</label>
-      {% if form.reference_groups.errors %}
-        {% render_field form.reference_groups class="form-select is-invalid" %}
-        <div class="invalid-feedback d-block">
-          {{ form.reference_groups.errors|join:", " }}
+        <div class="col-md-3 mb-2">
+          <label class="form-label">見積書コメント（顧客）</label>
+          {% render_field form.quotation_customer_comment class="form-control internal-comment" rows="3" %}
+          {% if form.quotation_customer_comment.help_text %}
+            <div class="form-text text-muted small">{{ form.quotation_customer_comment.help_text }}</div>
+          {% endif %}
         </div>
-      {% else %}
-        {% render_field form.reference_groups class="form-select" %}
-      {% endif %}
+        <div class="col-md-3 mb-2">
+          <label class="form-label">注文書コメント（承認者）</label>
+          {% render_field form.order_manager_comment class="form-control internal-comment" rows="3" %}
+          {% if form.order_manager_comment.help_text %}
+            <div class="form-text text-muted small">{{ form.order_manager_comment.help_text }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-3 mb-2">
+          <label class="form-label">注文書コメント（顧客）</label>
+          {% render_field form.order_customer_comment class="form-control internal-comment" rows="3" %}
+          {% if form.order_customer_comment.help_text %}
+            <div class="form-text text-muted small">{{ form.order_customer_comment.help_text }}</div>
+          {% endif %}
+        </div>
+      </div>
     </div>
+      {# 全社参照可 #}
+      <div class="col-md-2 mb-2 text-center">
+        <label for="{{ form.is_visible_all.id_for_label }}" class="form-label">全社参照可</label>
+        <div>
+          {% render_field form.is_visible_all class="form-check-input" %}
+        </div>
+      </div>
+
+      {# 参照ユーザー #}
+      <div class="col-md-5 mb-2">
+        <label class="form-label">参照ユーザー</label>
+        {% if form.reference_users.errors %}
+          {% render_field form.reference_users class="form-select is-invalid" %}
+          <div class="invalid-feedback d-block">
+            {{ form.reference_users.errors|join:", " }}
+          </div>
+        {% else %}
+          {% render_field form.reference_users class="form-select" %}
+        {% endif %}
+      </div>
+
+      {# 参照ユーザーグループ #}
+      <div class="col-md-5 mb-2">
+        <label class="form-label">参照グループ</label>
+        {% if form.reference_groups.errors %}
+          {% render_field form.reference_groups class="form-select is-invalid" %}
+          <div class="invalid-feedback d-block">
+            {{ form.reference_groups.errors|join:", " }}
+          </div>
+        {% else %}
+          {% render_field form.reference_groups class="form-select" %}
+        {% endif %}
+      </div>
+        {% if form.is_visible_all.help_text %}
+        <div class="form-text text-muted small">{{ form.is_visible_all.help_text }}</div>
+      {% endif %}
   </div>
 
   {# ======================================= #}
