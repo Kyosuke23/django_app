@@ -1,7 +1,7 @@
 from django.db import models
 from config.base import BaseModel
 from django.urls import reverse
-
+from django.core.exceptions import ValidationError
 
 class Product(BaseModel):
     '''
@@ -42,7 +42,7 @@ class Product(BaseModel):
     )
 
     unit_price = models.DecimalField(
-        max_digits=10,
+        max_digits=12,
         decimal_places=2,
         blank=True,
         null=True,
@@ -51,7 +51,6 @@ class Product(BaseModel):
     )
 
     description = models.TextField(
-        max_length=255,
         blank=True,
         null=True,
         verbose_name='商品説明',
@@ -60,6 +59,11 @@ class Product(BaseModel):
 
     def __str__(self):
         return f'{self.product_name}（{self.product_category}）'
+
+    def clean(self):
+        super().clean()
+        if self.description and len(self.description) > 255:
+            raise ValidationError({'description': '255文字以内で入力してください。'})
 
     def get_absolute_url(self):
         return reverse('product_mst:update', kwargs={'pk': self.pk})
