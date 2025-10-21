@@ -4,7 +4,7 @@
 :root {
   --color-bg-header: #23282d;
   --color-bg-sidebar: #23282d;
-  --color-bg-content: #f5f6f8;
+  --color-bg-content: #e9ebee;
   --color-text-base: #212529;
   --color-accent: #0d6efd;
   --color-border: #dee2e6;
@@ -131,7 +131,7 @@ header.navbar .text-white {
  * ======================================================= */
 /* モーダル背景をコンテンツエリアと同じ色にする */
 .modal-content {
-  background-color: var(--content-bg-color, #f8f9fa); /* ← コンテンツエリアの背景色に合わせる */
+  background-color: var(--content-bg-color, #e9ebee); /* ← コンテンツエリアの背景色に合わせる */
 }
 
 /* 必須フィールドラベルに赤いアスタリスクを表示 */
@@ -350,4 +350,15 @@ textarea[readonly] {
   background-color: #e9ecef !important;
   color: #495057;
   cursor: not-allowed;
+}
+
+form label,
+.form-label {
+  font-weight: 600; /* 500〜700 お好みで */
+}
+
+
+.btn-outline-secondary,
+.btn-outline-primary {
+  background-color: #ffffff;
 }
