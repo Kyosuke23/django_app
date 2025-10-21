@@ -1,5 +1,6 @@
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import CustomUser, UserGroup
+from tenant_mst.models import Tenant
 from django import forms
 from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
 
@@ -86,7 +87,7 @@ class UserSearchForm(forms.Form):
             attrs={'class': 'form-select form-select-sm', 'id': 'form-select'}
         )
     )
-    
+
     # 並び替え
     SORT_GROUPS = {
         'ユーザー名（カナ）': [
@@ -136,7 +137,7 @@ class SignUpForm(forms.ModelForm):
             'gender',
             'privilege',
             'groups_custom',
-            
+
         )
 
     def __init__(self, *args, **kwargs):
@@ -157,7 +158,7 @@ class SignUpForm(forms.ModelForm):
             del self.fields['password1']
         if 'password2' in self.fields:
             del self.fields['password2']
-            
+
     def clean_username(self):
         username = self.cleaned_data.get('username')
         # 自分以外に同じ username があればエラー
@@ -176,7 +177,7 @@ class ChangePasswordForm(PasswordChangeForm):
         # エラーフィールドに警告色を付与
         for error in self.errors:
             self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
-            
+
 
 class UserGroupForm(forms.ModelForm):
     selected_group = forms.ModelChoiceField(
@@ -204,3 +205,22 @@ class UserGroupForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['selected_group'].queryset = UserGroup.objects.filter(is_deleted=False).order_by('group_name')
+
+
+class InitialUserForm(forms.Form):
+    '''
+    システム管理者が初期ユーザーを招待するフォーム
+    '''
+    company_name = forms.CharField(label='企業名', max_length=255)
+    username = forms.CharField(label='氏名', max_length=100)
+    email = forms.EmailField(label='メールアドレス')
+
+
+class TenantRegisterForm(forms.ModelForm):
+    '''
+    テナント情報登録フォーム
+    '''
+    class Meta:
+        model = Tenant
+        fields = ['tenant_name', 'representative_name', 'contact_email', 'contact_tel_number',
+                  'postal_code', 'state', 'city', 'address', 'address2']

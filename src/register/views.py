@@ -2,6 +2,8 @@ import secrets
 from django.contrib.auth.hashers import make_password
 from django.views import generic
 from django.urls import reverse, reverse_lazy
+from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
 from django.contrib import messages
 from django.http import JsonResponse
 from django.template.loader import render_to_string
@@ -9,12 +11,13 @@ from django.shortcuts import redirect, get_object_or_404
 from django.db.models import Q
 from django.db.models.deletion import ProtectedError
 from .models import CustomUser, UserGroup
-from .forms import UserSearchForm, SignUpForm, ChangePasswordForm, UserGroupForm
+from .forms import UserSearchForm, SignUpForm, ChangePasswordForm, UserGroupForm, InitialUserForm, SignUpForm
 from config.common import Common
-from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin, SystemUserOnlyMixin
 from django.contrib.auth.views import PasswordChangeView
 from django.conf import settings
-from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
+from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES, PRIVILEGE_MANAGER
+from tenant_mst.models import Tenant
 
 
 # 出力カラム定義
@@ -375,6 +378,78 @@ class ImportCSV(PrivilegeRequiredMixin, CSVImportBaseView):
             update_user=request.user
         )
         return obj, None
+
+
+# ------------------------------------------------------
+# 初期ユーザー登録（システム管理者専用）
+# ------------------------------------------------------
+class InitialUserCreateView(SystemUserOnlyMixin, generic.FormView):
+    template_name = 'register/initial_user_form.html'
+    form_class = InitialUserForm
+
+    def form_valid(self, form):
+        company_name = form.cleaned_data['company_name']
+        username = form.cleaned_data['username']
+        email = form.cleaned_data['email']
+
+        # Tenant新規作成
+        tenant = Tenant.objects.create(
+            tenant_name=company_name,
+            representative_name=username,   # 本人を代表者として仮登録
+            contact_email=email,
+            create_user=self.request.user,
+            update_user=self.request.user
+        )
+
+        # 初期ユーザー（仮登録）
+        password = get_random_string(10)
+        user = CustomUser.objects.create_user(
+            username=username,
+            email=email,
+            tenant=tenant,
+            is_active=False,
+            privilege=PRIVILEGE_MANAGER,
+            create_user=self.request.user,
+            update_user=self.request.user,
+        )
+        user.is_active = True
+        user.set_password(password)
+        user.save()
+
+        # ログインURLを生成
+        login_url = self.request.build_absolute_uri('/login/')
+
+        subject='【システム】初期ログイン情報のご案内',
+        message=(
+            f'{username} 様\n\n'
+            'システムへの初期ログイン情報をお知らせします。\n\n'
+            f'ログインURL：{login_url}\n'
+            f'ログインID（メールアドレス）：{email}\n'
+            f'初期パスワード：{password}\n\n'
+            'ログイン後、以下の操作を推奨いたします。\n'
+            '--------------------------------------------------\n'
+            '① [設定] メニューからパスワードを変更してください。\n'
+            '② [テナント情報] ページで貴社情報を編集・登録してください。\n'
+            '--------------------------------------------------\n\n'
+            '※ 本メールは送信専用です。返信はできません。'
+        ),
+
+        print('=======================')
+        print(f'email: {email}')
+        print(f'password: {password}')
+        print(subject)
+        print(message)
+        print('=======================')
+
+        # send_mail(
+        #     subject=subject,
+        #     message=message,
+        #     from_email='noreply@example.com',
+        #     recipient_list=[email],
+        # )
+
+        messages.success(self.request, f'{email} 宛に初期ログイン情報を送信しました。')
+        return JsonResponse({'success': True})
 
 
 #--------------------------
