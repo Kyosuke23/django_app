@@ -12,7 +12,7 @@ class CustomUser(AbstractUser, BaseModel):
     '''
     USERNAME_FIELD = 'email'  # ← 認証に使うフィールドを email に変更
     REQUIRED_FIELDS = ['username']  # ← createsuperuser のとき追加で入力させるフィールド
-    
+
     username = models.CharField(
         max_length=100,
         unique=False,
@@ -37,7 +37,7 @@ class CustomUser(AbstractUser, BaseModel):
         null=False,
         blank=False,
         verbose_name='メールアドレス',
-        help_text='半角英数字で正しいメール形式を入力してください。例：info@example.com'
+        help_text='半角英数字で正しいメール形式を入力してください。'
     )
 
     gender = models.CharField(
@@ -55,7 +55,7 @@ class CustomUser(AbstractUser, BaseModel):
         blank=True,
         null=True,
         verbose_name='電話番号',
-        help_text='数字とハイフンのみ使用できます。例：090-1234-5678（任意）'
+        help_text='数字とハイフンのみ使用できます。'
     )
 
     postal_code = models.CharField(
@@ -64,7 +64,7 @@ class CustomUser(AbstractUser, BaseModel):
         blank=True,
         null=True,
         verbose_name='郵便番号',
-        help_text='ハイフンあり、またはなしで入力可能です。例：123-4567（任意）'
+        help_text='ハイフンあり、またはなしで入力可能です。'
     )
 
     state = models.CharField(
@@ -128,7 +128,7 @@ class CustomUser(AbstractUser, BaseModel):
         verbose_name='権限',
         help_text='ユーザーの操作権限を選択してください。'
     )
-    
+
     groups_custom = models.ManyToManyField(
         'UserGroup',
         related_name='users',
@@ -151,7 +151,7 @@ class CustomUser(AbstractUser, BaseModel):
     @property
     def is_employed(self):
         return self.employment_status == '1' and (self.employment_end_date is None)
-    
+
 class UserGroup(BaseModel):
     '''
     ユーザーグループマスタ

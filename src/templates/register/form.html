@@ -10,7 +10,73 @@
       data-save-url="{{ form_action }}"
       data-delete-url="{% if form.instance.pk %}{% url 'register:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
-  {% bootstrap_form form %}
+
+  {% if not form.instance.pk or request.user.privilege|add:0 == PRIVILEGE_SYSTEM|add:0 %}
+    {# ------------------------------------------------ #}
+    {# 登録時（新規）→ 全フォーム入力可               #}
+    {# ------------------------------------------------ #}
+    {% bootstrap_form form %}
+
+  {% else %}
+    {# ------------------------------------------------ #}
+    {# 更新時                                           #}
+    {# ------------------------------------------------ #}
+    {% if request.user.privilege|add:0 >= PRIVILEGE_EDITOR|add:0 %}
+      {# 権限2以上 → 全項目テキスト表示（縦配置） #}
+      {% for field in form %}
+        <div class="mb-3">
+          <label class="form-label text-muted small">{{ field.label }}</label>
+          <div class="form-control-plaintext">
+            {# 性別などchoicesを持つ項目は表示名を出す #}
+            {% if field.name == "gender" %}
+              {{ form.instance.get_gender_display }}
+            {% elif field.name == "privilege" %}
+              {{ form.instance.get_privilege_display }}
+            {% elif field.name == "employment_status" %}
+              {{ form.instance.get_employment_status_display }}
+            {% elif field.name == "groups_custom" %}
+              {% for g in form.instance.groups_custom.all %}
+                {{ g.group_name }}{% if not forloop.last %}, {% endif %}
+              {% empty %}
+                -
+              {% endfor %}
+            {% else %}
+              {{ field.value|default_if_none:"" }}
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+
+    {% elif request.user.privilege|add:0 == PRIVILEGE_MANAGER|add:0 %}
+      {# 権限1以下 → privilege, groups_customのみ編集可 #}
+      {% for field in form %}
+        {% if field.name == "privilege" or field.name == "groups_custom" %}
+          {% bootstrap_field field %}
+        {% else %}
+          <div class="mb-3">
+            <label class="form-label text-muted small">{{ field.label }}</label>
+            <div class="form-control-plaintext">
+              {% if field.name == "gender" %}
+                {{ form.instance.get_gender_display }}
+              {% elif field.name == "privilege" %}
+                {{ form.instance.get_privilege_display }}
+              {% elif field.name == "employment_status" %}
+                {{ form.instance.get_employment_status_display }}
+              {% elif field.name == "groups_custom" %}
+                {% for g in form.instance.groups_custom.all %}
+                  {{ g.group_name }}{% if not forloop.last %}, {% endif %}
+                {% empty %}
+                  -
+                {% endfor %}
+              {% else %}
+                {{ field.value|default_if_none:"" }}
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+  {% endif %}
 
   {% if not form.instance.pk %}
     <div class="alert alert-info mt-3" role="alert">
@@ -19,9 +85,17 @@
   {% endif %}
 
   <div class="d-flex justify-content-end gap-2 mt-3">
-    <button type="submit" class="btn btn-primary" data-action="save">保存</button>
-    {% if form.instance.pk != request.user.pk %}
-      <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
+    {% if not form.instance.pk %}
+      <button type="submit" class="btn btn-primary" data-action="save">登録</button>
+
+    {% elif request.user.privilege|add:0 <= 1 %}
+      <button type="submit" class="btn btn-primary" data-action="save">保存</button>
+      {% if form.instance.pk != request.user.pk %}
+        <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
+      {% endif %}
+
+    {% else %}
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
     {% endif %}
   </div>
 </form>

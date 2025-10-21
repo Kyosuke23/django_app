@@ -33,7 +33,7 @@
 
   {# 画面説明 #}
   <p class="text-muted mb-4">
-      ユーザー情報の登録や編集、検索ができます（管理者専用）。<br>
+      ユーザー情報の登録や編集、検索ができます。<br>
       登録されているユーザー先情報は見積作成時や請求書作成時に参照されます。
   </p>
 
@@ -74,7 +74,7 @@
           <th>電話番号</th>
           <th>雇用状態</th>
           <th>権限</th>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <th>操作</th>
           {% endif %}
         </tr>
@@ -92,7 +92,7 @@
           <td>{{ u.tel_number|default_if_none:'' }}</td>
           <td>{{ u.get_employment_status_display|default_if_none:'' }}</td>
           <td>{{ u.get_privilege_display|default_if_none:'' }}</td>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
+          {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
             <a href="#" class="btn btn-sm btn-outline-secondary"
                data-bs-toggle="modal"

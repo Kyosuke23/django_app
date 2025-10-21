@@ -106,7 +106,7 @@ $(function () {
         // 適用先フォームの取得
         const genders  = $modal.find('#id_gender');
         const privileges = $modal.find('#id_privilege');
-        const groups = $modal.find('#id_groups');
+        const groups = $modal.find('#id_groups_custom');
 
         // Select2のオプション設定
         const opt = {
@@ -155,8 +155,6 @@ $(function () {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(data) {
             if (data.success) {
-                // alert('メールを送信しました。');
-                // $form[0].reset();
                 location.reload();
             } else {
                 alert(data.error || '送信に失敗しました。');

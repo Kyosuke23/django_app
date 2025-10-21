@@ -123,6 +123,11 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
             return JsonResponse({'success': False, 'html': html})
         return super().form_invalid(form)
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
 
 class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     '''
@@ -134,7 +139,7 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
 
     def get(self, request, *args, **kwargs):
         self.object = self.get_object()
-        form = self.form_class(instance=self.object)
+        form = self.get_form()
         html = render_to_string(
             self.template_name,
             {
@@ -168,6 +173,11 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
             )
             return JsonResponse({'success': False, 'html': html})
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
+
 
 class ProfileUpdateView(generic.UpdateView):
     '''
@@ -178,6 +188,11 @@ class ProfileUpdateView(generic.UpdateView):
     template_name = 'register/update_profile.html'
     form_class = SignUpForm
     context_object_name = 'user'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['request'] = self.request
+        return kwargs
 
     def get_object(self, queryset=None):
         return self.request.user

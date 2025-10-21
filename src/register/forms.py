@@ -141,18 +141,31 @@ class SignUpForm(forms.ModelForm):
         )
 
     def __init__(self, *args, **kwargs):
+        request = kwargs.pop('request', None)
         super().__init__(*args, **kwargs)
+
+        # privilege選択肢を自分より強い権限を除外
+        if request and hasattr(request, 'user') and hasattr(request.user, 'privilege'):
+            user_privilege = int(request.user.privilege)
+            self.fields['privilege'].choices = [
+                (value, label) for value, label in self.fields['privilege'].choices
+                if value == '' or int(value) >= user_privilege
+            ]
+
         # 全項目共通のclassを付与
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
+
         # エラーフィールドに警告色を付与
         for error in self.errors:
             self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
+
         # プレースホルダの設定
         self.fields['username'].widget.attrs['placeholder'] = '例）山田 太郎'
         self.fields['username_kana'].widget.attrs['placeholder'] = '例）ヤマダ タロウ'
-        self.fields['email'].widget.attrs['placeholder'] = '例）xxx@test.com'
-        self.fields['tel_number'].widget.attrs['placeholder'] = '例）09012345678'
+        self.fields['email'].widget.attrs['placeholder'] = '例）info@test.com'
+        self.fields['tel_number'].widget.attrs['placeholder'] = '例）090-1234-5678'
+
         # 不要なパスワードフィールドを削除
         if 'password1' in self.fields:
             del self.fields['password1']

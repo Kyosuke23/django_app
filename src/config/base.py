@@ -7,7 +7,7 @@ from datetime import datetime
 from django.http import HttpResponse
 from django.db import models
 from django.http import HttpResponseForbidden
-from register.constants import PRIVILEGE_EDITOR
+from register.constants import PRIVILEGE_EDITOR, PRIVILEGE_MANAGER
 import openpyxl
 
 
@@ -238,7 +238,7 @@ class BaseModel(models.Model):
 
 class PrivilegeRequiredMixin():
     '''
-    一般権限以下のユーザーのアクセスを制限する
+    参照権限以下のユーザーのアクセスを制限する
     '''
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
@@ -249,11 +249,11 @@ class PrivilegeRequiredMixin():
 
 class SystemUserOnlyMixin():
     '''
-    システム管理者（privilege == '0'）のみアクセス可能
+    システム管理者以上のみアクセス可能
     '''
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.privilege != '0':
+        if request.user.privilege  > int(PRIVILEGE_MANAGER):
             return HttpResponseForbidden('アクセス権限がありません。')
         return super().dispatch(request, *args, **kwargs)
