@@ -89,7 +89,7 @@ $(function () {
                     if (xhr.responseJSON && xhr.responseJSON.error) {
                         alert(xhr.responseJSON.error);
                     } else {
-                        alert('削除に失敗しました');
+                        location.reload();
                     }
                 }
             });

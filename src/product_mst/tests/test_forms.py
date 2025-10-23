@@ -2,8 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from tenant_mst.models import Tenant
 from product_mst.models import Product, ProductCategory
-from product_mst.form import ProductForm, ProductSearchForm
-from decimal import Decimal
+from product_mst.form import ProductForm, ProductSearchForm, ProductCategoryForm
 
 
 class ProductFormTests(TestCase):
@@ -41,7 +40,7 @@ class ProductFormTests(TestCase):
         '''F02: product_name 必須エラー'''
         form = ProductForm(data={
             'product_name': '',
-            'unit': '個',
+            'unit_price': '1234.56',
         })
         self.assertFalse(form.is_valid())
         self.assertIn('この項目は必須です', form.errors['product_name'][0])
@@ -51,6 +50,7 @@ class ProductFormTests(TestCase):
         form = ProductForm(data={
             'product_name': 'テスト商品',
             'unit': 'A' * 21,
+            'unit_price': '1234.56',
         })
         self.assertFalse(form.is_valid())
         self.assertIn('この値は 20 文字以下でなければなりません', form.errors['unit'][0])
@@ -59,17 +59,24 @@ class ProductFormTests(TestCase):
         '''F04: description 桁数超過（256文字）'''
         form = ProductForm(data={
             'product_name': 'テスト商品',
-            'unit': '個',
+            'unit_price': '1234.56',
             'description': 'A' * 256,
         })
         self.assertFalse(form.is_valid())
         self.assertIn('255文字以内で入力してください', form.errors['description'][0])
 
     def test_F05(self):
+        '''F05: unit_price 必須エラー'''
+        form = ProductForm(data={
+            'product_name': 'テスト商品',
+        })
+        self.assertFalse(form.is_valid())
+        self.assertIn('この項目は必須です', form.errors['unit_price'][0])
+
+    def test_F05a(self):
         '''F05: unit_price 小数3桁'''
         form = ProductForm(data={
             'product_name': 'テスト商品',
-            'unit': '個',
             'unit_price': '123.456',
         })
         self.assertFalse(form.is_valid())
@@ -79,9 +86,7 @@ class ProductFormTests(TestCase):
         '''F06: product_category 未選択（任意項目）'''
         form = ProductForm(data={
             'product_name': 'テスト商品',
-            'unit': '個',
-            'unit_price': '',
-            'description': '',
+            'unit_price': '1234.56',
         })
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -90,13 +95,13 @@ class ProductFormTests(TestCase):
         Product.objects.create(
             tenant=self.tenant,
             product_name='重複商品',
-            unit='個',
+            unit_price='1234.56',
             create_user=self.user,
             update_user=self.user
         )
         form = ProductForm(data={
             'product_name': '重複商品',
-            'unit': '個',
+            'unit_price': '1234.56',
         })
         # ModelFormはDBユニーク制約では即エラーにならないため full_clean() 相当を確認
         self.assertTrue(form.is_valid(), 'フォーム単体では通過するが保存時エラーを想定')
@@ -115,7 +120,7 @@ class ProductFormTests(TestCase):
         Product.objects.create(
             tenant=self.tenant,
             product_name='共通商品',
-            unit='個',
+            unit_price='1234.56',
             create_user=self.user,
             update_user=self.user
         )
@@ -123,7 +128,7 @@ class ProductFormTests(TestCase):
         # テナントBで同名商品を登録
         form = ProductForm(data={
             'product_name': '共通商品',
-            'unit': '個',
+            'unit_price': '1234.56',
         })
         self.assertTrue(form.is_valid(), form.errors)
         # save() しても IntegrityError は発生しないことを確認
@@ -138,8 +143,7 @@ class ProductFormTests(TestCase):
         '''F08: unit_price 空（任意）'''
         form = ProductForm(data={
             'product_name': '価格なし商品',
-            'unit': '箱',
-            'unit_price': '',
+            'unit_price': '1234.56',
         })
         self.assertTrue(form.is_valid(), form.errors)
 
@@ -147,7 +151,6 @@ class ProductFormTests(TestCase):
         '''F09: unit_price 数値型チェック（文字列エラー）'''
         form = ProductForm(data={
             'product_name': 'テスト商品',
-            'unit': '個',
             'unit_price': 'abc',
         })
         self.assertFalse(form.is_valid())
@@ -161,14 +164,14 @@ class ProductSearchFormTests(TestCase):
         '''F10: キーワード＋単価範囲＋カテゴリ 複合入力（正常）'''
         form = ProductSearchForm(data={
             'search_keyword': 'テスト',
-            'min_price': 100,
-            'max_price': 200,
+            'search_unit_price_min': 100,
+            'search_unit_price_max': 200,
             'sort': 'product_name',
         })
         self.assertTrue(form.is_valid(), form.errors)
         self.assertEqual(form.cleaned_data['search_keyword'], 'テスト')
-        self.assertEqual(form.cleaned_data['min_price'], 100)
-        self.assertEqual(form.cleaned_data['max_price'], 200)
+        self.assertEqual(form.cleaned_data['search_unit_price_min'], 100)
+        self.assertEqual(form.cleaned_data['search_unit_price_max'], 200)
 
     def test_F11(self):
         '''F11: 並び替えオプション 構造確認'''
@@ -176,3 +179,67 @@ class ProductSearchFormTests(TestCase):
         self.assertIn('商品名称', dict(form.fields['sort'].choices))
         self.assertIn('商品カテゴリ', dict(form.fields['sort'].choices))
         self.assertIn('単価', dict(form.fields['sort'].choices))
+
+class ProductCategoryFormTests(TestCase):
+    '''ProductCategoryForm 単体テスト'''
+
+    def setUp(self):
+        User = get_user_model()
+        self.tenant = Tenant.objects.create(tenant_name='テストテナント')
+        self.user = User.objects.create_user(
+            username='tester',
+            email='tester@example.com',
+            password='pass',
+            tenant=self.tenant
+        )
+        self.cat = ProductCategory.objects.create(
+            tenant=self.tenant,
+            product_category_name='既存カテゴリ',
+            create_user=self.user,
+            update_user=self.user
+        )
+
+    def test_FC01(self):
+        '''FC01: 新規カテゴリ入力（正常）'''
+        form = ProductCategoryForm(data={'product_category_name': '新カテゴリ'})
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data['product_category_name'], '新カテゴリ')
+
+    def test_FC02(self):
+        '''FC02: 空入力'''
+        form = ProductCategoryForm(data={'product_category_name': ''})
+        self.assertFalse(form.is_valid())
+        self.assertIn('この項目は必須です', form.errors['product_category_name'][0])
+
+    def test_FC03(self):
+        '''FC03: 桁数超過（101文字）'''
+        form = ProductCategoryForm(data={'product_category_name': 'A' * 101})
+        self.assertFalse(form.is_valid())
+        self.assertIn('この値は 100 文字以下でなければなりません', form.errors['product_category_name'][0])
+
+    def test_FC04(self):
+        '''FC04: 既存カテゴリ選択＋更新アクション'''
+        form = ProductCategoryForm(data={
+            'selected_category': self.cat.id,
+            'product_category_name': '変更後カテゴリ'
+        })
+        self.assertTrue(form.is_valid(), form.errors)
+        cleaned = form.cleaned_data
+        self.assertEqual(cleaned['product_category_name'], '変更後カテゴリ')
+
+    def test_FC05(self):
+        '''FC05: 削除アクション時はカテゴリ名空でも通過（特殊処理想定）'''
+        form = ProductCategoryForm(data={'action': 'delete', 'product_category_name': ''})
+        # 実際には view 側でバリデーションスキップされるが想定動作確認
+        self.assertTrue(form.is_valid(), '削除時は空でも通過可能')
+
+    def test_FC06(self):
+        '''FC06: 同一テナント内で同名カテゴリ（保存時IntegrityError想定）'''
+        ProductCategory.objects.create(
+            tenant=self.tenant,
+            product_category_name='重複カテゴリ',
+            create_user=self.user,
+            update_user=self.user
+        )
+        form = ProductCategoryForm(data={'product_category_name': '重複カテゴリ'})
+        self.assertTrue(form.is_valid(), 'フォーム自体は通過、保存時IntegrityErrorを想定')

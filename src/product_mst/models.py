@@ -37,6 +37,8 @@ class Product(BaseModel):
 
     unit = models.CharField(
         max_length=20,
+        blank=True,
+        null=True,
         verbose_name='単位',
         help_text='数量に対する単位を20文字以内で入力してください。例：個、箱、kgなど'
     )
@@ -44,8 +46,6 @@ class Product(BaseModel):
     unit_price = models.DecimalField(
         max_digits=12,
         decimal_places=2,
-        blank=True,
-        null=True,
         verbose_name='単価',
         help_text='数値で入力してください。小数第2位まで指定できます。（任意）'
     )

@@ -198,7 +198,7 @@ class ProfileUpdateView(generic.UpdateView):
         return self.request.user
 
     def get_success_url(self):
-        messages.success(self.request, 'プロフィールを更新しました')
+        messages.success(self.request, 'プロフィールを更新しました。')
         return reverse('register:update_profile')
 
     def form_valid(self, form):
@@ -217,7 +217,7 @@ class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
     template_name = 'register/password_change.html'
 
     def get_success_url(self):
-        messages.success(self.request, 'パスワードが変更されました')
+        messages.success(self.request, 'パスワードが変更されました。')
         return reverse('dashboard:top')
 
 
@@ -232,7 +232,7 @@ class UserDeleteView(PrivilegeRequiredMixin, generic.View):
         # 自分自身は削除不可
         if obj.pk == request.user.pk:
             return JsonResponse({
-                'error': '自分自身のユーザーは削除できません',
+                'error': '自分自身のユーザーは削除できません。',
                 'details': ''
             }, status=400)
         try:
@@ -241,7 +241,7 @@ class UserDeleteView(PrivilegeRequiredMixin, generic.View):
             return JsonResponse({'success': True})
         except ProtectedError:
             return JsonResponse({
-                'error': '使用中のユーザーは削除できません',
+                'error': '使用中のユーザーは削除できません。',
                 'details': ''
             }, status=400)
 
@@ -255,17 +255,17 @@ class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
         if ids:
             if str(request.user.pk) in ids:
                 return JsonResponse({
-                    'error': '自分自身のユーザーは削除できません'
+                    'error': '自分自身のユーザーは削除できません。'
                 }, status=400)
             try:
                 CustomUser.objects.filter(id__in=ids).delete()
-                return JsonResponse({'message': f'{len(ids)}件削除しました'})
+                return JsonResponse({'message': f'{len(ids)}件削除しました。'})
             except ProtectedError:
                 return JsonResponse({
-                    'error': '使用中のユーザーは削除できません'
+                    'error': '使用中のユーザーは削除できません。'
                 }, status=400)
         else:
-            messages.warning(request, '削除対象が選択されていません')
+            messages.warning(request, '削除対象が選択されていません。')
         return redirect('register:list')
 
 

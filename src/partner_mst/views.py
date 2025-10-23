@@ -203,7 +203,7 @@ class PartnerDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View
         except Http404:
             if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 messages.error(request, 'この取引先は既に削除されています。')
-                return JsonResponse({'success': False})
+                return JsonResponse({'success': False}, status=404)
         obj.delete()
         set_message(self.request, '削除', obj.partner_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':

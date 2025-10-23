@@ -11,7 +11,7 @@ from django.utils import timezone
 from tenant_mst.models import Tenant
 from partner_mst.views import HEADER_MAP
 from django.contrib.messages.storage.fallback import FallbackStorage
-from partner_mst.views import PartnerUpdateView, PartnerBulkDeleteView
+from partner_mst.views import PartnerUpdateView, PartnerDeleteView, PartnerBulkDeleteView
 from sales_order.models import SalesOrder
 from django.conf import settings
 from django.contrib import messages
@@ -384,6 +384,7 @@ class PartnerViewTests(TestCase):
             'address2': 'ビル3F',
         }
 
+        # 処理実行
         response = self.client.post(
             url,
             data,
@@ -1088,7 +1089,7 @@ class PartnerViewTests(TestCase):
         setattr(request, '_messages', messages)
 
         # View呼び出し
-        response = PartnerUpdateView.as_view()(request, pk=99999)
+        response = PartnerDeleteView.as_view()(request, pk=99999)
 
         # JSONレスポンス構造確認
         self.assertJSONEqual(response.content, {'success': False})
@@ -1412,7 +1413,7 @@ class PartnerViewTests(TestCase):
             partner_name__icontains=target,
             tenant=self.user.tenant,
             is_deleted=False
-        ).order_by('partner_name')
+        ).order_by('id')
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
@@ -1444,7 +1445,7 @@ class PartnerViewTests(TestCase):
         self._assert_csv_matches_queryset(rows, partners)
 
     def test_V46(self):
-        '''CSVエクスポート（正常系：参照ユーザー）'''
+        '''CSVエクスポート（正常系：未ログイン）'''
         url = reverse('partner_mst:export_csv')
 
         # ログアウト
@@ -1463,23 +1464,23 @@ class PartnerViewTests(TestCase):
         if 'Content-Type' in response:
             self.assertNotEqual(response['Content-Type'], 'text/csv')
 
-    def _create_partners(self, n):
-        partners = []
+    def _create_max_data(self, n):
+        data = []
         for i in range(n):
             p = Partner.objects.create(
                 tenant=self.user.tenant,
-                partner_name=f"取引先{i}",
-                partner_name_kana=f"トリヒキサキ{i}",
-                contact_name=f"担当者{i}",
-                email=f"user{i}@example.com",
+                partner_name=f'取引先{i}',
+                partner_name_kana=f'トリヒキサキ{i}',
+                contact_name=f'担当者{i}',
+                email=f'user{i}@example.com',
                 is_deleted=False,
             )
-            partners.append(p)
-        return partners
+            data.append(p)
+        return data
 
     def test_V47(self):
         '''CSVエクスポート（正常系：上限数以上）'''
-        self._create_partners(settings.MAX_EXPORT_ROWS + 1)
+        self._create_max_data(settings.MAX_EXPORT_ROWS + 1)
         url = reverse('partner_mst:export_check')
 
         response = self.client.get(url)
@@ -1617,6 +1618,7 @@ class PartnerViewTests(TestCase):
             self.assertEqual(partner.city, row['city'])
             self.assertEqual(partner.address, row['address'])
             self.assertEqual(partner.address2, row['address2'])
+            self.assertEqual(partner.is_deleted, False)
             self.assertEqual(partner.create_user, self.user)
             self.assertEqual(partner.update_user, self.user)
             self.assertEqual(partner.tenant, self.user.tenant)
@@ -1890,7 +1892,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
     def test_V55(self):
-        '''CSVインポート（正常系：部分成功時ロールバック）'''
+        '''CSVインポート（異常系：部分成功時ロールバック）'''
         url = reverse('partner_mst:import_csv')
 
         # データを削除しておく

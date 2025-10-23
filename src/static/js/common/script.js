@@ -128,10 +128,19 @@ $(function () {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 dataType: 'json'
             })
-            // 処理成功時も失敗時も画面をリロードしてフラッシュメッセージ表示
+            // サーバ通信成功時
             .done(function (data) {
-                location.reload();
+                // サーバ処理成功時
+                if (data.success) {
+                    location.reload();
+
+                // サーバ処理失敗時
+                } else {
+                    $modal.find('.modal-body').html(data.html);
+                    afterLoadCallback($modal);
+                }
             })
+            // サーバ通信失敗時
             .fail(function () {
                 location.reload();
             });

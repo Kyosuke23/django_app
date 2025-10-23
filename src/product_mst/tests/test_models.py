@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from tenant_mst.models import Tenant
 from product_mst.models import Product, ProductCategory
 from django.utils import timezone
+from django.db import IntegrityError
 from decimal import Decimal
 
 
@@ -34,7 +35,7 @@ class ProductModelTests(TestCase):
             create_user=self.user,
             update_user=self.user,
             product_name='テスト商品',
-            unit='個',
+            unit_price=100,
         )
         defaults.update(kwargs)
         return Product(**defaults)
@@ -49,7 +50,7 @@ class ProductModelTests(TestCase):
         p.save()
         saved = Product.objects.get(pk=p.pk)
         self.assertEqual(saved.product_name, '有効商品')
-        self.assertEqual(saved.unit, '個')
+        self.assertEqual(saved.unit_price, 100)
         self.assertEqual(saved.tenant, self.tenant)
 
     def test_M01a(self):
@@ -130,11 +131,10 @@ class ProductModelTests(TestCase):
         self.assertEqual(Product.objects.get(pk=p.pk).unit_price, Decimal('1234.56'))
 
     def test_M04a(self):
-        '''M04a: unit_price None許可'''
+        '''M04a: unit_price 必須エラー'''
         p = self.create_product(unit_price=None)
-        p.full_clean()
-        p.save()
-        self.assertIsNone(Product.objects.get(pk=p.pk).unit_price)
+        with self.assertRaises(ValidationError):
+            p.full_clean()
 
     def test_M04b(self):
         '''M04b: unit_price 小数3桁（ValidationError）'''
@@ -173,7 +173,7 @@ class ProductModelTests(TestCase):
         Product.objects.create(
             tenant=self.tenant,
             product_name='重複商品',
-            unit='個',
+            unit_price=200,
             create_user=self.user,
             update_user=self.user
         )
@@ -181,7 +181,7 @@ class ProductModelTests(TestCase):
             Product.objects.create(
                 tenant=self.tenant,
                 product_name='重複商品',
-                unit='個',
+                unit_price=200,
                 create_user=self.user,
                 update_user=self.user
             )
@@ -192,14 +192,14 @@ class ProductModelTests(TestCase):
         Product.objects.create(
             tenant=self.tenant,
             product_name='同名商品',
-            unit='個',
+            unit_price=200,
             create_user=self.user,
             update_user=self.user
         )
         Product.objects.create(
             tenant=other_tenant,
             product_name='同名商品',
-            unit='個',
+            unit_price=200,
             create_user=self.user,
             update_user=self.user
         )
@@ -215,3 +215,101 @@ class ProductModelTests(TestCase):
         self.assertIsNotNone(p.pk)
         self.assertLessEqual(abs((p.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((p.updated_at - timezone.now()).total_seconds()), 5)
+
+
+class ProductCategoryModelTests(TestCase):
+    '''ProductCategoryモデル単体テスト'''
+
+    def setUp(self):
+        '''共通データ作成'''
+        User = get_user_model()
+        self.tenant = Tenant.objects.create(tenant_name='テストテナント')
+        self.user = User.objects.create_user(
+            username='tester',
+            email='tester@example.com',
+            password='pass',
+            tenant=self.tenant
+        )
+
+    def create_category(self, **kwargs):
+        defaults = dict(
+            tenant=self.tenant,
+            product_category_name='食品',
+            create_user=self.user,
+            update_user=self.user
+        )
+        defaults.update(kwargs)
+        return ProductCategory(**defaults)
+
+    # --------------------------
+    # 正常系
+    # --------------------------
+    def test_C01(self):
+        '''C01: 正常登録'''
+        cat = self.create_category()
+        cat.full_clean()
+        cat.save()
+        saved = ProductCategory.objects.get(pk=cat.pk)
+        self.assertEqual(saved.product_category_name, '食品')
+        self.assertEqual(saved.tenant, self.tenant)
+
+    def test_C02(self):
+        '''C02: 桁数上限100文字'''
+        cat = self.create_category(product_category_name='A' * 100)
+        cat.full_clean()
+        cat.save()
+        self.assertEqual(ProductCategory.objects.get(pk=cat.pk).product_category_name, 'A' * 100)
+
+    def test_C03(self):
+        '''C03: Null／空文字は許可されない'''
+        cat = self.create_category(product_category_name='')
+        with self.assertRaises(ValidationError):
+            cat.full_clean()
+
+    def test_C04(self):
+        '''C04: 桁数超過（101文字）'''
+        cat = self.create_category(product_category_name='A' * 101)
+        with self.assertRaises(ValidationError):
+            cat.full_clean()
+
+    # --------------------------
+    # ユニーク制約
+    # --------------------------
+    def test_C05(self):
+        '''C05: 同一テナント内でカテゴリ名重複時'''
+        ProductCategory.objects.create(
+            tenant=self.tenant,
+            product_category_name='重複カテゴリ',
+            create_user=self.user,
+            update_user=self.user
+        )
+        with self.assertRaises(IntegrityError):
+            ProductCategory.objects.create(
+                tenant=self.tenant,
+                product_category_name='重複カテゴリ',
+                create_user=self.user,
+                update_user=self.user
+            )
+
+    def test_C06(self):
+        '''C06: 異なるテナントでは同名カテゴリ登録可能'''
+        other_tenant = Tenant.objects.create(tenant_name='別テナント')
+        ProductCategory.objects.create(
+            tenant=self.tenant,
+            product_category_name='共通カテゴリ',
+            create_user=self.user,
+            update_user=self.user
+        )
+        other_user = get_user_model().objects.create_user(
+            username='other',
+            email='other@example.com',
+            password='pass',
+            tenant=other_tenant
+        )
+        ProductCategory.objects.create(
+            tenant=other_tenant,
+            product_category_name='共通カテゴリ',
+            create_user=other_user,
+            update_user=other_user
+        )
+        self.assertEqual(ProductCategory.objects.filter(product_category_name='共通カテゴリ').count(), 2)

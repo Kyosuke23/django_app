@@ -139,7 +139,7 @@
     "model": "product_mst.product",
     "pk": 9,
     "fields": {
-      "tenant": 1,
+      "tenant": 2,
       "product_name": "商品009",
       "product_category": 1,
       "description": "サンプル商品 9 の説明です。",
@@ -156,7 +156,7 @@
     "model": "product_mst.product",
     "pk": 10,
     "fields": {
-      "tenant": 1,
+      "tenant": 3,
       "product_name": "商品010",
       "product_category": 2,
       "description": "サンプル商品 10 の説明です。",

@@ -37,5 +37,18 @@
       "create_user": "1",
       "update_user": "1"
     }
+  },
+  {
+    "model": "product_mst.productcategory",
+    "pk": 4,
+    "fields": {
+      "tenant": 1,
+      "product_category_name": "test category 999",
+      "is_deleted": false,
+      "created_at": "2025-09-29T12:00:00Z",
+      "updated_at": "2025-09-29T12:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
   }
 ]

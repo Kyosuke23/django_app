@@ -1,4 +1,5 @@
 from django.views import generic
+from django.db import transaction
 from django.urls import reverse_lazy, reverse
 from .models import Product, ProductCategory
 from .form import ProductSearchForm, ProductForm, ProductCategoryForm
@@ -6,12 +7,14 @@ from config.common import Common
 from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin
 from django.db.models import Q
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.template.loader import render_to_string
 from django.shortcuts import redirect
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.conf import settings
+from django.contrib.auth.mixins import LoginRequiredMixin
+
 
 # 出力カラム定義
 HEADER_MAP = {
@@ -29,7 +32,7 @@ FILENAME_PREFIX = 'product_mst'
 #--------------------------
 # Product CRUD
 #--------------------------
-class ProductListView(generic.ListView):
+class ProductListView(LoginRequiredMixin, generic.ListView):
     '''
     商品一覧画面
     - 検索条件（キーワード/カテゴリ）に対応
@@ -65,7 +68,7 @@ class ProductListView(generic.ListView):
         return context
 
 
-class ProductCreateView(PrivilegeRequiredMixin, generic.CreateView):
+class ProductCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.CreateView):
     '''
     商品登録
     - GET: 部分テンプレートを返す（Ajax）
@@ -82,11 +85,17 @@ class ProductCreateView(PrivilegeRequiredMixin, generic.CreateView):
             {
                 'form': form,
                 'form_action': reverse('product_mst:create'),
-                'modal_title': '商品新規登録',
+                'modal_title': '商品: 新規登録',
             },
             request
         )
         return JsonResponse({'success': True, 'html': html})
+
+    def get_form(self, form_class=None):
+        # フォームのインスタンスに tenant を最初から入れておく -> 同一テナント内での重複チェックのため
+        form = super().get_form(form_class)
+        form.instance.tenant = self.request.user.tenant
+        return form
 
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=False)
@@ -102,7 +111,7 @@ class ProductCreateView(PrivilegeRequiredMixin, generic.CreateView):
                 {
                     'form': form,
                     'form_action': reverse('product_mst:create'),
-                    'modal_title': '商品新規登録',
+                    'modal_title': '商品: 新規登録',
                 },
                 self.request
             )
@@ -110,7 +119,7 @@ class ProductCreateView(PrivilegeRequiredMixin, generic.CreateView):
         return super().form_invalid(form)
 
 
-class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
+class ProductUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.UpdateView):
     '''
     商品更新
     - GET: 部分テンプレートを返す（Ajax）
@@ -121,8 +130,13 @@ class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     template_name = 'product_mst/form.html'
 
     def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        form = self.form_class(instance=self.object)
+        try:
+            self.object = self.get_object()
+        except Http404:
+            messages.error(request, 'この取引先は既に削除されています。')
+            return JsonResponse({'success': False}, status=404)
+
+        form = self.get_form()
         html = render_to_string(
             self.template_name,
             {
@@ -135,28 +149,47 @@ class ProductUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
         return JsonResponse({'success': True, 'html': html})
 
     def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
+        try:
+            self.object = self.get_object()
+        except Http404:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'この商品は既に削除されています。')
+                return JsonResponse({'success': False}, status=404)
+
         form = self.get_form()
         if form.is_valid():
-            self.object = form.save(commit=False)
-            self.object.update_user = self.request.user
-            self.object.save()
-            set_message(self.request, '更新', self.object.product_name)
-            return JsonResponse({'success': True})
+            return self.form_valid(form)
         else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        Common.save_data(selv=self, form=form, is_update=True)
+        set_message(self.request, '更新', self.object.product_name)
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': True})
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            obj = getattr(self, 'object', None)
+            modal_title = f'商品更新: {obj.product_name}' if obj else '商品更新'
             html = render_to_string(
                 self.template_name,
                 {
                     'form': form,
-                    'form_action': reverse('product_mst:update', kwargs={'pk': self.object.pk}),
-                    'modal_title': f'商品更新: {self.object.product_name}',
+                    'form_action': reverse(
+                        'product_mst:update',
+                        kwargs={'pk': obj.pk} if obj else {}
+                    ),
+                    'modal_title': modal_title,
                 },
-                request
+                self.request
             )
             return JsonResponse({'success': False, 'html': html})
+        return super().form_invalid(form)
 
 
-class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
+class ProductDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View):
     '''
     商品削除処理
     - 物理削除
@@ -165,29 +198,64 @@ class ProductDeleteView(PrivilegeRequiredMixin, generic.View):
     success_url = reverse_lazy('product_mst:list')
 
     def post(self, request, *args, **kwargs):
-        obj = get_object_or_404(Product, pk=kwargs['pk'])
+        try:
+            obj = get_object_or_404(Product, pk=kwargs['pk'])
+        except Http404:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'この商品は既に削除されています。')
+                return JsonResponse({'success': False}, status=404)
         obj.delete()
         set_message(self.request, '削除', obj.product_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
 
 
-class ProductBulkDeleteView(PrivilegeRequiredMixin, generic.View):
+class ProductBulkDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View):
     '''
     一括削除処理
     - 物理削除
     '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
-        if ids:
-            Product.objects.filter(id__in=ids).delete()
-            return JsonResponse({'message': f'{len(ids)}件削除しました'})
-        else:
-            messages.warning(request, '削除対象が選択されていません')
-        return redirect('product_mst:list')
+
+        if not ids:
+            messages.warning(request, '削除対象が選択されていません。')
+            return redirect('product_mst:list')
+
+        try:
+            with transaction.atomic():
+                # 対象取得
+                products = Product.objects.filter(id__in=ids)
+
+                # 存在しないIDを検出
+                found_ids = set(str(p.id) for p in products)
+                missing_ids = set(ids) - found_ids
+
+                if missing_ids:
+                    messages.error(request, 'すでに削除されている商品が含まれています。')
+                    return JsonResponse({'success': False}, status=404)
+
+                # 物理削除実行
+                deleted_count, _ = products.delete()
+
+            return JsonResponse({'message': f'{deleted_count}件削除しました。'})
+
+        except ValueError as e:
+            # トランザクションは自動ロールバック
+            messages.error(request, str(e))
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': str(e)}, status=400)
+            return redirect('product_mst:list')
+
+        except Exception:
+            # 想定外エラー（DBエラーなど）
+            messages.error(request, '削除処理中にエラーが発生しました。')
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': '削除処理中にエラーが発生しました。'}, status=500)
+            return redirect('product_mst:list')
 
 
-class ProductCategoryManageView(generic.FormView):
+class ProductCategoryManageView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.FormView):
     template_name = 'product_mst/category_mst.html'
     form_class = ProductCategoryForm
     success_url = reverse_lazy('product_mst:category_manage')
@@ -235,11 +303,10 @@ class ProductCategoryManageView(generic.FormView):
         return context
 
 
-
 #--------------------------
 # Export / Import
 #--------------------------
-class ExportExcel(ExcelExportBaseView):
+class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
     '''
     商品マスタのExcel出力
     - 共通の get_row を利用
@@ -259,7 +326,26 @@ class ExportExcel(ExcelExportBaseView):
         return get_row(rec=rec)
 
 
-class ExportCSV(CSVExportBaseView):
+class ExportCheckView(LoginRequiredMixin, generic.View):
+    '''CSV出力前の件数チェック'''
+    def get(self, request):
+        form = ProductSearchForm(request.GET or None)
+        queryset = Product.objects.filter(is_deleted=False, tenant=request.user.tenant)
+
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        count = queryset.count()
+        if count > settings.MAX_EXPORT_ROWS:
+            return JsonResponse({
+                'warning': f'出力件数が上限（{settings.MAX_EXPORT_ROWS:,}件）を超えています。'
+                           f'先頭{settings.MAX_EXPORT_ROWS:,}件のみを出力します。'
+            })
+
+        return JsonResponse({'ok': True})
+
+
+class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     '''
     商品マスタのCSV出力
     - 共通の get_row を利用
@@ -290,7 +376,7 @@ class ExportCSV(CSVExportBaseView):
         return get_row(rec=rec)
 
 
-class ImportCSV(CSVImportBaseView):
+class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
     '''
     商品マスタのCSVインポート
     - ヘッダ検証と1行ごとのバリデーション
@@ -298,7 +384,7 @@ class ImportCSV(CSVImportBaseView):
     '''
     expected_headers = list(HEADER_MAP.keys())
     model_class = Product
-    unique_field = 'product_name'
+    unique_field = ('tenant_id', 'product_name')
     HEADER_MAP = HEADER_MAP
 
     def validate_row(self, row, idx, existing, request):
@@ -316,7 +402,7 @@ class ImportCSV(CSVImportBaseView):
                 )
                 data['product_category'] = category.id
             except ProductCategory.DoesNotExist:
-                return None, f'{idx}行目: 商品カテゴリ「{category_name}」が存在しません'
+                return None, f'{idx}行目: 商品カテゴリ「{category_name}」が存在しません。'
         else:
             data['product_category'] = None
 
@@ -328,7 +414,7 @@ class ImportCSV(CSVImportBaseView):
             error_text = '; '.join(
                 [f"{field}: {','.join(errors)}" for field, errors in form.errors.items()]
             )
-            return None, f'{idx}行目: {error_text}'
+            return None, form
 
         # ------------------------------------------------------
         # 重複チェック（tenant + product_name）
@@ -336,7 +422,7 @@ class ImportCSV(CSVImportBaseView):
         product_name = data.get('product_name')
         key = (request.user.tenant_id, product_name)
         if key in existing:
-            return None, f'{idx}行目: 商品名称「{product_name}」は既に存在します。'
+            return None, f'{idx}行目: 商品「{product_name}」は既に存在します。'
         existing.add(key)
 
         # ------------------------------------------------------
@@ -371,6 +457,7 @@ def filter_data(cleaned_data, queryset):
             Q(product_name__icontains=keyword)
             | Q(description__icontains=keyword)
             | Q(unit__icontains=keyword)
+            | Q(unit_price__icontains=keyword)
             | Q(product_category__product_category_name__icontains=keyword)
         )
 
@@ -380,10 +467,10 @@ def filter_data(cleaned_data, queryset):
         queryset = queryset.filter(product_category=cleaned_data['search_category'])
     if cleaned_data.get('search_unit'):
         queryset = queryset.filter(unit__icontains=cleaned_data['search_unit'])
-    if cleaned_data.get('min_price') is not None:
-        queryset = queryset.filter(unit_price__gte=cleaned_data['min_price'])
-    if cleaned_data.get('max_price') is not None:
-        queryset = queryset.filter(unit_price__lte=cleaned_data['max_price'])
+    if cleaned_data.get('search_unit_price_min') is not None:
+        queryset = queryset.filter(unit_price__gte=cleaned_data['search_unit_price_min'])
+    if cleaned_data.get('search_unit_price_max') is not None:
+        queryset = queryset.filter(unit_price__lte=cleaned_data['search_unit_price_max'])
 
     return queryset
 

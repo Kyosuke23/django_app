@@ -41,14 +41,14 @@ class ProductSearchForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control form-control-sm'})
     )
 
-    min_price = forms.DecimalField(
+    search_unit_price_min = forms.DecimalField(
         required=False,
         label='単価（下限）',
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '円'}),
         min_value=0
     )
 
-    max_price = forms.DecimalField(
+    search_unit_price_max = forms.DecimalField(
         required=False,
         label='単価（上限）',
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '円'}),
@@ -111,12 +111,29 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        self.tenant = getattr(user, 'tenant', None)
         super().__init__(*args, **kwargs)
-        
+
         if user is not None:
             # 商品カテゴリをテナント内に限定
             self.fields['categories'].queryset = (self.fields['categories'].queryset.filter(tenant=user.tenant))
 
+        self.fields['unit'].required = False
+
+    def clean(self):
+        # views.pyのget_form()後のバリデーション（同一テナント内での重複チェック）
+        cleaned_data = super().clean()
+        tenant = self.initial.get('tenant') or getattr(self.instance, 'tenant', None)
+        product_name = cleaned_data.get('product_name')
+
+        # 同一テナント内で同じ商品名の組み合わせを禁止
+        if tenant and product_name:
+            qs = Product.objects.filter(tenant=tenant, product_name=product_name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                self.add_error('product_name', '同じ商品名が既に登録されています。')
+        return cleaned_data
 
 class ProductCategoryForm(forms.ModelForm):
     selected_category = forms.ModelChoiceField(
@@ -143,3 +160,8 @@ class ProductCategoryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['selected_category'].queryset = ProductCategory.objects.filter(is_deleted=False).order_by('product_category_name')
+
+        # 削除アクション時は必須チェックを無効化
+        action = self.data.get('action') or self.initial.get('action')
+        if action == 'delete':
+            self.fields['product_category_name'].required = False

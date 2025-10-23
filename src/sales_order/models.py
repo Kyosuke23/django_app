@@ -216,9 +216,21 @@ class SalesOrderDetail(BaseModel):
         on_delete=models.SET_NULL,
         verbose_name='商品'
     )
-    quantity = models.IntegerField(verbose_name='数量')
-    master_unit_price = models.IntegerField(verbose_name='マスタ単価')  # 商品マスタの単価コピー
-    billing_unit_price = models.IntegerField(verbose_name='請求単価')  # 受注明細フォームで入力した単価
+    quantity = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='数量',
+    )
+    master_unit_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='マスタ単価',
+    )
+    billing_unit_price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='請求単価',
+    )
     tax_rate = models.DecimalField(
         max_digits=3,
         decimal_places=2,

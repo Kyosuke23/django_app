@@ -13,9 +13,9 @@
   {% bootstrap_form form %}
 
   <div class="d-flex justify-content-end gap-2 mt-3">
-    <button type="submit" class="btn btn-primary" data-action="save">保存</button>
+    <button type="submit" id="save-btn" class="btn btn-primary" data-action="save">保存</button>
     {% if form.instance.pk %}
-      <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
+      <button type="submit" id="delete-btn" class="btn btn-danger" data-action="delete">削除</button>
     {% endif %}
   </div>
 </form>
