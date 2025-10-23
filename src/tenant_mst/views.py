@@ -27,6 +27,6 @@ class TenantEditView(generic.UpdateView):
     def form_valid(self, form):
         Common.save_data(selv=self, form=form, is_update=True)
         return super().form_valid(form)
-    
+
     def form_invalid(self, form):
-        pass
+        return super().form_invalid(form)

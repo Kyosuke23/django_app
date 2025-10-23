@@ -19,19 +19,20 @@ class Tenant(models.Model):
     )
 
     tenant_name = models.CharField(
-        max_length=255,
-        verbose_name='テナント名',
+        max_length=100,
+        verbose_name='テナント名称',
         help_text='企業名や団体名'
     )
 
     representative_name = models.CharField(
-        max_length=255,
+        max_length=100,
         verbose_name='代表者名',
         help_text='企業や団体の代表者名'
     )
 
     contact_email = models.EmailField(
-        verbose_name='代表メールアドレス'
+        max_length=254,
+        verbose_name='メールアドレス'
     )
 
     contact_tel_number = models.CharField(
@@ -83,7 +84,7 @@ class Tenant(models.Model):
         verbose_name='住所2',
         help_text='建物名・部屋番号などを150文字以内で入力してください。（任意）'
     )
-    
+
     # Tenantモデルだけは共通クラスの継承をしない
     is_deleted = models.BooleanField(default=False, verbose_name='削除フラグ')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')

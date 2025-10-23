@@ -313,6 +313,6 @@ class SystemUserOnlyMixin():
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             return self.handle_no_permission()
-        if request.user.privilege  > int(PRIVILEGE_MANAGER):
+        if int(request.user.privilege)  > int(PRIVILEGE_MANAGER):
             return HttpResponseForbidden('アクセス権限がありません。')
         return super().dispatch(request, *args, **kwargs)
