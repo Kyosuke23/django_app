@@ -435,19 +435,15 @@ class InitialUserCreateView(SystemUserOnlyMixin, generic.FormView):
         login_url = self.request.build_absolute_uri('/login/')
 
         subject='【システム】初期ログイン情報のご案内',
-        message=(
-            f'{username} 様\n\n'
-            'システムへの初期ログイン情報をお知らせします。\n\n'
-            f'ログインURL：{login_url}\n'
-            f'ログインID（メールアドレス）：{email}\n'
-            f'初期パスワード：{password}\n\n'
-            'ログイン後、以下の操作を推奨いたします。\n'
-            '--------------------------------------------------\n'
-            '① [設定] メニューからパスワードを変更してください。\n'
-            '② [テナント情報] ページで貴社情報を編集・登録してください。\n'
-            '--------------------------------------------------\n\n'
-            '※ 本メールは送信専用です。返信はできません。'
-        ),
+        message = render_to_string(
+            'register/mails/mail_initial_user.txt',
+            {
+                'username': username,
+                'email': email,
+                'password': password,
+                'login_url': login_url,
+            }
+        )
 
         print('=======================')
         print(f'email: {email}')
@@ -462,9 +458,21 @@ class InitialUserCreateView(SystemUserOnlyMixin, generic.FormView):
         #     from_email='noreply@example.com',
         #     recipient_list=[email],
         # )
+        self.request.session['register_info'] = {
+            'tenant_name': company_name,
+            'user_name': username,
+            'user_email': email,
+        }
 
-        messages.success(self.request, f'{email} 宛に初期ログイン情報を送信しました。')
-        return JsonResponse({'success': True})
+        return redirect(reverse('register:initial_done'))
+
+class InitialUserRegisterDoneView(generic.TemplateView):
+    template_name = 'register/initial_user_done.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['register_info'] = self.request.session.pop('register_info', None)
+        return context
 
 
 #--------------------------

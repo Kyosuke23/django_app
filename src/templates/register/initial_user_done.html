@@ -1,0 +1,33 @@
+{% extends "layout/base.html" %}
+{% load django_bootstrap5 %}
+{% load static %}
+{% block content %}
+
+<div class="container-fluid mt-4 ps-4 text-start"><!-- ✅ container-fluid + ps-4で左寄せ -->
+    <h1 class="h3 mb-3"><i class="bi bi-person-check me-2"></i>初期ユーザー登録完了</h1>
+
+    <p class="mb-4">
+        以下の情報で初期ユーザー登録が完了しました。
+    </p>
+
+    <div class="card shadow-sm border-0 mb-4" style="max-width: 600px;">
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">企業名</dt>
+                <dd class="col-sm-9">{{ register_info.tenant_name }}</dd>
+
+                <dt class="col-sm-3">氏名</dt>
+                <dd class="col-sm-9">{{ register_info.user_name }}</dd>
+
+                <dt class="col-sm-3">メールアドレス</dt>
+                <dd class="col-sm-9">{{ register_info.user_email }}</dd>
+            </dl>
+        </div>
+    </div>
+
+    <a href="{% url 'register:initial_user_create' %}" class="btn btn-outline-primary">
+        <i class="bi bi-arrow-left me-1"></i>登録画面に戻る
+    </a>
+</div>
+
+{% endblock %}

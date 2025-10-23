@@ -15,5 +15,6 @@ urlpatterns = [
     path('bulk_delete/', views.UserBulkDeleteView.as_view(), name='bulk_delete'),
     path('group_manage/', views.UserGroupManageView.as_view(), name='group_manage'),
     path('initial_user/create/', views.InitialUserCreateView.as_view(), name='initial_user_create'),
+    path('initial/done/', views.InitialUserRegisterDoneView.as_view(), name='initial_done'),
 
 ]

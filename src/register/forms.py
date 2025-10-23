@@ -228,6 +228,12 @@ class InitialUserForm(forms.Form):
     username = forms.CharField(label='氏名', max_length=100)
     email = forms.EmailField(label='メールアドレス')
 
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if Tenant.objects.filter(contact_email=email).exists():
+            raise forms.ValidationError('このメールアドレスは既に登録されています。')
+
+        return email
 
 class TenantRegisterForm(forms.ModelForm):
     '''
