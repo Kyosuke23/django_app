@@ -63,7 +63,7 @@ class Product(BaseModel):
     def clean(self):
         super().clean()
         if self.description and len(self.description) > 255:
-            raise ValidationError({'description': '255文字以内で入力してください。'})
+            raise ValidationError({'description': 'この値は 255 文字以下でなければなりません( 256 文字になっています)。'})
 
     def get_absolute_url(self):
         return reverse('product_mst:update', kwargs={'pk': self.pk})

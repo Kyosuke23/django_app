@@ -64,6 +64,7 @@ class ProductViewTests(TestCase):
         self.assertIsNotNone(soup.select_one('#bulk-delete-btn'))
         self.assertIsNotNone(soup.select_one('#check-all'))
         self.assertIsNotNone(soup.select_one('.check-item'))
+        self.assertIsNotNone(soup.select_one('#category_manage'))
 
     def test_1_1_1_2(self):
         '''初期表示（正常系: 参照権限）'''
@@ -90,6 +91,7 @@ class ProductViewTests(TestCase):
         self.assertIsNone(soup.select_one('#bulk-delete-btn'))
         self.assertIsNone(soup.select_one('#check-all'))
         self.assertIsNone(soup.select_one('.check-item'))
+        self.assertIsNone(soup.select_one('#category_manage'))
 
     def test_1_1_2_1(self):
         '''一覧画面表示（異常系: 直リンク）'''

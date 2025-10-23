@@ -44,6 +44,8 @@ class ProductSearchForm(forms.Form):
     search_unit_price_min = forms.DecimalField(
         required=False,
         label='単価（下限）',
+        max_digits=12,
+        decimal_places=2,
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '円'}),
         min_value=0
     )
@@ -51,6 +53,8 @@ class ProductSearchForm(forms.Form):
     search_unit_price_max = forms.DecimalField(
         required=False,
         label='単価（上限）',
+        max_digits=12,
+        decimal_places=2,
         widget=forms.NumberInput(attrs={'class': 'form-control form-control-sm', 'placeholder': '円'}),
         min_value=0
     )
@@ -98,6 +102,13 @@ class ProductSearchForm(forms.Form):
 
 
 class ProductForm(forms.ModelForm):
+    unit_price = forms.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={'class': 'form-control text-end'}),
+        label='単価'
+    )
+
     class Meta:
         model = Product
         fields = ['product_name', 'product_category', 'description', 'unit_price', 'unit']
@@ -105,7 +116,6 @@ class ProductForm(forms.ModelForm):
             'product_name': forms.TextInput(attrs={'class': 'form-control'}),
             'product_category': forms.Select(attrs={'class': 'form-select'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'unit_price': forms.NumberInput(attrs={'class': 'form-control text-end'}),
             'unit': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
@@ -116,7 +126,7 @@ class ProductForm(forms.ModelForm):
 
         if user is not None:
             # 商品カテゴリをテナント内に限定
-            self.fields['categories'].queryset = (self.fields['categories'].queryset.filter(tenant=user.tenant))
+            self.fields['product_category'].queryset = (self.fields['product_category'].queryset.filter(tenant=user.tenant))
 
         self.fields['unit'].required = False
 
