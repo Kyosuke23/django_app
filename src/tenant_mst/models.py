@@ -32,7 +32,12 @@ class Tenant(models.Model):
 
     contact_email = models.EmailField(
         max_length=254,
-        verbose_name='メールアドレス'
+        unique=True,
+        verbose_name='メールアドレス',
+        error_messages={
+            'unique': '同じメールアドレスが既に登録されています。',
+            'invalid': '有効なメールアドレスを入力してください。',
+        }
     )
 
     contact_tel_number = models.CharField(
@@ -46,7 +51,7 @@ class Tenant(models.Model):
 
     postal_code = models.CharField(
         max_length=10,
-        validators=[RegexValidator(r'^\d{3}-?\d{4}$', '郵便番号の形式が正しくありません。')],
+        validators=[RegexValidator(r'^[0-9\-]+$', '郵便番号の形式が正しくありません。')],
         blank=True,
         null=True,
         verbose_name='郵便番号',

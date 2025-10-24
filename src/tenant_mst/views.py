@@ -3,12 +3,13 @@ from django.urls import  reverse
 from .models import Tenant
 from .form import TenantEditForm
 from config.common import Common
-from django.http import JsonResponse
-from django.template.loader import render_to_string
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin
+from config.base import ManagerOverMixin
+from django.http import Http404
 
 
-class TenantEditView(generic.UpdateView):
+class TenantEditView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
     '''
     ログイン中のユーザーに紐づくテナント情報を編集する画面
     '''
@@ -18,7 +19,13 @@ class TenantEditView(generic.UpdateView):
     context_object_name = 'tenant'
 
     def get_object(self, queryset=None):
-        return self.request.user.tenant
+        try:
+            tenant = self.request.user.tenant
+            if tenant is None or getattr(tenant, 'is_deleted', False):
+                raise Http404('このテナントは既に削除されています。')
+            return tenant
+        except Tenant.DoesNotExist:
+            raise Http404('このテナントは既に削除されています。')
 
     def get_success_url(self):
         messages.success(self.request, 'テナント情報を更新しました')
