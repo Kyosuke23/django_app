@@ -230,7 +230,7 @@ class InitialUserForm(forms.Form):
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if Tenant.objects.filter(contact_email=email).exists():
+        if Tenant.objects.filter(email=email).exists():
             raise forms.ValidationError('このメールアドレスは既に登録されています。')
 
         return email
@@ -241,5 +241,5 @@ class TenantRegisterForm(forms.ModelForm):
     '''
     class Meta:
         model = Tenant
-        fields = ['tenant_name', 'representative_name', 'contact_email', 'contact_tel_number',
+        fields = ['tenant_name', 'representative_name', 'email', 'tel_number',
                   'postal_code', 'state', 'city', 'address', 'address2']

@@ -10,8 +10,8 @@ class TenantEditForm(forms.ModelForm):
         fields = [
             'tenant_name',
             'representative_name',
-            'contact_email',
-            'contact_tel_number',
+            'email',
+            'tel_number',
             'postal_code',
             'state',
             'city',
@@ -21,8 +21,8 @@ class TenantEditForm(forms.ModelForm):
         widgets = {
             'tenant_name': forms.TextInput(attrs={'class': 'form-control'}),
             'representative_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'contact_email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'contact_tel_number': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'tel_number': forms.TextInput(attrs={'class': 'form-control'}),
             'postal_code': forms.TextInput(attrs={'class': 'form-control'}),
             'state': forms.TextInput(attrs={'class': 'form-control'}),
             'city': forms.TextInput(attrs={'class': 'form-control'}),
@@ -32,8 +32,8 @@ class TenantEditForm(forms.ModelForm):
         labels = {
             'tenant_name': 'テナント名称',
             'representative_name': '代表者名',
-            'contact_email': 'メールアドレス',
-            'contact_tel_number': '電話番号',
+            'email': 'メールアドレス',
+            'tel_number': '電話番号',
             'postal_code': '郵便番号',
             'state': '都道府県',
             'city': '市区町村',

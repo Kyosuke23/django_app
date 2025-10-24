@@ -176,23 +176,36 @@ class SalesOrder(BaseModel):
             self.sales_order_no = generate_sales_order_no(self.tenant)
         super().save(*args, **kwargs)
 
-    @property
-    def subtotal(self):
-        if not self.pk:
-            return 0
-        return sum([(d.quantity or 0) * (d.billing_unit_price or 0) for d in self.details.all()])
+@property
+def subtotal(self):
+    """小計（明細単価×数量）"""
+    if not self.pk:
+        return Decimal('0.00')
+    return sum([
+        (Decimal(d.quantity or 0) * Decimal(d.billing_unit_price or 0))
+        for d in self.details.all()
+    ], Decimal('0.00')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    @property
-    def tax_total(self):
-        if not self.pk:
-            return 0
-        return sum([0 if d.is_tax_exempt else (d.quantity or 0) * (d.billing_unit_price or 0) * float(d.tax_rate) for d in self.details.all()])
+@property
+def tax_total(self):
+    """消費税合計（課税対象のみ）"""
+    if not self.pk:
+        return Decimal('0.00')
+    total_tax = Decimal('0.00')
+    for d in self.details.all():
+        if not d.is_tax_exempt:
+            qty = Decimal(d.quantity or 0)
+            unit = Decimal(d.billing_unit_price or 0)
+            rate = Decimal(str(d.tax_rate or 0))  # float→Decimal変換
+            total_tax += (qty * unit * rate / Decimal('100'))
+    return total_tax.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    @property
-    def grand_total(self):
-        if not self.pk:
-            return 0
-        return self.subtotal + self.tax_total
+@property
+def grand_total(self):
+    """総合計（小計＋税）"""
+    if not self.pk:
+        return Decimal('0.00')
+    return (self.subtotal + self.tax_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 class SalesOrderDetail(BaseModel):
     '''

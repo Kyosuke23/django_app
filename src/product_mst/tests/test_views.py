@@ -424,12 +424,12 @@ class ProductViewTests(TestCase):
         self.tenant1 = Tenant.objects.create(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com'
+            email='a@example.com'
         )
         self.tenant2 = Tenant.objects.create(
             tenant_name='テナントB',
             representative_name='代表B',
-            contact_email='b@example.com'
+            email='b@example.com'
         )
 
         # ユーザーを作成してテナント1に所属
@@ -796,12 +796,12 @@ class ProductViewTests(TestCase):
         tenant1 = Tenant.objects.create(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com'
+            email='a@example.com'
         )
         tenant2 = Tenant.objects.create(
             tenant_name='テナントB',
             representative_name='代表B',
-            contact_email='b@example.com'
+            email='b@example.com'
         )
 
         # ユーザーを作成してテナント1に所属

@@ -30,7 +30,7 @@ class Tenant(models.Model):
         help_text='企業や団体の代表者名'
     )
 
-    contact_email = models.EmailField(
+    email = models.EmailField(
         max_length=254,
         unique=True,
         verbose_name='メールアドレス',
@@ -40,7 +40,7 @@ class Tenant(models.Model):
         }
     )
 
-    contact_tel_number = models.CharField(
+    tel_number = models.CharField(
         max_length=20,
         validators=[RegexValidator(r'^[0-9\-]+$', '数字とハイフンのみ使用できます。')],
         blank=True,

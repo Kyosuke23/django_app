@@ -26,7 +26,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='株式会社テスト',
             representative_name='代表太郎',
-            contact_email='test@example.com',
+            email='test@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -39,7 +39,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='',
             representative_name='代表太郎',
-            contact_email='test@example.com',
+            email='test@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -51,7 +51,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='A' * 101,
             representative_name='代表太郎',
-            contact_email='test@example.com',
+            email='test@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -66,7 +66,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='A' * 100,
-            contact_email='test@example.com',
+            email='test@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -77,7 +77,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='A' * 101,
-            contact_email='test@example.com',
+            email='test@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -85,14 +85,14 @@ class TenantModelTests(TestCase):
             tenant.full_clean()
 
     # ------------------------------------------------------------
-    # contact_email
+    # email
     # ------------------------------------------------------------
     def test_1_3_1_1(self):
         """正しいメールアドレス形式で保存できる"""
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='test@example.com',
+            email='test@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -103,7 +103,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='invalid@@example',
+            email='invalid@@example',
             create_user=self.user,
             update_user=self.user,
         )
@@ -111,15 +111,15 @@ class TenantModelTests(TestCase):
             tenant.full_clean()
 
     # ------------------------------------------------------------
-    # contact_tel_number
+    # tel_number
     # ------------------------------------------------------------
     def test_1_4_1_1(self):
         """電話番号が数字＋ハイフン形式で保存できる"""
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
-            contact_tel_number='03-1234-5678',
+            email='a@example.com',
+            tel_number='03-1234-5678',
             create_user=self.user,
             update_user=self.user,
         )
@@ -130,8 +130,8 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
-            contact_tel_number='03-12A4-5678',
+            email='a@example.com',
+            tel_number='03-12A4-5678',
             create_user=self.user,
             update_user=self.user,
         )
@@ -146,7 +146,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             postal_code='123-4567',
             create_user=self.user,
             update_user=self.user,
@@ -158,7 +158,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             postal_code='1234567',
             create_user=self.user,
             update_user=self.user,
@@ -170,7 +170,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             postal_code='１２３-４５６７',
             create_user=self.user,
             update_user=self.user,
@@ -186,7 +186,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             state='東京都',
             create_user=self.user,
             update_user=self.user,
@@ -198,7 +198,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             state='A' * 11,
             create_user=self.user,
             update_user=self.user,
@@ -214,7 +214,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             city='千代田区',
             create_user=self.user,
             update_user=self.user,
@@ -226,7 +226,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             city='A' * 51,
             create_user=self.user,
             update_user=self.user,
@@ -242,7 +242,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             address='丸の内1-1-1',
             create_user=self.user,
             update_user=self.user,
@@ -254,7 +254,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             address='A' * 101,
             create_user=self.user,
             update_user=self.user,
@@ -270,7 +270,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             address2='テストビル3F',
             create_user=self.user,
             update_user=self.user,
@@ -282,7 +282,7 @@ class TenantModelTests(TestCase):
         tenant = Tenant(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             address2='A' * 151,
             create_user=self.user,
             update_user=self.user,
@@ -298,14 +298,14 @@ class TenantModelTests(TestCase):
         t1 = Tenant.objects.create(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             create_user=self.user,
             update_user=self.user,
         )
         t2 = Tenant.objects.create(
             tenant_name='テナントB',
             representative_name='代表B',
-            contact_email='b@example.com',
+            email='b@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -318,7 +318,7 @@ class TenantModelTests(TestCase):
             tenant_code=code,
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
+            email='a@example.com',
             create_user=self.user,
             update_user=self.user,
         )
@@ -327,7 +327,7 @@ class TenantModelTests(TestCase):
                 tenant_code=code,
                 tenant_name='テナントB',
                 representative_name='代表B',
-                contact_email='b@example.com',
+                email='b@example.com',
                 create_user=self.user,
                 update_user=self.user,
             )

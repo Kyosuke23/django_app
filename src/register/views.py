@@ -411,7 +411,7 @@ class InitialUserCreateView(SystemUserOnlyMixin, generic.FormView):
         tenant = Tenant.objects.create(
             tenant_name=company_name,
             representative_name=username,   # 本人を代表者として仮登録
-            contact_email=email,
+            email=email,
             create_user=self.request.user,
             update_user=self.request.user
         )

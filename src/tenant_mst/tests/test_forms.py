@@ -13,7 +13,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': '株式会社テスト',
             'representative_name': '代表太郎',
-            'contact_email': 'test@example.com',
+            'email': 'test@example.com',
         })
         self.assertTrue(form.is_valid())
 
@@ -22,7 +22,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': '',
             'representative_name': '代表太郎',
-            'contact_email': 'test@example.com',
+            'email': 'test@example.com',
         })
         self.assertFalse(form.is_valid())
         self.assertIn('この項目は必須です。', form.errors['tenant_name'][0])
@@ -32,7 +32,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'A' * 101,
             'representative_name': '代表太郎',
-            'contact_email': 'test@example.com',
+            'email': 'test@example.com',
         })
         self.assertFalse(form.is_valid())
         self.assertIn('この値は 100 文字以下でなければなりません( 101 文字になっています)。', form.errors['tenant_name'][0])
@@ -45,7 +45,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': 'A' * 100,
-            'contact_email': 'test@example.com',
+            'email': 'test@example.com',
         })
         self.assertTrue(form.is_valid())
 
@@ -54,20 +54,20 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': 'A' * 101,
-            'contact_email': 'test@example.com',
+            'email': 'test@example.com',
         })
         self.assertFalse(form.is_valid())
         self.assertIn('この値は 100 文字以下でなければなりません( 101 文字になっています)。', form.errors['representative_name'][0])
 
     # ------------------------------------------------------------
-    # contact_email
+    # email
     # ------------------------------------------------------------
     def test_2_3_1_1(self):
         """正常：正しいメール形式で有効"""
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'valid@example.com',
+            'email': 'valid@example.com',
         })
         self.assertTrue(form.is_valid())
 
@@ -76,21 +76,21 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'invalid@@example',
+            'email': 'invalid@@example',
         })
         self.assertFalse(form.is_valid())
-        self.assertIn('有効なメールアドレスを入力してください。', form.errors['contact_email'][0])
+        self.assertIn('有効なメールアドレスを入力してください。', form.errors['email'][0])
 
     # ------------------------------------------------------------
-    # contact_tel_number
+    # tel_number
     # ------------------------------------------------------------
     def test_2_4_1_1(self):
         """正常：数字＋ハイフン形式で有効"""
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
-            'contact_tel_number': '03-1234-5678'
+            'email': 'a@example.com',
+            'tel_number': '03-1234-5678'
         })
         self.assertTrue(form.is_valid())
 
@@ -99,8 +99,8 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
-            'contact_tel_number': ''
+            'email': 'a@example.com',
+            'tel_number': ''
         })
         self.assertTrue(form.is_valid())
 
@@ -109,11 +109,11 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
-            'contact_tel_number': '03-12A4-5678'
+            'email': 'a@example.com',
+            'tel_number': '03-12A4-5678'
         })
         self.assertFalse(form.is_valid())
-        self.assertIn('数字とハイフンのみ使用できます。', form.errors['contact_tel_number'][0])
+        self.assertIn('数字とハイフンのみ使用できます。', form.errors['tel_number'][0])
 
     # ------------------------------------------------------------
     # postal_code
@@ -123,7 +123,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'postal_code': '123-4567'
         })
         self.assertTrue(form.is_valid())
@@ -133,7 +133,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'postal_code': '1234567'
         })
         self.assertTrue(form.is_valid())
@@ -143,7 +143,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'postal_code': ''
         })
         self.assertTrue(form.is_valid())
@@ -153,7 +153,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'postal_code': '１２３-４５６７'
         })
         self.assertFalse(form.is_valid())
@@ -167,7 +167,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'state': '東京都'
         })
         self.assertTrue(form.is_valid())
@@ -177,7 +177,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'state': 'A' * 11
         })
         self.assertFalse(form.is_valid())
@@ -191,7 +191,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'city': '千代田区'
         })
         self.assertTrue(form.is_valid())
@@ -201,7 +201,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'city': 'A' * 51
         })
         self.assertFalse(form.is_valid())
@@ -215,7 +215,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'address': '丸の内1-1-1'
         })
         self.assertTrue(form.is_valid())
@@ -225,7 +225,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'address': 'A' * 101
         })
         self.assertFalse(form.is_valid())
@@ -239,7 +239,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'address2': 'テストビル3F'
         })
         self.assertTrue(form.is_valid())
@@ -249,7 +249,7 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data={
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'a@example.com',
+            'email': 'a@example.com',
             'address2': 'A' * 151
         })
         self.assertFalse(form.is_valid())

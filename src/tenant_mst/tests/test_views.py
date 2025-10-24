@@ -14,8 +14,8 @@ class TenantViewTests(TestCase):
         self.tenant = Tenant.objects.create(
             tenant_name='テナントA',
             representative_name='代表A',
-            contact_email='a@example.com',
-            contact_tel_number='03-1111-1111',
+            email='a@example.com',
+            tel_number='03-1111-1111',
             postal_code='100-0001',
             state='東京都',
             city='千代田区',
@@ -59,8 +59,8 @@ class TenantViewTests(TestCase):
         soup = BeautifulSoup(response.content, 'html.parser')
         self.assertEqual(self.tenant.tenant_name, soup.select_one('#id_tenant_name').get('value'))
         self.assertEqual(self.tenant.representative_name, soup.select_one('#id_representative_name').get('value'))
-        self.assertEqual(self.tenant.contact_email, soup.select_one('#id_contact_email').get('value'))
-        self.assertEqual(self.tenant.contact_tel_number, soup.select_one('#id_contact_tel_number').get('value'))
+        self.assertEqual(self.tenant.email, soup.select_one('#id_email').get('value'))
+        self.assertEqual(self.tenant.tel_number, soup.select_one('#id_tel_number').get('value'))
         self.assertEqual(self.tenant.postal_code, soup.select_one('#id_postal_code').get('value'))
         self.assertEqual(self.tenant.state, soup.select_one('#id_state').get('value'))
         self.assertEqual(self.tenant.city, soup.select_one('#id_city').get('value'))
@@ -85,8 +85,8 @@ class TenantViewTests(TestCase):
         post_data = {
             'tenant_name': '更新後テナント',
             'representative_name': '更新代表',
-            'contact_email': 'update@example.com',
-            'contact_tel_number': '03-9999-8888',
+            'email': 'update@example.com',
+            'tel_number': '03-9999-8888',
             'postal_code': '150-0001',
             'state': '東京都',
             'city': '渋谷区',
@@ -101,8 +101,8 @@ class TenantViewTests(TestCase):
         self.tenant.refresh_from_db()
         self.assertEqual(self.tenant.tenant_name, '更新後テナント')
         self.assertEqual(self.tenant.representative_name, '更新代表')
-        self.assertEqual(self.tenant.contact_email, 'update@example.com')
-        self.assertEqual(self.tenant.contact_tel_number, '03-9999-8888')
+        self.assertEqual(self.tenant.email, 'update@example.com')
+        self.assertEqual(self.tenant.tel_number, '03-9999-8888')
         self.assertEqual(self.tenant.postal_code, '150-0001')
         self.assertEqual(self.tenant.state, '東京都')
         self.assertEqual(self.tenant.city, '渋谷区')
@@ -114,7 +114,7 @@ class TenantViewTests(TestCase):
         other_tenant = Tenant.objects.create(
             tenant_name='同名テナント',
             representative_name='代表B',
-            contact_email='same@example.com',
+            email='same@example.com',
             create_user=self.manager_user,
             update_user=self.manager_user,
         )
@@ -122,7 +122,7 @@ class TenantViewTests(TestCase):
         post_data = {
             'tenant_name': other_tenant.tenant_name,
             'representative_name': '代表A',
-            'contact_email': 'other@example.com',
+            'email': 'other@example.com',
         }
         response = self.client.post(self.url, post_data)
         self.assertEqual(response.status_code, 302)
@@ -150,21 +150,21 @@ class TenantViewTests(TestCase):
         post_data = {
             'tenant_name': 'テナントA',
             'representative_name': '代表A',
-            'contact_email': 'abc@@example',
+            'email': 'abc@@example',
         }
         response = self.client.post(self.url, post_data)
         self.assertEqual(response.status_code, 200)
         soup = BeautifulSoup(response.content, 'html.parser')
-        self.assertIn('有効なメールアドレスを入力してください。', soup.select_one('#id_contact_email + .invalid-feedback').get_text())
+        self.assertIn('有効なメールアドレスを入力してください。', soup.select_one('#id_email + .invalid-feedback').get_text())
         self.tenant.refresh_from_db()
-        self.assertNotEqual(self.tenant.contact_email, 'abc@@example')
+        self.assertNotEqual(self.tenant.email, 'abc@@example')
 
     def test_1_2_2_4(self):
         """異常：メール重複で更新不可"""
         other = Tenant.objects.create(
             tenant_name='他テナント',
             representative_name='代表B',
-            contact_email='dup@example.com',
+            email='dup@example.com',
             create_user=self.manager_user,
             update_user=self.manager_user,
         )
@@ -172,14 +172,14 @@ class TenantViewTests(TestCase):
         post_data = {
             'tenant_name': other.tenant_name,
             'representative_name': '代表A',
-            'contact_email': other.contact_email,
+            'email': other.email,
         }
         response = self.client.post(self.url, post_data)
         self.assertEqual(response.status_code, 200)
         soup = BeautifulSoup(response.content, 'html.parser')
-        self.assertIn('同じメールアドレスが既に登録されています。', soup.select_one('#id_contact_email + .invalid-feedback').get_text())
+        self.assertIn('同じメールアドレスが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
         self.tenant.refresh_from_db()
-        self.assertNotEqual(self.tenant.contact_email, 'dup@example.com')
+        self.assertNotEqual(self.tenant.email, 'dup@example.com')
 
     def test_1_2_2_5(self):
         """異常：存在しないID指定で404"""
