@@ -135,6 +135,15 @@ class CSVImportBaseView(View):
             return JsonResponse({'error': 'ファイルが選択されていません'}, status=400)
 
         # ------------------------------------------------------------
+        # 拡張子チェック
+        # ------------------------------------------------------------
+        import os
+        filename = file.name
+        ext = os.path.splitext(filename)[1].lower()  # 拡張子を小文字で取得
+        if ext != '.csv':
+            return JsonResponse({'error': 'CSVファイル（.csv）のみアップロード可能です。'}, status=400)
+
+        # ------------------------------------------------------------
         # ファイルサイズチェック
         # ------------------------------------------------------------
         if file.size > settings.MAX_FILE_SIZE:
@@ -153,7 +162,7 @@ class CSVImportBaseView(View):
         reader = csv.DictReader(decoded_file)
 
         # ------------------------------------------------------------
-        # ヘッダチェック（日本語・英語両対応）
+        # ヘッダチェック
         # ------------------------------------------------------------
         if reader.fieldnames is None:
             return JsonResponse({'error': 'CSVにヘッダ行が存在しません。'}, status=400)
@@ -161,34 +170,38 @@ class CSVImportBaseView(View):
         normalize = lambda x: x.strip().replace('　', '')
         normalized_actual = [normalize(h) for h in reader.fieldnames]
         normalized_expected = [normalize(h) for h in self.expected_headers]
+        allowed_headers = [h for h in self.HEADER_MAP.keys() if h in normalized_expected]
 
-        allowed_headers = set(normalized_expected) | set(self.HEADER_MAP.values())
-
-        # ヘッダ欠落パターン
-        missing = [h for h in normalized_expected
-                   if h not in normalized_actual and self.HEADER_MAP.get(h) not in normalized_actual]
+        # 欠落チェック
+        missing = [h for h in normalized_expected if h not in normalized_actual]
         if missing:
             return JsonResponse({
                 'error': 'CSVヘッダが正しくありません。',
-                'details': f'不足: {missing} / 期待: {self.expected_headers} / 実際: {reader.fieldnames}'
+                'details': (
+                    f"不足: {missing} / "
+                    f"期待: {[h for h in self.HEADER_MAP.keys()]} / "
+                    f"実際: {reader.fieldnames}"
+                )
             }, status=400)
 
-        # 不要ヘッダパターン
+        # 不要ヘッダチェック
         unexpected = [h for h in normalized_actual if h not in allowed_headers]
         if unexpected:
             return JsonResponse({
                 'error': '想定外のヘッダが含まれています。',
-                'details': f'不要: {unexpected} / 許可: {list(allowed_headers)}'
+                'details': (
+                    f"不要: {unexpected} / "
+                    f"許可: {[h for h in self.HEADER_MAP.keys()]}"
+                )
             }, status=400)
 
-        # ヘッダ重複パターン
+        # 重複チェック
         duplicates = [h for h in set(normalized_actual) if normalized_actual.count(h) > 1]
         if duplicates:
             return JsonResponse({
                 'error': 'CSVヘッダが重複しています。',
                 'details': f'重複: {duplicates}',
             }, status=400)
-
 
         # ------------------------------------------------------------
         # 重複チェックデータ準備

@@ -81,14 +81,14 @@ def get_submittable(user, form):
     '''ログインユーザーと受注ステータスから、ボタン操作可否を判定する'''
     # ログインユーザー
     login_user = user
-    
+
     # 受注データ情報
     instance = getattr(form, 'instance', None)
     status_code = getattr(instance, 'status_code', None)  # 受注ステータス
     assignee = instance.assignee  # 受注担当者
     reference_users_manager = getattr(instance, 'reference_users', None)
     reference_users = reference_users_manager.all() if reference_users_manager else []  # 参照ユーザー
-    
+
     # 新規作成：作成者未設定は新規作成とし、可
     if not instance.create_user:
         return True
@@ -159,11 +159,11 @@ def apply_field_permissions(form, user):
     for field_name in ['remarks', 'quotation_manager_comment', 'quotation_customer_comment', 'order_manager_comment', 'order_customer_comment']:
         if field_name in form.fields:
             form.fields[field_name].widget.attrs['readonly'] = True
-            
+
     # 新規作成 = 備考の編集可
     if not form.instance.create_user:
         form.fields['remarks'].widget.attrs.pop('readonly', None)
-        
+
     # 仮保存 = 作成者のみ備考の編集可
     if status == STATUS_CODE_DRAFT and form.instance.assignee == user:
         form.fields['remarks'].widget.attrs.pop('readonly', None)
@@ -171,14 +171,14 @@ def apply_field_permissions(form, user):
     # 見積書：提出済 = 承認権限者のみ見積書コメント（承認者）の編集可
     if status == STATUS_CODE_QUOTATION_SUBMITTED and user in form.instance.reference_users.all():
         form.fields['quotation_manager_comment'].widget.attrs.pop('readonly', None)
-        
+
     # 注文書：提出済 = 承認権限者のみ注文書コメント（承認者）の編集可
     if status == STATUS_CODE_ORDER_SUBMITTED and user in form.instance.reference_users.all():
         form.fields['order_manager_comment'].widget.attrs.pop('readonly', None)
-        
+
     # 見積書：顧客承諾済 = 担当者のみ納入日と納入場所の編集可
     if status == STATUS_CODE_QUOTATION_CONFIRMED and form.instance.create_user == user:
         form.fields['delivery_due_date'].widget.attrs.pop('readonly', None)
         form.fields['delivery_place'].widget.attrs.pop('readonly', None)
-        
+
     return form

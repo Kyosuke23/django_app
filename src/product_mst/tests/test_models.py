@@ -62,7 +62,7 @@ class ProductModelTests(TestCase):
 
     def test_1_1_1_3(self):
         '''M07: 異なるテナントで同名登録許可'''
-        other_tenant = Tenant.objects.create(tenant_name='別テナント')
+        other_tenant = Tenant.objects.create(tenant_name='別テナント', email='other@example.com',)
         Product.objects.create(
             tenant=self.tenant,
             product_name='同名商品',
@@ -293,7 +293,7 @@ class ProductCategoryModelTests(TestCase):
 
     def test_7_1_2_3(self):
         '''C06: 異なるテナントでは同名カテゴリ登録可能'''
-        other_tenant = Tenant.objects.create(tenant_name='別テナント')
+        other_tenant = Tenant.objects.create(tenant_name='別テナント', email='other@example.com')
         ProductCategory.objects.create(
             tenant=self.tenant,
             product_category_name='共通カテゴリ',

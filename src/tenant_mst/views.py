@@ -28,7 +28,7 @@ class TenantEditView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
             raise Http404('このテナントは既に削除されています。')
 
     def get_success_url(self):
-        messages.success(self.request, 'テナント情報を更新しました')
+        messages.success(self.request, 'テナント情報を更新しました。')
         return reverse('tenant_mst:edit')
 
     def form_valid(self, form):

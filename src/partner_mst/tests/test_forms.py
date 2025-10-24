@@ -11,7 +11,7 @@ class PartnerFormTests(TestCase):
     def setUp(self):
         '''テスト用テナント＆ユーザー、正常データの用意'''
         User = get_user_model()
-        self.tenant = Tenant.objects.create(tenant_name='テストテナント')
+        self.tenant = Tenant.objects.create(tenant_name='テストテナント', email='test@example.com')
         self.user = User.objects.create_user(
             username='tester',
             email='tester@example.com',

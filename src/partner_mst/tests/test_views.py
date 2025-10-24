@@ -20,6 +20,8 @@ from django.contrib.messages import get_messages
 
 
 class PartnerViewTests(TestCase):
+    '''取引先マスタ 単体テスト'''
+
     def setUp(self):
         '''共通データ作成'''
         self.factory = RequestFactory()
@@ -1682,7 +1684,9 @@ class PartnerViewTests(TestCase):
         for row in rows:
             writer.writerow(row)
         output.seek(0)
-        return io.BytesIO(output.getvalue().encode(encoding=encoding))
+        bytes_file = io.BytesIO(output.getvalue().encode(encoding=encoding))
+        bytes_file.name = 'test.csv'
+        return bytes_file
 
     def test_7_1_1_1(self):
         '''CSVインポート（正常系：n件）'''
@@ -1880,6 +1884,7 @@ class PartnerViewTests(TestCase):
         lines = [','.join(header)] + [','.join(r.values()) for r in rows]
         csv_content = '\r\n'.join(lines[:-1]) + '\n' + lines[-1]
         file = io.BytesIO(csv_content.encode('utf-8'))
+        file.name = 'test.csv'
 
         response = self.client.post(url, {'file': file})
         self.assertEqual(response.status_code, 200)
@@ -1924,6 +1929,7 @@ class PartnerViewTests(TestCase):
         ]
         file = self._make_csv_file(rows)
         file = io.BytesIO((file.getvalue() + b'\n\n').strip())  # 空行を追加
+        file.name = 'test.csv'
 
         # レスポンス確認
         response = self.client.post(url, {'file': file})
@@ -2275,17 +2281,25 @@ class PartnerViewTests(TestCase):
         self.assertEqual(res.status_code, 400)
         res_json = json.loads(res.content)
         self.assertEqual('CSVヘッダが正しくありません。', res_json.get('error', ''))
+        self.assertEqual("不足: ['担当者名'] / 期待: ['取引先名称', '取引先名称（カナ）', '取引先区分', '担当者名', 'メールアドレス', '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2'] / 実際: ['取引先名称', '取引先名称（カナ）', '取引先区分', 'メールアドレス', '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2']", res_json.get('details', ''))
 
     def test_7_1_2_7(self):
-        '''CSVインポート（異常系：余分ヘッダ列）'''
+        '''CSVインポート（異常系：ヘッダ過多）'''
         url = reverse('partner_mst:import_csv')
 
         # データを削除しておく
         Partner.objects.all().delete()
 
         # ヘッダ指定でデータ作成
-        header = ['取引先名称','メールアドレス','テナント','取引先区分']
-        rows = [{'取引先名称':'余分列株式会社','メールアドレス':'extra@example.com','取引先区分':'customer','テナント':'X'}]
+        header = ['取引先名称', '取引先名称（カナ）', '取引先区分', '担当者名', 'メールアドレス',
+                  '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2', 'テナント']
+        rows = [
+            {'取引先名称': '正常株式会社', '取引先名称（カナ）': 'セイジョウカブシキガイシャ',
+             '取引先区分': 'customer', '担当者名': 'テスト担当者',
+             'メールアドレス': 'ok@example.com', '電話番号': '0312345678',
+             '郵便番号': '1000001', '都道府県': '東京都', '市区町村': '千代田区',
+             '住所': '丸の内1-1-1', '住所2': '', 'テナント': 'X'},
+        ]
 
         # CSVファイルの作成
         file = self._make_csv_file(rows, header=header)
@@ -2296,7 +2310,8 @@ class PartnerViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
-        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
+        self.assertEqual('想定外のヘッダが含まれています。', res_json['error'])
+        self.assertEqual("不要: ['テナント'] / 許可: ['取引先名称', '取引先名称（カナ）', '取引先区分', '担当者名', 'メールアドレス', '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2']", res_json['details'])
 
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)
@@ -2308,12 +2323,19 @@ class PartnerViewTests(TestCase):
         # データを削除しておく
         Partner.objects.all().delete()
 
-         # CSVファイルの作成
-        output = io.StringIO()
-        writer = csv.writer(output)
-        writer.writerow(['partner_name','partner_name','partner_type'])
-        writer.writerow(['重複ヘッダ株式会社','customer','supplier'])
-        file = io.BytesIO(output.getvalue().encode('utf-8'))
+        # ヘッダ指定でデータ作成
+        header = ['取引先名称', '取引先名称（カナ）', '取引先名称（カナ）', '取引先区分', '担当者名', 'メールアドレス',
+                  '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2']
+        rows = [
+            {'取引先名称': '正常株式会社', '取引先名称（カナ）': 'セイジョウカブシキガイシャ', '取引先名称（カナ）': 'セイジョウカブシキガイシャ',
+             '取引先区分': 'customer', '担当者名': 'テスト担当者',
+             'メールアドレス': 'ok@example.com', '電話番号': '0312345678',
+             '郵便番号': '1000001', '都道府県': '東京都', '市区町村': '千代田区',
+             '住所': '丸の内1-1-1', '住所2': ''},
+        ]
+
+        # CSVファイルの作成
+        file = self._make_csv_file(rows, header=header)
 
         # レスポンス確認
         response = self.client.post(url, {'file': file})
@@ -2321,7 +2343,8 @@ class PartnerViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
-        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
+        self.assertEqual('CSVヘッダが重複しています。', res_json['error'])
+        self.assertEqual("重複: ['取引先名称（カナ）']", res_json['details'])
 
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)
@@ -2342,7 +2365,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
-        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
+        self.assertEqual('CSVファイル（.csv）のみアップロード可能です。', res_json['error'])
 
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)

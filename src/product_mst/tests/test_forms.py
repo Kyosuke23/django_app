@@ -9,8 +9,8 @@ from tenant_mst.models import Tenant
 class ProductFormTests(TestCase):
 
     def setUp(self):
-        self.tenant1 = Tenant.objects.create(tenant_name="TenantA")
-        self.tenant2 = Tenant.objects.create(tenant_name="TenantB")
+        self.tenant1 = Tenant.objects.create(tenant_name="TenantA", email='a@example.com')
+        self.tenant2 = Tenant.objects.create(tenant_name="TenantB", email='b@example.com')
         self.user1 = CustomUser.objects.create_user(username="user1", email="user1@example.com", password="pass", tenant=self.tenant1)
         self.user2 = CustomUser.objects.create_user(username="user2", email="user2@example.com", password="pass", tenant=self.tenant2)
 

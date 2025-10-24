@@ -22,7 +22,7 @@ User = get_user_model()
 
 
 class ProductViewTests(TestCase):
-    '''商品マスタ View統合確認 (V01〜V44)'''
+    '''商品マスタ 単体テスト'''
 
     def setUp(self):
         '''共通データ作成'''
@@ -1790,7 +1790,9 @@ class ProductViewTests(TestCase):
         for row in rows:
             writer.writerow(row)
         output.seek(0)
-        return io.BytesIO(output.getvalue().encode(encoding=encoding))
+        bytes_file = io.BytesIO(output.getvalue().encode(encoding=encoding))
+        bytes_file.name = 'test.csv'
+        return bytes_file
 
     def test_7_1_1_1(self):
         '''CSVインポート（正常系：n件）'''
@@ -1880,6 +1882,7 @@ class ProductViewTests(TestCase):
         lines = [','.join(header)] + [','.join(r.values()) for r in rows]
         csv_content = '\r\n'.join(lines[:-1]) + '\n' + lines[-1]
         file = io.BytesIO(csv_content.encode('utf-8'))
+        file.name = 'test.csv'
 
         response = self.client.post(url, {'file': file})
         self.assertEqual(response.status_code, 200)
@@ -1922,6 +1925,7 @@ class ProductViewTests(TestCase):
         ]
         file = self._make_csv_file(rows)
         file = io.BytesIO((file.getvalue() + b'\n\n').strip())  # 空行を追加
+        file.name = 'test.csv'
 
         # レスポンス確認
         response = self.client.post(url, {'file': file})
@@ -2195,20 +2199,23 @@ class ProductViewTests(TestCase):
     def test_7_1_2_7(self):
         '''CSVインポート（異常系：ヘッダ欠落）'''
         url = reverse('product_mst:import_csv')
+
+        header = ['商品名', '商品カテゴリ', '単価', '説明']
         rows = [
             {
+                '商品名': 'テスト商品',
                 '商品カテゴリ': '文房具',
                 '単価': '234.56',
-                '単位': '箱',
                 '説明': '重複商品テストです。',
             },
         ]
-        file = self._make_csv_file(rows)
+        file = self._make_csv_file(rows, header=header)
 
         res = self.client.post(url, {'file': file})
         self.assertEqual(res.status_code, 400)
         res_json = json.loads(res.content)
-        self.assertEqual('CSVに問題があります。', res_json.get('error', ''))
+        self.assertEqual('CSVヘッダが正しくありません。', res_json.get('error', ''))
+        self.assertEqual("不足: ['単位'] / 期待: ['商品名', '商品カテゴリ', '単価', '単位', '説明'] / 実際: ['商品名', '商品カテゴリ', '単価', '説明']", res_json['details'])
 
     def test_7_1_2_8(self):
         '''CSVインポート（異常系：ヘッダ過多）'''
@@ -2229,6 +2236,7 @@ class ProductViewTests(TestCase):
         self.assertEqual(res.status_code, 400)
         res_json = json.loads(res.content)
         self.assertEqual('想定外のヘッダが含まれています。', res_json.get('error', ''))
+        self.assertEqual("不要: ['テストカラム'] / 許可: ['商品名', '商品カテゴリ', '単価', '単位', '説明']", res_json['details'])
 
     def test_7_1_2_9(self):
         '''CSVインポート（異常系：ヘッダ重複）'''
@@ -2249,8 +2257,32 @@ class ProductViewTests(TestCase):
         self.assertEqual(res.status_code, 400)
         res_json = json.loads(res.content)
         self.assertEqual('CSVヘッダが重複しています。', res_json.get('error', ''))
+        self.assertEqual("重複: ['単位']", res_json['details'])
 
     def test_7_1_2_10(self):
+        '''CSVインポート（異常系：拡張子不正）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Product.objects.all().delete()
+
+         # CSVファイルの作成
+        file = SimpleUploadedFile('test.txt', b'dummy text', content_type='text/plain')
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 400)
+
+        # エラーメッセージ確認
+        self.assertEqual('CSVファイル（.csv）のみアップロード可能です。', res_json['error'])
+
+        # 件数確認
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_7_1_2_11(self):
         '''CSVインポート（異常系：サイズ超過）'''
         url = reverse('product_mst:import_csv')
 
@@ -2272,29 +2304,6 @@ class ProductViewTests(TestCase):
 
         # エラーメッセージ確認
         self.assertEqual('ファイルサイズが上限を超えています。', res_json['error'])
-
-        # 件数確認
-        self.assertEqual(Product.objects.count(), 0)
-
-    def test_7_1_2_11(self):
-        '''CSVインポート（異常系：拡張子不正）'''
-        url = reverse('partner_mst:import_csv')
-
-        # データを削除しておく
-        Product.objects.all().delete()
-
-         # CSVファイルの作成
-        file = SimpleUploadedFile('test.txt', b'dummy text', content_type='text/plain')
-
-        # レスポンス確認
-        response = self.client.post(url, {'file': file})
-        res_json = json.loads(response.content)
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 400)
-
-        # エラーメッセージ確認
-        self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
 
         # 件数確認
         self.assertEqual(Product.objects.count(), 0)

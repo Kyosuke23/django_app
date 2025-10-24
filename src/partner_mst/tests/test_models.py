@@ -10,8 +10,8 @@ class PartnerModelTests(TestCase):
     """Partnerモデルの単体テスト"""
 
     def setUp(self):
-        self.tenant_a = Tenant.objects.create(tenant_name='TenantA')
-        self.tenant_b = Tenant.objects.create(tenant_name='TenantB')
+        self.tenant_a = Tenant.objects.create(tenant_name='TenantA', email='a@example.com')
+        self.tenant_b = Tenant.objects.create(tenant_name='TenantB', email='b@example.com')
         self.user = get_user_model().objects.create_user(
             username='test_user', email='user@example.com', password='pass', tenant=self.tenant_a
         )
