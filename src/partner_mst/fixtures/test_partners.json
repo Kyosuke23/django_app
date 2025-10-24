@@ -218,5 +218,225 @@
       "create_user": "1",
       "update_user": "1"
     }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 11,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "999会社",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "加藤 洋子",
+      "tel_number": "03-5678-0000",
+      "email": "test1@trade.co.jp",
+      "postal_code": "135-0001",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 12,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "999カイシャ",
+      "partner_type": "customer",
+      "contact_name": "加藤 洋子",
+      "tel_number": "03-5678-0000",
+      "email": "test2@trade.co.jp",
+      "postal_code": "135-0001",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 13,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "担当999",
+      "tel_number": "03-5678-0000",
+      "email": "test3@trade.co.jp",
+      "postal_code": "135-0001",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 14,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-9990",
+      "email": "test4@trade.co.jp",
+      "postal_code": "135-0001",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 15,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-0000",
+      "email": "999test5@trade.co.jp",
+      "postal_code": "135-0001",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 16,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-0000",
+      "email": "test6@trade.co.jp",
+      "postal_code": "135-9990",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 17,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-0000",
+      "email": "test7@trade.co.jp",
+      "postal_code": "135-0000",
+      "state": "999",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 18,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-0000",
+      "email": "test8@trade.co.jp",
+      "postal_code": "135-0000",
+      "state": "東京都",
+      "city": "江東区豊洲1-999-1",
+      "address": "トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 19,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-0000",
+      "email": "test9@trade.co.jp",
+      "postal_code": "135-0000",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "999トヨスタワー",
+      "address2": "",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
+  },
+  {
+    "model": "partner_mst.partner",
+    "pk": 20,
+    "fields": {
+      "tenant": 1,
+      "partner_name": "testカイシャ",
+      "partner_name_kana": "カイシャ",
+      "partner_type": "customer",
+      "contact_name": "テスト担当者",
+      "tel_number": "03-5678-0000",
+      "email": "test10@trade.co.jp",
+      "postal_code": "135-0000",
+      "state": "東京都",
+      "city": "江東区豊洲1-1-1",
+      "address": "トヨスタワー",
+      "address2": "999",
+      "created_at": "2025-01-10T10:00:00Z",
+      "updated_at": "2025-01-10T10:00:00Z",
+      "create_user": "1",
+      "update_user": "1"
+    }
   }
 ]

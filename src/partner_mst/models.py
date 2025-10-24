@@ -13,6 +13,12 @@ class Partner(BaseModel):
         ('both', '両方'),
     ]
 
+    PARTNER_TYPE_MAP = {
+        '顧客': 'customer',
+        '仕入先': 'supplier',
+        '両方': 'both',
+    }
+
     partner_name = models.CharField(
         max_length=100,
         verbose_name='取引先名称',
@@ -42,7 +48,7 @@ class Partner(BaseModel):
         verbose_name='担当者名',
         help_text='50文字以内で入力してください。（任意）'
     )
-    
+
     tel_number = models.CharField(
         max_length=20,
         validators=[RegexValidator(r'^[0-9\-]+$', '数字とハイフンのみ使用できます。')],

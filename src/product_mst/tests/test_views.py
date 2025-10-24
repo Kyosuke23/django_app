@@ -122,7 +122,7 @@ class ProductViewTests(TestCase):
         self.assertEqual(list.count(), 5)
         self.assertEqual('keyword_test_product_999', list[0].product_name)
 
-        # 各オブジェクトの主要プロパティに "999" が含まれていることを確認
+        # 各オブジェクトのプロパティに "999" が含まれていることを確認
         for p in list:
             text_values = [
                 str(p.product_name),
@@ -1547,7 +1547,7 @@ class ProductViewTests(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def test_5_1_2_3(self):
-        '''一括削除処理（異常系：存在しないID指定）'''
+        '''一括削除処理（異常系：部分失敗）'''
 
         # 商品データ
         product = Product.objects.create(
@@ -1707,6 +1707,32 @@ class ProductViewTests(TestCase):
         self.assertEqual(len(rows) - 1, data.count())
         self._assert_csv_matches_queryset(rows, data)
 
+    def _create_max_data(self, n):
+        data = []
+        for i in range(n):
+            p = Product.objects.create(
+                tenant=self.user.tenant,
+                product_name=f'商品{i}',
+                unit_price='123.45',
+                create_user=self.user,
+                update_user=self.user,
+            )
+            data.append(p)
+        return data
+
+    def test_6_1_1_5(self):
+        '''CSVエクスポート（正常系：上限数以上）'''
+        self._create_max_data(settings.MAX_EXPORT_ROWS + 1)
+        url = reverse('product_mst:export_check')
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertIn('warning', data)
+        self.assertEqual('出力件数が上限（10,000件）を超えています。先頭10,000件のみを出力します。', data['warning'])
+        self.assertNotIn('ok', data)
+
     def test_6_1_2_1(self):
         '''CSVエクスポート（異常系：直リンク）'''
         url = reverse('product_mst:export_csv')
@@ -1727,31 +1753,6 @@ class ProductViewTests(TestCase):
         if 'Content-Type' in response:
             self.assertNotEqual(response['Content-Type'], 'text/csv')
 
-    def _create_max_data(self, n):
-        data = []
-        for i in range(n):
-            p = Product.objects.create(
-                tenant=self.user.tenant,
-                product_name=f'商品{i}',
-                unit_price='123.45',
-                create_user=self.user,
-                update_user=self.user,
-            )
-            data.append(p)
-        return data
-
-    def test_6_1_2_2(self):
-        '''CSVエクスポート（正常系：上限数以上）'''
-        self._create_max_data(settings.MAX_EXPORT_ROWS + 1)
-        url = reverse('product_mst:export_check')
-
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        data = response.json()
-        self.assertIn('warning', data)
-        self.assertEqual('出力件数が上限（10,000件）を超えています。先頭10,000件のみを出力します。', data['warning'])
-        self.assertNotIn('ok', data)
 
     #----------------
     # ImportCSV
@@ -1953,6 +1954,9 @@ class ProductViewTests(TestCase):
         # レスポンス確認
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
 
         # メッセージ確認
         self.assertEqual('1件をインポートしました。', res_json['message'])
@@ -2159,6 +2163,9 @@ class ProductViewTests(TestCase):
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
 
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 400)
+
         # エラーメッセージ確認
         self.assertEqual('CSVに問題があります。', res_json['error'])
         self.assertTrue(any('必須' in s for s in res_json['details']))
@@ -2241,6 +2248,9 @@ class ProductViewTests(TestCase):
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
 
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 400)
+
         # エラーメッセージ確認
         self.assertEqual('ファイルサイズが上限を超えています。', res_json['error'])
 
@@ -2260,6 +2270,9 @@ class ProductViewTests(TestCase):
         # レスポンス確認
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
         self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])

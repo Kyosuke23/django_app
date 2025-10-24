@@ -38,7 +38,7 @@ class PartnerViewTests(TestCase):
     #----------------
     # ListView
     #----------------
-    def test_V01(self):
+    def test_1_1_1_1(self):
         '''初期表示（正常系: データあり）'''
         # レスポンス取得
         response = self.client.get(reverse('partner_mst:list'))
@@ -51,13 +51,80 @@ class PartnerViewTests(TestCase):
 
         # 取得データ確認
         list = response.context['partners']
-        self.assertEqual(list.count(), 8)
+        self.assertEqual(list.count(), 18)
         self.assertTrue(all(tid == 1 for tid in list.values_list('tenant_id', flat=True)))
 
-    def test_V02(self):
-        '''検索処理（正常系: キーワード）'''
+        # 要素の取得を確認
+        soup = BeautifulSoup(response.content, 'html.parser')
+        self.assertIsNotNone(soup.select_one('#import-btn'))
+        self.assertIsNotNone(soup.select_one('#create-btn'))
+        self.assertIsNotNone(soup.select_one('.edit-btn'))
+        self.assertIsNotNone(soup.select_one('#bulk-delete-btn'))
+        self.assertIsNotNone(soup.select_one('#check-all'))
+        self.assertIsNotNone(soup.select_one('.check-item'))
+
+    def test_1_1_1_2(self):
+        '''初期表示（正常系: 参照ユーザー）'''
+
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        # レスポンス取得
+        response = self.client.get(reverse('partner_mst:list'))
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # レスポンス内容確認
+        self.assertContains(response, '株式会社アルファ')
+
+        # 取得データ確認
+        list = response.context['partners']
+        self.assertEqual(list.count(), 18)
+        self.assertTrue(all(tid == 1 for tid in list.values_list('tenant_id', flat=True)))
+
+        # 要素の取得を確認
+        soup = BeautifulSoup(response.content, 'html.parser')
+        self.assertIsNone(soup.select_one('#import-btn'))
+        self.assertIsNone(soup.select_one('#create-btn'))
+        self.assertIsNone(soup.select_one('.edit-btn'))
+        self.assertIsNone(soup.select_one('#bulk-delete-btn'))
+        self.assertIsNone(soup.select_one('#check-all'))
+        self.assertIsNone(soup.select_one('.check-item'))
+
+    def test_1_1_1_3(self):
+        '''検索処理（正常系: 結果0件）'''
         # 検索値
-        key = '商事'
+
+        # レスポンス取得
+        response = self.client.get(reverse('partner_mst:list'), {'search_keyword': 'ZZZZZZZ',})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # 取得データ確認
+        list = response.context['partners']
+        self.assertEqual(list.count(), 0)
+
+    def test_1_1_2_1(self):
+        '''一覧画面表示（異常系: 直リンク）'''
+        url = reverse('partner_mst:list')
+
+        # 直リンク状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/')
+
+    def test_1_2_1_1(self):
+        '''検索処理（正常系: キーワード->取引先区分以外）'''
+        # 検索値
+        key = '999'
 
         # レスポンス取得
         response = self.client.get(reverse('partner_mst:list'), {'search_keyword': key})
@@ -67,11 +134,54 @@ class PartnerViewTests(TestCase):
 
         # 取得データ確認
         list = response.context['partners']
-        self.assertEqual(list.count(), 1)
-        self.assertEqual('有限会社ベータ商事', list[0].partner_name)
+        self.assertEqual(list.count(), 10)
+
+        # 取引先区分以外に "999" が含まれていることを確認
+        for p in list:
+            text_values = [
+                str(p.partner_name or ''),
+                str(p.partner_name_kana or ''),
+                str(p.contact_name or ''),
+                str(p.email or ''),
+                str(p.tel_number or ''),
+                str(p.postal_code or ''),
+                str(p.state or ''),
+                str(p.city or ''),
+                str(p.address or ''),
+                str(p.address2 or ''),
+            ]
+            # どれか一つでも '999' を含めばOK
+            self.assertTrue(
+                any(key in v for v in text_values),
+                f"{p.id} のいずれのプロパティにも '{key}' が含まれていません。: {text_values}"
+            )
+
+        # 検索後のフォーム確認
         self.assertEqual(key, response.context['form']['search_keyword'].value())
 
-    def test_V03(self):
+    def test_1_2_1_2(self):
+        '''検索処理（正常系: キーワード->取引先区分）'''
+        # 検索値
+        key = '仕入'
+
+        # レスポンス取得
+        response = self.client.get(reverse('partner_mst:list'), {'search_keyword': key})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # 取得データ確認
+        list = response.context['partners']
+        self.assertEqual(list.count(), 3)
+
+        # 取引先区分がすべて仕入先であることを確認
+        for p in list:
+            self.assertEqual('仕入先', p.get_partner_type_display())
+
+        # 検索後のフォーム確認
+        self.assertEqual(key, response.context['form']['search_keyword'].value())
+
+    def test_1_2_1_3(self):
         '''検索処理（正常系: 取引先名称）'''
         # 検索値
         key = '会社アル'
@@ -88,7 +198,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('株式会社アルファ', list[0].partner_name)
         self.assertEqual(key, response.context['form']['search_partner_name'].value())
 
-    def test_V04(self):
+    def test_1_2_1_4(self):
         '''検索処理（正常系: 取引先区分）'''
         # 検索値
         key = 'both'
@@ -105,7 +215,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('有限会社ベータ商事', list[0].partner_name)
         self.assertEqual(key, response.context['form']['search_partner_type'].value())
 
-    def test_V04(self):
+    def test_1_2_1_5(self):
         '''検索処理（正常系: 担当者名）'''
         # 検索値
         key = '山田'
@@ -122,7 +232,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('大阪商会', list[0].partner_name)
         self.assertEqual(key, response.context['form']['search_contact_name'].value())
 
-    def test_V06(self):
+    def test_1_2_1_6(self):
         '''検索処理（正常系: メールアドレス）'''
         # 検索値
         key = '@hokkaido'
@@ -139,7 +249,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('北海道フーズ', list[0].partner_name)
         self.assertEqual(key, response.context['form']['search_email'].value())
 
-    def test_V07(self):
+    def test_1_2_1_7(self):
         '''検索処理（正常系: 電話番号）'''
         # 検索値
         key = '06-'
@@ -156,7 +266,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('大阪商会', list[0].partner_name)
         self.assertEqual(key, response.context['form']['search_tel_number'].value())
 
-    def test_V08(self):
+    def test_1_2_1_8(self):
         '''検索処理（正常系: 都道府県）'''
         # 検索値
         key = '北海道'
@@ -173,8 +283,8 @@ class PartnerViewTests(TestCase):
         self.assertEqual('北海道', list[0].state)
         self.assertEqual(key, response.context['form']['search_address'].value())
 
-    def test_V09(self):
-        '''検索処理（正常系: 市町村区）'''
+    def test_1_2_1_9(self):
+        '''検索処理（正常系: シク長槍ん）'''
         # 検索値
         key = '千代田'
 
@@ -190,7 +300,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('千代田区千代田1-1', list[0].city)
         self.assertEqual(key, response.context['form']['search_address'].value())
 
-    def test_V10(self):
+    def test_1_2_1_10(self):
         '''検索処理（正常系: 住所）'''
         # 検索値
         key = 'フーズビル'
@@ -207,7 +317,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('フーズビル', list[0].address)
         self.assertEqual(key, response.context['form']['search_address'].value())
 
-    def test_V11(self):
+    def test_1_2_1_11(self):
         '''検索処理（正常系: 住所2）'''
         # 検索値
         key = 'セカンドアドレス'
@@ -224,42 +334,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual('セカンドアドレス', list[0].address2)
         self.assertEqual(key, response.context['form']['search_address'].value())
 
-    def test_V12(self):
-        '''検索処理（正常系: 複合検索）'''
-        # 検索値
-
-        # レスポンス取得
-        response = self.client.get(reverse('partner_mst:list'), {
-            'search_keyword': '九州',
-            'search_partner_type': 'customer',
-        })
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 200)
-
-        # 取得データ確認
-        list = response.context['partners']
-        self.assertEqual(list.count(), 1)
-        self.assertEqual('九州産業株式会社', list[0].partner_name)
-        self.assertEqual('九州', response.context['form']['search_keyword'].value())
-        self.assertEqual('customer', response.context['form']['search_partner_type'].value())
-
-    def test_V13(self):
-        '''検索処理（正常系: 結果0件）'''
-        # 検索値
-
-        # レスポンス取得
-        response = self.client.get(reverse('partner_mst:list'), {'search_keyword': 'ZZZZZZZ',})
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 200)
-
-        # 取得データ確認
-        list = response.context['partners']
-        self.assertEqual(list.count(), 0)
-
-
-    def test_V14(self):
+    def test_1_2_1_12(self):
         '''ページング（正常系: 1ページあたり20件、21件目が次ページに表示）'''
         url = reverse('partner_mst:list')
 
@@ -307,46 +382,11 @@ class PartnerViewTests(TestCase):
         # 21件目が2ページ目に含まれる
         self.assertTrue(any('テスト商事21' in p.partner_name for p in partners_page2))
 
-    def test_V15(self):
-        '''初期表示（正常系: 参照ユーザー）'''
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
-        self.client.login(email='viewer@example.com', password='pass')
-
-        url = reverse('partner_mst:list')
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        html = response.content.decode('utf-8')
-
-        # 新規登録ボタンが非表示
-        self.assertNotIn('新規登録', html, '参照ユーザーに新規登録ボタンが表示されてはいけない')
-
-        # 明細行の操作列（編集・削除ボタンなど）が非表示
-        self.assertNotRegex(
-            html,
-            r'<button[^>]+(編集|削除)',
-            '参照ユーザーに編集・削除ボタンが表示されてはいけない'
-        )
-
-    def test_V16(self):
-        '''一覧画面表示（異常系: 未ログイン）'''
-        url = reverse('partner_mst:list')
-
-        # 未ログイン状態でアクセス
-        self.client.logout()
-        response = self.client.get(url, follow=False)
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 302)
-
-        # 遷移後の画面確認
-        self.assertRedirects(response, '/login/?next=/partner_mst/')
 
     #----------------
     # CreateView
     #----------------
-    def test_V17(self):
+    def test_2_1_1_1(self):
         '''登録画面表示（正常系）'''
         # レスポンス取得
         response = self.client.get(reverse('partner_mst:create'))
@@ -365,7 +405,34 @@ class PartnerViewTests(TestCase):
         # モーダルタイトル確認
         self.assertEqual(modal_title, '取引先: 新規登録')
 
-    def test_V18(self):
+    def test_2_1_2_1(self):
+        '''登録画面表示（異常系：直リンク）'''
+        url = reverse('partner_mst:create')
+
+        # 直リンク状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/create/')
+
+    def test_2_1_2_2(self):
+        '''登録画面表示（異常系：権限不足）'''
+
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        url = reverse('partner_mst:create')
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_2_2_1_1(self):
         '''
         登録処理（正常系: 全項目に有効値）
         '''
@@ -416,7 +483,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V19(self):
+    def test_2_2_1_2(self):
         '''登録処理（正常系: 異なるテナントで同じ取引先名称）'''
         # テナントを2つ作成
         self.tenant1 = Tenant.objects.create(
@@ -482,8 +549,74 @@ class PartnerViewTests(TestCase):
         self.assertEqual(partners_t1.count(), 1)
         self.assertEqual(partners_t2.count(), 1)
 
+    def test_2_2_2_1(self):
+        '''
+        登録処理（異常系: 直リンク）
+        '''
+        url = reverse('partner_mst:create')
 
-    def test_V20(self):
+        # ログインせずにアクセス
+        self.client.logout()
+
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_name_kana': 'テストカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '山田太郎',
+            'tel_number': '0312345678',
+            'email': 'test@example.com',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '千代田区',
+            'address': '丸の内1-1-1',
+            'address2': 'ビル3F',
+        }
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # レスポンス確認
+        self.assertEqual(response.status_code, 302)
+
+    def test_2_2_2_2(self):
+        '''
+        登録処理（異常系: 権限不足）
+        '''
+        url = reverse('partner_mst:create')
+
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_name_kana': 'テストカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '山田太郎',
+            'tel_number': '0312345678',
+            'email': 'test@example.com',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '千代田区',
+            'address': '丸の内1-1-1',
+            'address2': 'ビル3F',
+        }
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # レスポンス確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_2_2_2_3(self):
         '''登録処理（異常系: メールアドレス形式不正）'''
         url = reverse('partner_mst:create')
         data = {
@@ -510,8 +643,8 @@ class PartnerViewTests(TestCase):
         soup = BeautifulSoup(res_json['html'], 'html.parser')
         self.assertIn('有効なメールアドレスを入力してください。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
-    def test_V21(self):
-        '''登録処理（異常系: 同一テナント内取引先名称重複）'''
+    def test_2_2_2_4(self):
+        '''登録処理（異常系: 同一テナント内重複）'''
         url = reverse('partner_mst:create')
 
         # 先に1件目を登録
@@ -552,36 +685,11 @@ class PartnerViewTests(TestCase):
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_partner_name + .invalid-feedback').get_text())
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
-    def test_V22(self):
-        '''登録画面表示（異常系：権限不足）'''
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
-        self.client.login(email='viewer@example.com', password='pass')
-
-        url = reverse('partner_mst:create')
-        response = self.client.get(url, follow=False)
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 403)
-
-    def test_V23(self):
-        '''登録画面表示（異常系：未ログイン）'''
-        url = reverse('partner_mst:create')
-
-        # 未ログイン状態でアクセス
-        self.client.logout()
-        response = self.client.get(url, follow=False)
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 302)
-
-        # 遷移後の画面確認
-        self.assertRedirects(response, '/login/?next=/partner_mst/create/')
 
     #----------------
     # UpdateView
     #----------------
-    def test_V24(self):
+    def test_3_1_1_1(self):
         '''更新画面表示'''
         # レスポンス取得
         response = self.client.get(reverse('partner_mst:update', args=[1]))
@@ -600,7 +708,63 @@ class PartnerViewTests(TestCase):
         # モーダルタイトル確認
         self.assertEqual(modal_title, '取引先更新: 株式会社アルファ')
 
-    def test_V25(self):
+    def test_3_1_2_1(self):
+        '''更新画面表示（異常系：直リンク）'''
+        url = reverse('partner_mst:update', args=[1])
+
+        # 直リンク状態でアクセス
+        self.client.logout()
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # 遷移後の画面確認
+        self.assertRedirects(response, '/login/?next=/partner_mst/1/update/')
+
+    def test_3_1_2_2(self):
+        '''更新画面表示（異常系：権限不足）'''
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        url = reverse('partner_mst:update', args=[1])
+        response = self.client.get(url, follow=False)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_3_1_2_3(self):
+        '''
+        更新処理（異常系：存在しないデータを開く）
+        '''
+        # リクエスト作成
+        url = reverse('partner_mst:update', args=[99999])
+        request = self.factory.get(url)
+        request.user = self.user
+        setattr(request, 'session', self.client.session)
+
+        # メッセージストレージ設定
+        messages = FallbackStorage(request)
+        setattr(request, '_messages', messages)
+
+        # View実行
+        response = PartnerUpdateView.as_view()(request, pk=99999)
+
+        # JSONレスポンス構造確認
+        self.assertJSONEqual(response.content, {'success': False})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 404)
+
+        # メッセージ内容確認
+        storage = list(messages)
+        self.assertEqual(len(storage), 1)
+        self.assertEqual(storage[0].message, 'この取引先は既に削除されています。')
+        self.assertEqual(storage[0].level_tag, 'error')
+
+
+    def test_3_2_1_1(self):
         '''
         更新処理（正常系：全項目更新）
         '''
@@ -673,8 +837,8 @@ class PartnerViewTests(TestCase):
         self.assertLess((timezone.now() - partner.created_at).total_seconds(), 60)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V26(self):
-        '''更新処理（正常系：異なるテナントで同じ取引先名称に変更）'''
+    def test_3_2_1_2(self):
+        '''更新処理（正常系：異なるテナントで同じ取引先名称+メールアドレスに変更）'''
         # テナントを2つ作成
         self.tenant1 = Tenant.objects.create(
             tenant_name='テナントA',
@@ -723,7 +887,7 @@ class PartnerViewTests(TestCase):
             update_user=self.user2,
         )
 
-        # 更新データ（両方とも同じ名前に更新してみる）
+        # 更新データ（両方とも同じ名前+メールアドレスに更新してみる）
         data = {
             'partner_name': '重複テスト株式会社',
             'partner_type': 'customer',
@@ -755,7 +919,91 @@ class PartnerViewTests(TestCase):
         self.assertEqual(partners_t1.count(), 1)
         self.assertEqual(partners_t2.count(), 1)
 
-    def test_V27(self):
+    def test_3_2_2_1(self):
+        '''
+        更新処理（異常系: 直リンク）
+        '''
+        url = reverse('partner_mst:update', args=[1])
+
+        # ログインせずにアクセス
+        self.client.logout()
+
+        # 事前データ作成
+        Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='旧テスト株式会社',
+            partner_name_kana='キュウテストカブシキガイシャ',
+            partner_type='supplier',
+            contact_name='佐藤一郎',
+            tel_number='0311111111',
+            email='old@example.com',
+            postal_code='1500001',
+            state='東京都',
+            city='渋谷区',
+            address='渋谷1-1-1',
+            address2='旧ビル2F',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_name_kana': 'テストカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '山田太郎',
+            'tel_number': '0312345678',
+            'email': 'test@example.com',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '千代田区',
+            'address': '丸の内1-1-1',
+            'address2': 'ビル3F',
+        }
+
+        response = self.client.post(
+            url,
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # レスポンス確認
+        self.assertEqual(response.status_code, 302)
+
+    def test_3_2_2_2(self):
+        '''
+        登録処理（異常系: 権限不足）
+        '''
+        url = reverse('partner_mst:create')
+
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        data = {
+            'partner_name': 'テスト株式会社',
+            'partner_name_kana': 'テストカブシキガイシャ',
+            'partner_type': 'customer',
+            'contact_name': '山田太郎',
+            'tel_number': '0312345678',
+            'email': 'test@example.com',
+            'postal_code': '1000001',
+            'state': '東京都',
+            'city': '千代田区',
+            'address': '丸の内1-1-1',
+            'address2': 'ビル3F',
+        }
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            data,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # レスポンス確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_3_2_2_3(self):
         '''更新処理（異常系：メールアドレス形式不正）'''
         partner = Partner.objects.create(
             tenant=self.user.tenant,
@@ -787,7 +1035,7 @@ class PartnerViewTests(TestCase):
         soup = BeautifulSoup(res_json['html'], 'html.parser')
         self.assertEqual('有効なメールアドレスを入力してください。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
-    def test_V28(self):
+    def test_3_2_2_4(self):
         '''更新処理（異常系：同一テナント内で取引先名称＋メールアドレス重複）'''
         # 既存データ1
         partner1 = Partner.objects.create(
@@ -830,106 +1078,7 @@ class PartnerViewTests(TestCase):
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_partner_name + .invalid-feedback').get_text())
         self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
-    def test_V29(self):
-        '''更新画面表示（異常系：権限不足）'''
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
-        self.client.login(email='viewer@example.com', password='pass')
-
-        # 事前データ作成
-        partner = Partner.objects.create(
-            tenant=self.user.tenant,
-            partner_name='ログイン株式会社',
-            partner_type='supplier',
-            email='login@example.com',
-            create_user=self.user,
-            update_user=self.user,
-        )
-
-        # 更新処理のURLとデータ作成
-        url = reverse('partner_mst:update', args=[partner.id])
-        data = {
-            'partner_name': 'テスト株式会社',
-            'partner_type': 'customer',
-            'email': 'test@example.com',
-        }
-
-        # 処理実行
-        response = self.client.post(
-            url,
-            data,
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 403)
-
-    def test_V30(self):
-        '''更新画面表示（異常系：未ログイン）'''
-        # 事前データ作成
-        partner = Partner.objects.create(
-            tenant=self.user.tenant,
-            partner_name='ログイン株式会社',
-            partner_type='supplier',
-            email='login@example.com',
-            create_user=self.user,
-            update_user=self.user,
-        )
-
-        # 更新処理のURLとデータ作成
-        url = reverse('partner_mst:update', args=[partner.id])
-        data = {
-            'partner_name': 'テスト株式会社',
-            'partner_type': 'customer',
-            'email': 'test@example.com',
-        }
-
-        # ログアウト
-        self.client.logout()
-
-        # 処理実行
-        response = self.client.post(
-            url,
-            data,
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 302)
-
-        # 遷移後の画面確認
-        self.assertRedirects(response, f'/login/?next=/partner_mst/{partner.id}/update/')
-
-    def test_V31(self):
-        '''
-        更新処理（異常系：存在しないデータを開く）
-        '''
-        # リクエスト作成
-        url = reverse('partner_mst:update', args=[99999])
-        request = self.factory.get(url)
-        request.user = self.user
-        setattr(request, 'session', self.client.session)
-
-        # メッセージストレージ設定
-        messages = FallbackStorage(request)
-        setattr(request, '_messages', messages)
-
-        # View実行
-        response = PartnerUpdateView.as_view()(request, pk=99999)
-
-        # JSONレスポンス構造確認
-        self.assertJSONEqual(response.content, {'success': False})
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 404)
-
-        # メッセージ内容確認
-        storage = list(messages)
-        self.assertEqual(len(storage), 1)
-        self.assertEqual(storage[0].message, 'この取引先は既に削除されています。')
-        self.assertEqual(storage[0].level_tag, 'error')
-
-    def test_V32(self):
+    def test_3_2_2_5(self):
         '''
         更新処理（異常系：存在しないデータの更新）
         '''
@@ -975,7 +1124,7 @@ class PartnerViewTests(TestCase):
     #----------------
     # DeleteView
     #----------------
-    def test_V33(self):
+    def test_4_1_1_1(self):
         '''
         削除処理（正常系）
         '''
@@ -1015,36 +1164,8 @@ class PartnerViewTests(TestCase):
         sales_order.refresh_from_db()
         self.assertIsNone(sales_order.partner)
 
-    def test_V34(self):
-        '''削除処理（異常系：権限不足）'''
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
-        self.client.login(email='viewer@example.com', password='pass')
-
-        # 事前データ作成
-        partner = Partner.objects.create(
-            tenant=self.user.tenant,
-            partner_name='ログイン株式会社',
-            partner_type='supplier',
-            email='login@example.com',
-            create_user=self.user,
-            update_user=self.user,
-        )
-
-        # 更新処理のURL作成
-        url = reverse('partner_mst:update', args=[partner.id])
-
-        # 処理実行
-        response = self.client.post(
-            url,
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 403)
-
-    def test_V35(self):
-        '''削除処理（異常系：未ログイン）'''
+    def test_4_1_2_1(self):
+        '''削除処理（異常系：直リンク）'''
         # 事前データ作成
         partner = Partner.objects.create(
             tenant=self.user.tenant,
@@ -1073,7 +1194,36 @@ class PartnerViewTests(TestCase):
         # 遷移後の画面確認
         self.assertRedirects(response, f'/login/?next=/partner_mst/{partner.id}/delete/')
 
-    def test_V36(self):
+    def test_4_1_2_2(self):
+        '''削除処理（異常系：権限不足）'''
+
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        # 事前データ作成
+        partner = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='ログイン株式会社',
+            partner_type='supplier',
+            email='login@example.com',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 更新処理のURL作成
+        url = reverse('partner_mst:update', args=[partner.id])
+
+        # 処理実行
+        response = self.client.post(
+            url,
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_4_1_2_3(self):
         '''
         削除処理（異常系：存在しないデータの削除）
         '''
@@ -1103,7 +1253,11 @@ class PartnerViewTests(TestCase):
         self.assertEqual(storage[0].message, 'この取引先は既に削除されています。')
         self.assertEqual(storage[0].level_tag, 'error')
 
-    def test_V37(self):
+
+    #----------------
+    # BulkDeleteView
+    #----------------
+    def test_5_1_1_1(self):
         '''
         一括削除（正常系）
         '''
@@ -1169,9 +1323,9 @@ class PartnerViewTests(TestCase):
         self.assertIsNone(sales_order_1.partner)
         self.assertIsNone(sales_order_2.partner)
 
-    def test_V38(self):
+    def test_5_1_1_2(self):
         '''
-        一括削除（異常系：指定なし）
+        一括削除（正常系：指定なし）
         '''
         # 削除対象データ作成
         partner1 = Partner.objects.create(
@@ -1206,44 +1360,9 @@ class PartnerViewTests(TestCase):
         self.assertTrue(Partner.objects.filter(id=partner1.id).exists())
         self.assertTrue(Partner.objects.filter(id=partner2.id).exists())
 
-    def test_V39(self):
-        '''一括削除処理（異常系：権限不足）'''
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
-        self.client.login(email='viewer@example.com', password='pass')
-
-        # 削除対象データ作成
-        partner1 = Partner.objects.create(
-            tenant=self.user.tenant,
-            partner_name='削除対象1',
-            email='p1@example.com',
-            partner_type='customer',
-            create_user=self.user,
-            update_user=self.user,
-        )
-        partner2 = Partner.objects.create(
-            tenant=self.user.tenant,
-            partner_name='削除対象2',
-            email='p2@example.com',
-            partner_type='customer',
-            create_user=self.user,
-            update_user=self.user,
-        )
-
-        # 処理実行
-        url = reverse('partner_mst:bulk_delete')
-        response = self.client.post(
-            url,
-            {'ids': [partner1.id, partner2.id]},
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 403)
-
-    def test_V40(self):
+    def test_5_1_2_1(self):
         '''
-        一括削除（異常系：未ログイン）
+        一括削除（異常系：直リンク）
         '''
         # 削除対象データ作成
         partner1 = Partner.objects.create(
@@ -1284,8 +1403,44 @@ class PartnerViewTests(TestCase):
         self.assertTrue(Partner.objects.filter(id=partner1.id).exists())
         self.assertTrue(Partner.objects.filter(id=partner2.id).exists())
 
-    def test_V41(self):
-        '''一括削除処理（異常系：存在しないID指定）'''
+    def test_5_1_2_2(self):
+        '''一括削除処理（異常系：権限不足）'''
+
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+
+        # 削除対象データ作成
+        partner1 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象1',
+            email='p1@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+        partner2 = Partner.objects.create(
+            tenant=self.user.tenant,
+            partner_name='削除対象2',
+            email='p2@example.com',
+            partner_type='customer',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        # 処理実行
+        url = reverse('partner_mst:bulk_delete')
+        response = self.client.post(
+            url,
+            {'ids': [partner1.id, partner2.id]},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
+        )
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+    def test_5_1_2_3(self):
+        '''一括削除処理（異常系：部分失敗）'''
 
         # テスト用データ作成（1件だけ存在）
         partner = Partner.objects.create(
@@ -1389,13 +1544,13 @@ class PartnerViewTests(TestCase):
 
             self.assertEqual(row, expected)
 
-    def test_V42(self):
+    def test_6_1_1_1(self):
         '''CSVエクスポート（正常系：n件）'''
         url = reverse('partner_mst:export_csv')
         rows = self._request_and_parse(url)
 
         # 件数チェック（事前に8件のデータがある想定）
-        self.assertEqual(len(rows) - 1, 8)
+        self.assertEqual(len(rows) - 1, 18)
 
         partners = Partner.objects.filter(
             tenant=self.user.tenant,
@@ -1404,7 +1559,7 @@ class PartnerViewTests(TestCase):
 
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_V43(self):
+    def test_6_1_1_2(self):
         '''CSVエクスポート（正常系：取引先名称検索）'''
         target = '株式会社アルファ'
         url = reverse('partner_mst:export_csv') + f'?search_partner_name={target}'
@@ -1417,7 +1572,7 @@ class PartnerViewTests(TestCase):
         self.assertEqual(len(rows) - 1, partners.count())
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_V44(self):
+    def test_6_1_1_3(self):
         '''CSVエクスポート（正常系：0件）'''
         Partner.objects.all().delete()
         url = reverse('partner_mst:export_csv')
@@ -1425,8 +1580,9 @@ class PartnerViewTests(TestCase):
         # ヘッダのみ
         self.assertEqual(len(rows), 1)
 
-    def test_V45(self):
+    def test_6_1_1_4(self):
         '''CSVエクスポート（正常系：参照ユーザー）'''
+
         # 参照ユーザーでログイン
         self.user = get_user_model().objects.get(pk=1)
         self.client.login(email='viewer@example.com', password='pass')
@@ -1435,7 +1591,7 @@ class PartnerViewTests(TestCase):
         rows = self._request_and_parse(url)
 
         # 件数チェック（事前に8件のデータがある想定）
-        self.assertEqual(len(rows) - 1, 8)
+        self.assertEqual(len(rows) - 1, 18)
 
         partners = Partner.objects.filter(
             tenant=self.user.tenant,
@@ -1444,8 +1600,35 @@ class PartnerViewTests(TestCase):
 
         self._assert_csv_matches_queryset(rows, partners)
 
-    def test_V46(self):
-        '''CSVエクスポート（正常系：未ログイン）'''
+    def _create_max_data(self, n):
+        data = []
+        for i in range(n):
+            p = Partner.objects.create(
+                tenant=self.user.tenant,
+                partner_name=f'取引先{i}',
+                partner_name_kana=f'トリヒキサキ{i}',
+                contact_name=f'担当者{i}',
+                email=f'user{i}@example.com',
+                is_deleted=False,
+            )
+            data.append(p)
+        return data
+
+    def test_6_1_1_5(self):
+        '''CSVエクスポート（正常系：上限数以上）'''
+        self._create_max_data(settings.MAX_EXPORT_ROWS + 1)
+        url = reverse('partner_mst:export_check')
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        self.assertIn('warning', data)
+        self.assertEqual('出力件数が上限（10,000件）を超えています。先頭10,000件のみを出力します。', data['warning'])
+        self.assertNotIn('ok', data)
+
+    def test_6_1_2_1(self):
+        '''CSVエクスポート（異常系：直リンク）'''
         url = reverse('partner_mst:export_csv')
 
         # ログアウト
@@ -1464,32 +1647,6 @@ class PartnerViewTests(TestCase):
         if 'Content-Type' in response:
             self.assertNotEqual(response['Content-Type'], 'text/csv')
 
-    def _create_max_data(self, n):
-        data = []
-        for i in range(n):
-            p = Partner.objects.create(
-                tenant=self.user.tenant,
-                partner_name=f'取引先{i}',
-                partner_name_kana=f'トリヒキサキ{i}',
-                contact_name=f'担当者{i}',
-                email=f'user{i}@example.com',
-                is_deleted=False,
-            )
-            data.append(p)
-        return data
-
-    def test_V47(self):
-        '''CSVエクスポート（正常系：上限数以上）'''
-        self._create_max_data(settings.MAX_EXPORT_ROWS + 1)
-        url = reverse('partner_mst:export_check')
-
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        data = response.json()
-        self.assertIn('warning', data)
-        self.assertEqual('出力件数が上限（10,000件）を超えています。先頭10,000件のみを出力します。', data['warning'])
-        self.assertNotIn('ok', data)
 
     #----------------
     # ImportCSV
@@ -1500,9 +1657,9 @@ class PartnerViewTests(TestCase):
         '''
         if header is None:
             fieldnames = [
-                'partner_name', 'partner_name_kana', 'partner_type',
-                'contact_name', 'email', 'tel_number', 'postal_code',
-                'state', 'city', 'address', 'address2'
+                '取引先名称', '取引先名称（カナ）', '取引先区分',
+                '担当者名', 'メールアドレス', '電話番号', '郵便番号',
+                '都道府県', '市区町村', '住所', '住所2'
             ]
         else:
             fieldnames = header
@@ -1514,7 +1671,7 @@ class PartnerViewTests(TestCase):
         output.seek(0)
         return io.BytesIO(output.getvalue().encode(encoding=encoding))
 
-    def test_V48(self):
+    def test_7_1_1_1(self):
         '''CSVインポート（正常系：n件）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1523,69 +1680,69 @@ class PartnerViewTests(TestCase):
 
         rows = [
             {
-                'partner_name': 'テスト株式会社',
-                'partner_name_kana': 'テストカブシキガイシャ',
-                'partner_type': 'customer',
-                'contact_name': '山田太郎',
-                'email': 'test1@example.com',
-                'tel_number': '0312345678',
-                'postal_code': '1000001',
-                'state': '東京都',
-                'city': '千代田区',
-                'address': '丸の内1-1-1',
-                'address2': 'ビル3F',
+                '取引先名称': 'テスト株式会社',
+                '取引先名称（カナ）': 'テストカブシキガイシャ',
+                '取引先区分': 'customer',
+                '担当者名': '山田太郎',
+                'メールアドレス': 'test1@example.com',
+                '電話番号': '0312345678',
+                '郵便番号': '1000001',
+                '都道府県': '東京都',
+                '市区町村': '千代田区',
+                '住所': '丸の内1-1-1',
+                '住所2': 'ビル3F',
             },
             {
-                'partner_name': 'サンプル商事',
-                'partner_name_kana': 'サンプルショウジ',
-                'partner_type': 'supplier',
-                'contact_name': '佐藤花子',
-                'email': 'test2@example.com',
-                'tel_number': '0459876543',
-                'postal_code': '2200002',
-                'state': '神奈川県',
-                'city': '横浜市西区',
-                'address': 'みなとみらい2-2-2',
-                'address2': 'ランドタワー10F',
+                '取引先名称': 'サンプル商事',
+                '取引先名称（カナ）': 'サンプルショウジ',
+                '取引先区分': 'supplier',
+                '担当者名': '佐藤花子',
+                'メールアドレス': 'test2@example.com',
+                '電話番号': '0459876543',
+                '郵便番号': '2200002',
+                '都道府県': '神奈川県',
+                '市区町村': '横浜市西区',
+                '住所': 'みなとみらい2-2-2',
+                '住所2': 'ランドタワー10F',
             },
             {
-                'partner_name': 'グローバル合同会社',
-                'partner_name_kana': 'グローバルゴウドウガイシャ',
-                'partner_type': 'both',
-                'contact_name': '鈴木一郎',
-                'email': 'test3@example.com',
-                'tel_number': '0521234567',
-                'postal_code': '4500003',
-                'state': '愛知県',
-                'city': '名古屋市中村区',
-                'address': '名駅3-3-3',
-                'address2': 'サウスタワー5F',
+                '取引先名称': 'グローバル合同会社',
+                '取引先名称（カナ）': 'グローバルゴウドウガイシャ',
+                '取引先区分': 'both',
+                '担当者名': '鈴木一郎',
+                'メールアドレス': 'test3@example.com',
+                '電話番号': '0521234567',
+                '郵便番号': '4500003',
+                '都道府県': '愛知県',
+                '市区町村': '名古屋市中村区',
+                '住所': '名駅3-3-3',
+                '住所2': 'サウスタワー5F',
             },
             {
-                'partner_name': '未来産業株式会社',
-                'partner_name_kana': 'ミライサンギョウカブシキガイシャ',
-                'partner_type': 'customer',
-                'contact_name': '高橋次郎',
-                'email': 'test4@example.com',
-                'tel_number': '0665432109',
-                'postal_code': '5300004',
-                'state': '大阪府',
-                'city': '大阪市北区',
-                'address': '梅田4-4-4',
-                'address2': 'グランビル8F',
+                '取引先名称': '未来産業株式会社',
+                '取引先名称（カナ）': 'ミライサンギョウカブシキガイシャ',
+                '取引先区分': 'customer',
+                '担当者名': '高橋次郎',
+                'メールアドレス': 'test4@example.com',
+                '電話番号': '0665432109',
+                '郵便番号': '5300004',
+                '都道府県': '大阪府',
+                '市区町村': '大阪市北区',
+                '住所': '梅田4-4-4',
+                '住所2': 'グランビル8F',
             },
             {
-                'partner_name': 'クリエイト有限会社',
-                'partner_name_kana': 'クリエイトユウゲンガイシャ',
-                'partner_type': 'supplier',
-                'contact_name': '田中三郎',
-                'email': 'test5@example.com',
-                'tel_number': '0753456789',
-                'postal_code': '6000005',
-                'state': '京都府',
-                'city': '京都市下京区',
-                'address': '四条通5-5-5',
-                'address2': '中央ビル2F',
+                '取引先名称': 'クリエイト有限会社',
+                '取引先名称（カナ）': 'クリエイトユウゲンガイシャ',
+                '取引先区分': 'supplier',
+                '担当者名': '田中三郎',
+                'メールアドレス': 'test5@example.com',
+                '電話番号': '0753456789',
+                '郵便番号': '6000005',
+                '都道府県': '京都府',
+                '市区町村': '京都市下京区',
+                '住所': '四条通5-5-5',
+                '住所2': '中央ビル2F',
             },
         ]
 
@@ -1606,18 +1763,18 @@ class PartnerViewTests(TestCase):
 
         # 登録値の確認
         partners = Partner.objects.order_by('email')  # email で並べて rows と突き合わせやすくする
-        for row, partner in zip(sorted(rows, key=lambda x: x['email']), partners):
-            self.assertEqual(partner.partner_name, row['partner_name'])
-            self.assertEqual(partner.partner_name_kana, row['partner_name_kana'])
-            self.assertEqual(partner.partner_type, row['partner_type'])
-            self.assertEqual(partner.contact_name, row['contact_name'])
-            self.assertEqual(partner.email, row['email'])
-            self.assertEqual(partner.tel_number, row['tel_number'])
-            self.assertEqual(partner.postal_code, row['postal_code'])
-            self.assertEqual(partner.state, row['state'])
-            self.assertEqual(partner.city, row['city'])
-            self.assertEqual(partner.address, row['address'])
-            self.assertEqual(partner.address2, row['address2'])
+        for row, partner in zip(sorted(rows, key=lambda x: x['メールアドレス']), partners):
+            self.assertEqual(partner.partner_name, row['取引先名称'])
+            self.assertEqual(partner.partner_name_kana, row['取引先名称（カナ）'])
+            self.assertEqual(partner.partner_type, row['取引先区分'])
+            self.assertEqual(partner.contact_name, row['担当者名'])
+            self.assertEqual(partner.email, row['メールアドレス'])
+            self.assertEqual(partner.tel_number, row['電話番号'])
+            self.assertEqual(partner.postal_code, row['郵便番号'])
+            self.assertEqual(partner.state, row['都道府県'])
+            self.assertEqual(partner.city, row['市区町村'])
+            self.assertEqual(partner.address, row['住所'])
+            self.assertEqual(partner.address2, row['住所2'])
             self.assertEqual(partner.is_deleted, False)
             self.assertEqual(partner.create_user, self.user)
             self.assertEqual(partner.update_user, self.user)
@@ -1625,7 +1782,7 @@ class PartnerViewTests(TestCase):
             self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
             self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V49(self):
+    def test_7_1_1_2(self):
         '''CSVインポート（正常系：shift-jis）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1634,17 +1791,17 @@ class PartnerViewTests(TestCase):
 
         rows = [
             {
-                'partner_name': 'テスト株式会社',
-                'partner_name_kana': 'テストカブシキガイシャ',
-                'partner_type': 'customer',
-                'contact_name': '山田太郎',
-                'email': 'test1@example.com',
-                'tel_number': '0312345678',
-                'postal_code': '1000001',
-                'state': '東京都',
-                'city': '千代田区',
-                'address': '丸の内1-1-1',
-                'address2': 'ビル3F',
+                '取引先名称': 'テスト株式会社',
+                '取引先名称（カナ）': 'テストカブシキガイシャ',
+                '取引先区分': 'customer',
+                '担当者名': '山田太郎',
+                'メールアドレス': 'test1@example.com',
+                '電話番号': '0312345678',
+                '郵便番号': '1000001',
+                '都道府県': '東京都',
+                '市区町村': '千代田区',
+                '住所': '丸の内1-1-1',
+                '住所2': 'ビル3F',
             }
         ]
         # CSVファイルの作成
@@ -1682,7 +1839,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V50(self):
+    def test_7_1_1_3(self):
         '''CSVインポート（正常系：改行混在 CRLF/LF）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1691,17 +1848,17 @@ class PartnerViewTests(TestCase):
 
         rows = [
             {
-                'partner_name': '改行混在株式会社',
-                'partner_name_kana': 'カイコウコンザイカブシキガイシャ',
-                'partner_type': 'customer',
-                'contact_name': '佐々木進',
-                'email': 'crlf@example.com',
-                'tel_number': '0312349999',
-                'postal_code': '1000001',
-                'state': '東京都',
-                'city': '港区',
-                'address': '芝公園1-1-1',
-                'address2': '',
+                '取引先名称': '改行混在株式会社',
+                '取引先名称（カナ）': 'カイコウコンザイカブシキガイシャ',
+                '取引先区分': 'customer',
+                '担当者名': '佐々木進',
+                'メールアドレス': 'crlf@example.com',
+                '電話番号': '0312349999',
+                '郵便番号': '1000001',
+                '都道府県': '東京都',
+                '市区町村': '港区',
+                '住所': '芝公園1-1-1',
+                '住所2': '',
             },
         ]
 
@@ -1738,7 +1895,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V51(self):
+    def test_7_1_1_4(self):
         '''CSVインポート（正常系：空行スキップ）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1747,10 +1904,10 @@ class PartnerViewTests(TestCase):
 
         # データの作成
         rows = [
-            {'partner_name': '空行スキップ株式会社', 'partner_name_kana': 'クウギョウスキップカブシキガイシャ',
-             'partner_type': 'customer', 'contact_name': '田原正義', 'email': 'skip@example.com',
-             'tel_number': '0311111111', 'postal_code': '1000001', 'state': '東京都',
-             'city': '千代田区', 'address': '丸の内1-1-1', 'address2': ''}
+            {'取引先名称': '空行スキップ株式会社', '取引先名称（カナ）': 'クウギョウスキップカブシキガイシャ',
+             '取引先区分': 'customer', '担当者名': '田原正義', 'メールアドレス': 'skip@example.com',
+             '電話番号': '0311111111', '郵便番号': '1000001', '都道府県': '東京都',
+             '市区町村': '千代田区', '住所': '丸の内1-1-1', '住所2': ''}
         ]
         file = self._make_csv_file(rows)
         file = io.BytesIO((file.getvalue() + b'\n\n').strip())  # 空行を追加
@@ -1787,7 +1944,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V52(self):
+    def test_7_1_1_5(self):
         '''CSVインポート（正常系：ヘッダ順入替え）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1795,21 +1952,21 @@ class PartnerViewTests(TestCase):
         Partner.objects.all().delete()
 
         # データの作成
-        header = ['email', 'partner_name', 'partner_type', 'partner_name_kana', 'contact_name',
-                  'tel_number', 'postal_code', 'state', 'city', 'address', 'address2']
+        header = ['メールアドレス', '取引先名称', '取引先区分', '取引先名称（カナ）', '担当者名',
+                  '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2']
         rows = [
             {
-                'partner_name': '順序入替株式会社',
-                'partner_name_kana': 'ジュンジョイレカエカブシキガイシャ',
-                'partner_type': 'supplier',
-                'contact_name': '並木優',
-                'email': 'order@example.com',
-                'tel_number': '0422222222',
-                'postal_code': '1800001',
-                'state': '東京都',
-                'city': '武蔵野市',
-                'address': '吉祥寺1-2-3',
-                'address2': '順序ビル5F',
+                'メールアドレス': 'order@example.com',
+                '取引先名称': '順序入替株式会社',
+                '取引先区分': 'supplier',
+                '取引先名称（カナ）': 'ジュンジョイレカエカブシキガイシャ',
+                '担当者名': '並木優',
+                '電話番号': '0422222222',
+                '郵便番号': '1800001',
+                '都道府県': '東京都',
+                '市区町村': '武蔵野市',
+                '住所': '吉祥寺1-2-3',
+                '住所2': '順序ビル5F',
             },
         ]
         file = self._make_csv_file(rows, header=header)
@@ -1817,6 +1974,9 @@ class PartnerViewTests(TestCase):
         # レスポンス確認
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
 
         # メッセージ確認
         self.assertEqual('1件をインポートしました。', res_json['message'])
@@ -1843,7 +2003,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V54(self):
+    def test_7_1_1_6(self):
         '''CSVインポート（正常系：住所に改行含む）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1852,17 +2012,17 @@ class PartnerViewTests(TestCase):
 
         # CSVファイルの作成
         rows = [{
-            'partner_name': '改行住所株式会社',
-            'partner_name_kana': 'カイギョウジュウショカブシキガイシャ',
-            'partner_type': 'customer',
-            'contact_name': '改行一郎',
-            'email': 'newline@example.com',
-            'tel_number': '0333333333',
-            'postal_code': '1000001',
-            'state': '東京都',
-            'city': '中央区',
-            'address': '日本橋1-1-1\nオフィスA',
-            'address2': '',
+            '取引先名称': '改行住所株式会社',
+            '取引先名称（カナ）': 'カイギョウジュウショカブシキガイシャ',
+            '取引先区分': 'customer',
+            '担当者名': '改行一郎',
+            'メールアドレス': 'newline@example.com',
+            '電話番号': '0333333333',
+            '郵便番号': '1000001',
+            '都道府県': '東京都',
+            '市区町村': '中央区',
+            '住所': '日本橋1-1-1\nオフィスA',
+            '住所2': '',
         }]
         file = self._make_csv_file(rows)
 
@@ -1891,38 +2051,117 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.created_at - timezone.now()).total_seconds()), 5)
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
-    def test_V55(self):
-        '''CSVインポート（異常系：部分成功時ロールバック）'''
+    def test_7_1_2_1(self):
+        '''CSVインポート（異常系：直リンク）'''
+        self.client.logout()
         url = reverse('partner_mst:import_csv')
 
         # データを削除しておく
         Partner.objects.all().delete()
 
         # CSVファイルの作成
+        file = self._make_csv_file([{'取引先名称':'直リンク株式会社','取引先区分':'customer','メールアドレス':'nologin@example.com'}])
+
+        # レスポンスを取得
+        response = self.client.post(url, {'file': file})
+
+        # 登録されていないことを確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 302)
+
+        # リダイレクト先を確認
+        self.assertRedirects(response, r'/login/?next=/partner_mst/import/csv')
+
+    def test_7_1_2_2(self):
+        '''CSVインポート（異常系：権限不足）'''
+        # 現在ログイン中ユーザーをviewer権限に変更
+        self.user.privilege = '3'
+        self.user.save()
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # テストデータ
+        rows = [{
+            '取引先名称': '権限不足株式会社',
+            '取引先名称（カナ）': 'ケンゲンフソクカブシキガイシャ',
+            '取引先区分': 'customer',
+            '担当者名': '制限太郎',
+            'メールアドレス': 'viewer@example.com',
+            '電話番号': '0300000000',
+            '郵便番号': '1000001',
+            '都道府県': '東京都',
+            '市区町村': '港区',
+            '住所': '芝公園1-1-1',
+            '住所2': ''
+        }]
+
+        # CSVファイルの作成
+        file = self._make_csv_file(rows)
+
+        # レスポンスを取得
+        response = self.client.post(url, {'file': file})
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 403)
+
+        # 登録されていないことを確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_7_1_2_3(self):
+        '''CSVインポート（異常系：複数フィールド・複数行エラー）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
         rows = [
-            {'partner_name': '正常株式会社', 'partner_name_kana': 'セイジョウカブシキガイシャ',
-             'partner_type': 'customer', 'contact_name': '正常太郎',
-             'email': 'ok@example.com', 'tel_number': '0312345678',
-             'postal_code': '1000001', 'state': '東京都', 'city': '千代田区',
-             'address': '丸の内1-1-1', 'address2': ''},
-            {'partner_name': '', 'partner_name_kana': '', 'partner_type': '',
-             'contact_name': '', 'email': 'ng@example.com', 'tel_number': '',
-             'postal_code': '', 'state': '', 'city': '', 'address': '', 'address2': ''}
+            {
+                '取引先名称': '',
+                '取引先名称（カナ）': 'テストカブシキガイシャ',
+                '取引先区分': 'testtype',
+                '担当者名': '山田太郎',
+                'メールアドレス': 'test1@example.com',
+                '電話番号': '0312345678',
+                '郵便番号': '1000001',
+                '都道府県': '東京都',
+                '市区町村': '千代田区',
+                '住所': '丸の内1-1-1',
+                '住所2': 'ビル3F',
+            },
+            {
+                '取引先名称': 'サンプル商事',
+                '取引先名称（カナ）': 'サンプルショウジ',
+                '取引先区分': 'supplier',
+                '担当者名': '佐藤花子',
+                'メールアドレス': 'test2@@example.com',
+                '電話番号': '04598@76543',
+                '郵便番号': '2200002',
+                '都道府県': '神奈川県',
+                '市区町村': '横浜市西区',
+                '住所': 'みなとみらい2-2-2',
+                '住所2': 'ランドタワー10F',
+            },
         ]
         file = self._make_csv_file(rows)
 
-        # レスポンス確認
-        response = self.client.post(url, {'file': file})
-        res_json = json.loads(response.content)
+        res = self.client.post(url, {'file': file})
+        self.assertEqual(res.status_code, 400)
+        res_json = json.loads(res.content)
 
-        # エラーメッセージ確認
-        self.assertEqual('CSVに問題があります。', res_json['error'])
-        self.assertTrue(any('必須' in s for s in res_json['details']))
+        # 期待メッセージ確認
+        self.assertEqual('CSVに問題があります。', res_json.get('error', ''))
+        self.assertIn('2行目:', res_json.get('details', '')[0])
+        self.assertIn('この項目は必須です。', res_json.get('details', '')[0])
+        self.assertIn('正しく選択してください。 testtype は候補にありません。', res_json.get('details', '')[0])
+        self.assertIn('3行目:', res_json.get('details', '')[1])
+        self.assertIn('有効なメールアドレスを入力してください。', res_json.get('details', '')[1])
+        self.assertIn('数字とハイフンのみ使用できます。', res_json.get('details', '')[1])
 
-        # 件数確認
-        self.assertEqual(Partner.objects.count(), 0)
-
-    def test_V56(self):
+    def test_7_1_2_4(self):
         '''CSVインポート（異常系：重複エラー）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1932,23 +2171,23 @@ class PartnerViewTests(TestCase):
         # 先行データ
         Partner.objects.create(
             tenant=self.user.tenant, partner_name='既存株式会社',
-            email='dup@example.com', partner_type='customer',
+            email='dup@example.com', partner_type='both',
             contact_name='既存太郎', create_user=self.user, update_user=self.user
         )
 
         # 重複発生用データ
         rows = [{
-            'partner_name': '既存株式会社',
-            'partner_name_kana': 'キゾンカブシキガイシャ',
-            'partner_type': 'customer',
-            'contact_name': '新太郎',
-            'email': 'dup@example.com',
-            'tel_number': '0312340000',
-            'postal_code': '1000001',
-            'state': '東京都',
-            'city': '港区',
-            'address': '芝1-1-1',
-            'address2': ''
+            '取引先名称': '既存株式会社',
+            '取引先名称（カナ）': 'キゾンカブシキガイシャ',
+            '取引先区分': 'customer',
+            '担当者名': '新太郎',
+            'メールアドレス': 'dup@example.com',
+            '電話番号': '0312340000',
+            '郵便番号': '1000001',
+            '都道府県': '東京都',
+            '市区町村': '港区',
+            '住所': '芝1-1-1',
+            '住所2': ''
         }]
 
         # CSVファイルを作成する
@@ -1958,6 +2197,9 @@ class PartnerViewTests(TestCase):
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
 
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 400)
+
         # メッセージ確認
         self.assertEqual('CSVに問題があります。', res_json['error'])
         self.assertTrue(any('既に存在' in s for s in res_json['details']))
@@ -1965,7 +2207,63 @@ class PartnerViewTests(TestCase):
         # 件数確認
         self.assertEqual(Partner.objects.count(), 1)
 
-    def test_V57(self):
+    def test_7_1_2_5(self):
+        '''CSVインポート（異常系：部分失敗）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # CSVファイルの作成
+        rows = [
+            {'取引先名称': '正常株式会社', '取引先名称（カナ）': 'セイジョウカブシキガイシャ',
+             '取引先区分': 'customer', '担当者名': '正常太郎',
+             'メールアドレス': 'ok@example.com', '電話番号': '0312345678',
+             '郵便番号': '1000001', '都道府県': '東京都', '市区町村': '千代田区',
+             '住所': '丸の内1-1-1', '住所2': ''},
+            {'取引先名称': '', '取引先名称（カナ）': '', '取引先区分': '',
+             '担当者名': '', 'メールアドレス': 'ng@example.com', '電話番号': '',
+             '郵便番号': '', '都道府県': '', '市区町村': '', '住所': '', '住所2': ''}
+        ]
+        file = self._make_csv_file(rows)
+
+        # レスポンス確認
+        response = self.client.post(url, {'file': file})
+        res_json = json.loads(response.content)
+        self.assertEqual(response.status_code, 400)
+
+        # エラーメッセージ確認
+        self.assertEqual('CSVに問題があります。', res_json['error'])
+        self.assertTrue(any('必須' in s for s in res_json['details']))
+
+        # 件数確認
+        self.assertEqual(Partner.objects.count(), 0)
+
+    def test_7_1_2_6(self):
+        '''CSVインポート（異常系：ヘッダ欠落）'''
+        url = reverse('partner_mst:import_csv')
+
+        # データを削除しておく
+        Partner.objects.all().delete()
+
+        # CSVファイルの作成
+        header = ['取引先名称', '取引先名称（カナ）', '取引先区分', 'メールアドレス',
+                  '電話番号', '郵便番号', '都道府県', '市区町村', '住所', '住所2']
+        rows = [
+            {'取引先名称': '正常株式会社', '取引先名称（カナ）': 'セイジョウカブシキガイシャ',
+             '取引先区分': 'customer',
+             'メールアドレス': 'ok@example.com', '電話番号': '0312345678',
+             '郵便番号': '1000001', '都道府県': '東京都', '市区町村': '千代田区',
+             '住所': '丸の内1-1-1', '住所2': ''},
+        ]
+        file = self._make_csv_file(rows=rows, header=header)
+
+        res = self.client.post(url, {'file': file})
+        self.assertEqual(res.status_code, 400)
+        res_json = json.loads(res.content)
+        self.assertEqual('CSVヘッダが正しくありません。', res_json.get('error', ''))
+
+    def test_7_1_2_7(self):
         '''CSVインポート（異常系：余分ヘッダ列）'''
         url = reverse('partner_mst:import_csv')
 
@@ -1973,8 +2271,8 @@ class PartnerViewTests(TestCase):
         Partner.objects.all().delete()
 
         # ヘッダ指定でデータ作成
-        header = ['partner_name','email','tenant','partner_type']
-        rows = [{'partner_name':'余分列株式会社','email':'extra@example.com','partner_type':'customer','tenant':'X'}]
+        header = ['取引先名称','メールアドレス','テナント','取引先区分']
+        rows = [{'取引先名称':'余分列株式会社','メールアドレス':'extra@example.com','取引先区分':'customer','テナント':'X'}]
 
         # CSVファイルの作成
         file = self._make_csv_file(rows, header=header)
@@ -1982,6 +2280,7 @@ class PartnerViewTests(TestCase):
         # レスポンス確認
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+        self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
         self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
@@ -1989,7 +2288,7 @@ class PartnerViewTests(TestCase):
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)
 
-    def test_V58(self):
+    def test_7_1_2_8(self):
         '''CSVインポート（異常系：重複ヘッダ）'''
         url = reverse('partner_mst:import_csv')
 
@@ -2006,6 +2305,7 @@ class PartnerViewTests(TestCase):
         # レスポンス確認
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+        self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
         self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
@@ -2013,7 +2313,7 @@ class PartnerViewTests(TestCase):
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)
 
-    def test_V59(self):
+    def test_7_1_2_9(self):
         '''CSVインポート（異常系：拡張子不正）'''
         url = reverse('partner_mst:import_csv')
 
@@ -2026,6 +2326,7 @@ class PartnerViewTests(TestCase):
         # レスポンス確認
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+        self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
         self.assertEqual('CSVヘッダが正しくありません。', res_json['error'])
@@ -2033,7 +2334,7 @@ class PartnerViewTests(TestCase):
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)
 
-    def test_V60(self):
+    def test_7_1_2_10(self):
         '''CSVインポート（異常系：サイズ超過）'''
         url = reverse('partner_mst:import_csv')
 
@@ -2049,69 +2350,10 @@ class PartnerViewTests(TestCase):
         # レスポンス取得
         response = self.client.post(url, {'file': file})
         res_json = json.loads(response.content)
+        self.assertEqual(response.status_code, 400)
 
         # エラーメッセージ確認
         self.assertEqual('ファイルサイズが上限を超えています。', res_json['error'])
 
         # 件数確認
         self.assertEqual(Partner.objects.count(), 0)
-
-    def test_V61(self):
-        '''CSVインポート（異常系：権限不足）'''
-        # 現在ログイン中ユーザーをviewer権限に変更
-        self.user.privilege = '3'
-        self.user.save()
-        url = reverse('partner_mst:import_csv')
-
-        # データを削除しておく
-        Partner.objects.all().delete()
-
-        # テストデータ
-        rows = [{
-            'partner_name': '権限不足株式会社',
-            'partner_name_kana': 'ケンゲンフソクカブシキガイシャ',
-            'partner_type': 'customer',
-            'contact_name': '制限太郎',
-            'email': 'viewer@example.com',
-            'tel_number': '0300000000',
-            'postal_code': '1000001',
-            'state': '東京都',
-            'city': '港区',
-            'address': '芝公園1-1-1',
-            'address2': ''
-        }]
-
-        # CSVファイルの作成
-        file = self._make_csv_file(rows)
-
-        # レスポンスを取得
-        response = self.client.post(url, {'file': file})
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 403)
-
-        # 登録されていないことを確認
-        self.assertEqual(Partner.objects.count(), 0)
-
-    def test_V62(self):
-        '''CSVインポート（異常系：未ログイン）'''
-        self.client.logout()
-        url = reverse('partner_mst:import_csv')
-
-        # データを削除しておく
-        Partner.objects.all().delete()
-
-        # CSVファイルの作成
-        file = self._make_csv_file([{'partner_name':'未ログイン株式会社','partner_type':'customer','email':'nologin@example.com'}])
-
-        # レスポンスを取得
-        response = self.client.post(url, {'file': file})
-
-        # 登録されていないことを確認
-        self.assertEqual(Partner.objects.count(), 0)
-
-        # ステータスコード確認
-        self.assertEqual(response.status_code, 302)
-
-        # リダイレクト先を確認
-        self.assertRedirects(response, r'/login/?next=/partner_mst/import/csv')

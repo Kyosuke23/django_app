@@ -25,8 +25,8 @@ HEADER_MAP = {
     '郵便番号': 'postal_code',
     '都道府県': 'state',
     '市区町村': 'city',
-    '住所１': 'address',
-    '住所２': 'address2',
+    '住所': 'address',
+    '住所2': 'address2',
 }
 
 # 出力ファイル名定義
@@ -385,19 +385,40 @@ def get_row(rec):
 
 def filter_data(cleaned_data, queryset):
     keyword = cleaned_data.get('search_keyword', '').strip()
+    q = None
+
+    # キーワード検索
     if keyword:
-        queryset = queryset.filter(
+        q = (
             Q(partner_name__icontains=keyword)
             | Q(partner_name_kana__icontains=keyword)
             | Q(contact_name__icontains=keyword)
             | Q(email__icontains=keyword)
             | Q(tel_number__icontains=keyword)
+            | Q(postal_code__icontains=keyword)
             | Q(state__icontains=keyword)
             | Q(city__icontains=keyword)
             | Q(address__icontains=keyword)
             | Q(address2__icontains=keyword)
         )
 
+    # キーワード入力が取引先区分値にあればに変換
+    mapped_value = None
+    for key, val in Partner.PARTNER_TYPE_MAP.items():
+        if keyword not in (None, '') and keyword in key:
+            mapped_value = val
+            break
+
+    if mapped_value:
+        if q is not None:
+            q |= Q(partner_type__icontains=mapped_value)
+        else:
+            q = Q(partner_type__icontains=mapped_value)
+
+    if q is not None:
+        queryset = queryset.filter(q)
+
+    # 詳細検索
     if cleaned_data.get('search_partner_name'):
         queryset = queryset.filter(partner_name__icontains=cleaned_data['search_partner_name'])
     if cleaned_data.get('search_contact_name'):

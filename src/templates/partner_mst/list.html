@@ -11,18 +11,20 @@
     <h1 class="h2 mb-0"><i class="bi bi-building me-4"></i></i>取引先マスタ管理</h1>
 
     <div class="d-flex gap-2">
+      {% if user.privilege <= PRIVILEGE_EDITOR %}
       <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
       <button type="button" id="import-btn" class="btn btn-outline-secondary btn-sm"
               data-action="{% url 'partner_mst:import_csv' %}">
         <i class="bi bi-upload"></i> Import
       </button>
+      {% endif %}
       <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
             data-action="{% url 'partner_mst:export_csv' %}"
             data-check-action="{% url 'partner_mst:export_check' %}">
         <i class="bi bi-download"></i> Export
       </button>
       {% if user.privilege <= PRIVILEGE_EDITOR %}
-      <a class="btn btn-outline-primary btn-sm"
+      <a id="create-btn" class="btn btn-outline-primary btn-sm"
          href="#"
          data-bs-toggle="modal"
          data-bs-target="#partnerModal"
@@ -86,7 +88,7 @@
           </td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
-            <a href="#" class="btn btn-sm btn-outline-secondary"
+            <a href="#" class="btn btn-sm btn-outline-secondary edit-btn"
                data-bs-toggle="modal"
                data-bs-target="#partnerModal"
                data-url="{% url 'partner_mst:update' partner.id %}">
