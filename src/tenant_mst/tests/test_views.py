@@ -3,6 +3,7 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 from tenant_mst.models import Tenant
 from bs4 import BeautifulSoup
+from django.contrib.messages import get_messages
 
 class TenantViewTests(TestCase):
     """TenantEditView の単体テスト"""
@@ -93,9 +94,16 @@ class TenantViewTests(TestCase):
             'address': '渋谷1-2-3',
             'address2': '新ビル10F',
         }
-        response = self.client.post(self.url, post_data)
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, '/tenant_mst/edit/')
+        # リダイレクトを追跡して最終レスポンスを取得
+        response = self.client.post(self.url, post_data, follow=True)
+
+        # ステータス確認
+        self.assertEqual(response.status_code, 200)  # follow=Trueにしてたらステータスコードが200になる
+        self.assertTemplateUsed(response, 'tenant_mst/edit.html')
+
+        # メッセージ内容の確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('テナント情報を更新しました。', [m.message for m in messages])
 
         # DB反映確認
         self.tenant.refresh_from_db()

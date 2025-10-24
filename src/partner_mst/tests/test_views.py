@@ -16,6 +16,7 @@ from sales_order.models import SalesOrder
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.messages import get_messages
 
 
 class PartnerViewTests(TestCase):
@@ -463,6 +464,12 @@ class PartnerViewTests(TestCase):
         res_json = json.loads(response.content)
         self.assertTrue(res_json['success'])
 
+        # メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(len(messages) > 0)
+        self.assertEqual(messages[0].message, '取引先「テスト株式会社」を登録しました。')
+        self.assertEqual(messages[0].level_tag, 'success')
+
         # DB登録確認
         partner = Partner.objects.get(partner_name='テスト株式会社')
         self.assertEqual(partner.partner_name, 'テスト株式会社')
@@ -816,6 +823,12 @@ class PartnerViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         res_json = json.loads(response.content)
         self.assertTrue(res_json['success'])
+
+        # メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(len(messages) > 0)
+        self.assertEqual(messages[0].message, '取引先「テスト株式会社」を更新しました。')
+        self.assertEqual(messages[0].level_tag, 'success')
 
         # DB更新確認
         partner.refresh_from_db()

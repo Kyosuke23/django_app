@@ -13,6 +13,7 @@ from django.core.management import call_command
 from bs4 import BeautifulSoup
 from django.utils import timezone
 from decimal import Decimal
+from django.contrib.messages import get_messages
 import csv
 import io
 import json
@@ -276,7 +277,7 @@ class ProductViewTests(TestCase):
         self.assertEqual(prices, sorted(prices, reverse=True))
 
     def test_1_4_1_1(self):
-        '''V09: ページング'''
+        '''ページング'''
         url = reverse('product_mst:list')
 
         # テスト初期データを削除
@@ -403,6 +404,12 @@ class ProductViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         res_json = json.loads(response.content)
         self.assertTrue(res_json['success'])
+
+        # メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(len(messages) > 0)
+        self.assertEqual(messages[0].message, '商品「登録テスト」を登録しました。')
+        self.assertEqual(messages[0].level_tag, 'success')
 
         # DB登録確認
         product = Product.objects.get(product_name='登録テスト')
@@ -774,6 +781,12 @@ class ProductViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         res_json = json.loads(response.content)
         self.assertTrue(res_json['success'])
+
+        # メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(len(messages) > 0)
+        self.assertEqual(messages[0].message, '商品「更新テスト」を更新しました。')
+        self.assertEqual(messages[0].level_tag, 'success')
 
         # DB更新確認
         product.refresh_from_db()
@@ -1147,7 +1160,7 @@ class ProductViewTests(TestCase):
         # 削除対象データ
         product = Product.objects.create(
             tenant=self.user.tenant,
-            product_name='単位桁数商品',
+            product_name='削除テスト',
             product_category=c,
             unit='個',
             unit_price='123.45',
@@ -1185,6 +1198,12 @@ class ProductViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         res_json = response.json()
         self.assertTrue(res_json['success'])
+
+        # メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertTrue(len(messages) > 0)
+        self.assertEqual(messages[0].message, '商品「削除テスト」を削除しました。')
+        self.assertEqual(messages[0].level_tag, 'success')
 
         # 商品データの削除確認
         self.assertFalse(Product.objects.filter(id=product.id).exists())
