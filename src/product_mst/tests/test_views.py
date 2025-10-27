@@ -2345,10 +2345,15 @@ class ProductCategoryViewTests(TestCase):
         self.assertEqual(messages[0].level_tag, 'success')
 
         # DB登録確認
-        self.assertTrue(ProductCategory.objects.filter(
-            tenant=self.user.tenant,
-            product_category_name='新カテゴリ'
-        ).exists())
+        pc = ProductCategory.objects.filter(tenant=self.user.tenant, product_category_name='新カテゴリ')
+        self.assertTrue(pc.exists())
+        self.assertEqual(pc.product_category_name, '新カテゴリ')
+        self.assertEqual(pc.is_deleted, False)
+        self.assertEqual(pc.create_user, self.user)
+        self.assertEqual(pc.update_user, self.user)
+        self.assertEqual(pc.tenant, self.user.tenant)
+        self.assertLessEqual(abs((pc.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((pc.updated_at - timezone.now()).total_seconds()), 5)
 
     def test_8_1_2_1(self):
         """新規登録：異常系（直リンク）"""
@@ -2378,25 +2383,49 @@ class ProductCategoryViewTests(TestCase):
 
     def test_8_2_1_1(self):
         """更新（正常）"""
+        create_user = self.user
         url = reverse('product_mst:category_manage')
+
+        # ログインを追加
+        self.client.force_login(create_user)
+
+        # カテゴリ作成
         data = {
-            'selected_category': ProductCategory.objects.first().id,
+            'selected_category': '',
+            'product_category_name': '対象カテゴリ',
+            'action': 'save',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        # 更新ユーザーで更新処理
+        update_user = get_user_model().objects.get(pk=2)
+        self.client.force_login(update_user)
+        data = {
+            'selected_category': ProductCategory.objects.filter(product_category_name='対象カテゴリ').first().id,
             'product_category_name': '更新カテゴリ',
             'action': 'save',
         }
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, 302)
 
-        # 成功メッセージ確認
+        # メッセージ確認
         messages = list(get_messages(response.wsgi_request))
-        self.assertIn('商品カテゴリ「更新カテゴリ」を更新しました。', str(messages[0]))
+        self.assertIn('商品カテゴリ「更新カテゴリ」を更新しました。', str(messages[1]))
         self.assertEqual(messages[0].level_tag, 'success')
 
         # DB登録確認
-        self.assertTrue(ProductCategory.objects.filter(
+        pc = ProductCategory.objects.filter(
             tenant=self.user.tenant,
             product_category_name='更新カテゴリ'
-        ).exists())
+        ).first()
+        self.assertEqual(pc.product_category_name, '更新カテゴリ')
+        self.assertFalse(pc.is_deleted)
+        self.assertEqual(pc.create_user, create_user)
+        self.assertEqual(pc.update_user, update_user)
+        self.assertEqual(pc.tenant, self.user.tenant)
+        self.assertLessEqual(abs((pc.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((pc.updated_at - timezone.now()).total_seconds()), 5)
 
     def test_8_2_2_1(self):
         """カテゴリ選択＋名称未入力"""
@@ -2444,7 +2473,6 @@ class ProductCategoryViewTests(TestCase):
             create_user=self.user,
             update_user=self.user,
         )
-
 
         data = {
             'selected_category': pc.id,
