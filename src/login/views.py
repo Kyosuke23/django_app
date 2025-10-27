@@ -10,6 +10,9 @@ from datetime import datetime
 from django.http import HttpResponse
 from openpyxl import Workbook
 from django.contrib import messages
+from django import forms
+from django.shortcuts import render
+from django.contrib.auth import get_user_model
 from django.contrib.auth import update_session_auth_hash
 
 # 出力データカラム
@@ -33,13 +36,40 @@ class Logout(LogoutView):
     template_name = 'login/login.html'
 
 class PasswordReset(PasswordResetView):
-    '''
+    """
     パスワードリセット画面表示
-    '''
+    （存在しないメール・バリデーションエラー対応 + 有効期限付きトークン）
+    """
     subject_template_name = 'mail/password_reset/password_reset_subject.txt'
     email_template_name = 'mail/password_reset/password_reset_email.txt'
     template_name = 'login/password_reset_form.html'
     success_url = reverse_lazy('login:password_reset_done')
+
+    def form_valid(self, form):
+        """
+        入力メールが存在する場合 → 通常の送信処理
+        存在しない場合 → フィールドエラー表示
+        """
+        User = get_user_model()
+        email = form.cleaned_data.get('email')
+
+        # メール存在チェック
+        if not User.objects.filter(email=email).exists():
+            form.add_error('email', forms.ValidationError('入力されたメールアドレスは登録されていません。'))
+            return self.form_invalid(form)
+
+        # メール存在時 → 通常のメール送信処理
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """
+        フォームのバリデーションエラー時（例：空欄・不正形式など）
+        """
+        for field, errors in form.errors.items():
+            for error in errors:
+                label = form.fields[field].label if field in form.fields else field
+                messages.error(self.request, f"{label}: {error}")
+        return render(self.request, self.template_name, {'form': form})
 
 class PasswordResetDone(PasswordResetDoneView):
     '''
@@ -69,7 +99,6 @@ class PasswordResetConfirm(PasswordResetConfirmView):
         """
         バリデーションエラー時（パスワード不一致など）
         """
-        messages.error(self.request, form.errors['new_password2'][0])
         return super().form_invalid(form)
 
 class PasswordResetComplete(PasswordResetCompleteView):

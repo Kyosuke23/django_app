@@ -42,7 +42,7 @@ def user_logged_in_callback(sender, request, user, **kwargs):
     '''
     ip = Common.get_ip_address(request) or '0.0.0.0'
     AccessLog.objects.create(
-        tenant=user.tenant,
+        tenant=user.tenant or '',
         username=user.get_username(),
         ip=ip,
         access_type='login',
@@ -58,7 +58,7 @@ def user_logged_out_callback(sender, request, user, **kwargs):
     '''
     ip = Common.get_ip_address(request) or '0.0.0.0'
     AccessLog.objects.create(
-        tenant=user.tenant,
+        tenant=user.tenant or '',
         username=user.username,
         ip=ip,
         access_type='logout',
