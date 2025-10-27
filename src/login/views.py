@@ -9,6 +9,8 @@ from config.common import Common
 from datetime import datetime
 from django.http import HttpResponse
 from openpyxl import Workbook
+from django.contrib import messages
+from django.contrib.auth import update_session_auth_hash
 
 # 出力データカラム
 OUTPUT_DATA_COLUMNS = ['usernmae', 'ip', 'access_type', 'access_at'] + Common.COMMON_DATA_COLUMNS
@@ -46,18 +48,38 @@ class PasswordResetDone(PasswordResetDoneView):
     template_name = 'login/password_reset_done.html'
 
 class PasswordResetConfirm(PasswordResetConfirmView):
-    '''
+    """
     パスワード再設定画面
-    （パスワードリセットURLを踏んだ直後の画面）
-    '''
+    （メールURLから遷移し、新しいパスワードを設定する画面）
+    """
     success_url = reverse_lazy('login:password_reset_complete')
     template_name = 'login/password_reset_confirm.html'
+
+    def form_valid(self, form):
+        """
+        フォームが正常に送信されたとき（新しいパスワードを確定する処理）
+        """
+        # 新しいパスワードを保存
+        user = form.save()
+        # セッション中のユーザー情報を更新（ログアウト防止）
+        update_session_auth_hash(self.request, user)
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """
+        バリデーションエラー時（パスワード不一致など）
+        """
+        messages.error(self.request, form.errors['new_password2'][0])
+        return super().form_invalid(form)
 
 class PasswordResetComplete(PasswordResetCompleteView):
     '''
     パスワード再設定の完了画面
     '''
     template_name = 'login/password_reset_complete.html'
+
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
 class AccessLogListView(generic.ListView):
     model = AccessLog
@@ -84,7 +106,7 @@ class AccessLogListView(generic.ListView):
         context = Common.set_pagination(context, self.request.GET.urlencode())
         # コンテキストを返却
         return context
-    
+
 def search_data(request, query_set):
     '''
     クエリセットに検索条件を適用
@@ -166,4 +188,3 @@ class ExportCSV(generic.TemplateView):
             ] + Common.get_common_columns(rec=rec))
         # 処理結果を返却
         return response
-    
