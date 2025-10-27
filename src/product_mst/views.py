@@ -261,46 +261,75 @@ class ProductCategoryManageView(LoginRequiredMixin, PrivilegeRequiredMixin, gene
     success_url = reverse_lazy('product_mst:category_manage')
 
     def post(self, request, *args, **kwargs):
-        '''カテゴリ名がnullでもバリデーションを通すための処理'''
+        """削除時など、名称未入力でもバリデーション通過させる"""
         if request.POST.get('action') == 'delete':
             form = self.get_form()
             if not form.is_valid():
                 form.cleaned_data = form.cleaned_data if hasattr(form, 'cleaned_data') else {}
             return self.form_valid(form)
-        else:
-            return super().post(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         req = self.request
         action = req.POST.get('action')
-        selected = form.cleaned_data.get('selected_category')
+        selected_id = req.POST.get('selected_category')
         name = form.cleaned_data.get('product_category_name')
 
+        # カテゴリIDの存在チェック
+        if selected_id:
+            selected = ProductCategory.objects.filter(id=int(selected_id), tenant=req.user.tenant).first()
+        else:
+            selected = None
+
+        # 保存処理
         if action == 'save':
-            if not name:
-                messages.warning(req, 'カテゴリ名を入力してください。')
-            elif selected:
+            # 新規登録
+            if selected:
                 selected.product_category_name = name
                 selected.update_user = req.user
                 selected.save(update_fields=['product_category_name', 'update_user', 'updated_at'])
-                messages.success(req, f'カテゴリ「{name}」を更新しました。')
+                messages.success(req, f'商品カテゴリ「{name}」を更新しました。')
+            # 更新
             else:
-                ProductCategory.objects.create(product_category_name=name, tenant_id=req.user.tenant.id, create_user=req.user, update_user=req.user)
-                messages.success(req, f'カテゴリ「{name}」を新規作成しました。')
+                ProductCategory.objects.create(
+                    product_category_name=name,
+                    tenant=req.user.tenant,
+                    create_user=req.user,
+                    update_user=req.user,
+                )
+                messages.success(req, f'商品カテゴリ「{name}」を新規作成しました。')
 
+        # 削除処理
         elif action == 'delete':
+            # 使用中のチェック
+            in_use = Product.objects.filter(
+                product_category=selected,
+                tenant=req.user.tenant,
+                is_deleted=False
+            ).exists()
+            if in_use:
+                messages.warning(req, f'商品カテゴリ「{selected.product_category_name}」は使用中カテゴリのため、削除できません。')
+                return redirect(f"{reverse('product_mst:list')}?category_open=1")
+
+            # 削除処理
             if selected:
                 selected.delete()
-                messages.success(req, f'カテゴリ「{selected.product_category_name}」を削除しました。')
+                messages.success(req, f'商品カテゴリ「{selected.product_category_name}」を削除しました。')
             else:
-                messages.warning(req, '削除対象のカテゴリを選択してください。')
-
+                messages.warning(req, '削除対象の商品カテゴリを選択してください。')
         return redirect(f"{reverse('product_mst:list')}?category_open=1")
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = self.get_form()
-        return context
+    def form_invalid(self, form):
+        """未入力などバリデーションエラー時のハンドリング"""
+        if self.request.POST.get('action') == 'save':
+            if 'selected_category' in form.errors:
+                msg = form.errors['selected_category'][0]
+            elif 'product_category_name' in form.errors:
+                msg = form.errors['product_category_name'][0]
+            else:
+                msg = 'エラーが発生しました。'
+            messages.error(self.request, msg)
+        return redirect(f"{reverse('product_mst:list')}?category_open=1")
 
 
 #--------------------------
@@ -390,9 +419,9 @@ class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
     def validate_row(self, row, idx, existing, request):
         data = row.copy()
 
-        # ------------------------------------------------------
+        #---------------------------------------------------
         # 商品カテゴリチェック
-        # ------------------------------------------------------
+        #---------------------------------------------------
         category_name = data.get('product_category')
         if category_name:
             try:
@@ -406,9 +435,9 @@ class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
         else:
             data['product_category'] = None
 
-        # ------------------------------------------------------
+        #---------------------------------------------------
         # Djangoフォームバリデーション
-        # ------------------------------------------------------
+        #---------------------------------------------------
         form = ProductForm(data=data)
         if not form.is_valid():
             error_text = '; '.join(
@@ -416,18 +445,18 @@ class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
             )
             return None, form
 
-        # ------------------------------------------------------
+        #---------------------------------------------------
         # 重複チェック（tenant + product_name）
-        # ------------------------------------------------------
+        #---------------------------------------------------
         product_name = data.get('product_name')
         key = (request.user.tenant_id, product_name)
         if key in existing:
             return None, f'{idx}行目: 商品「{product_name}」は既に存在します。'
         existing.add(key)
 
-        # ------------------------------------------------------
+        #---------------------------------------------------
         # Productオブジェクト作成
-        # ------------------------------------------------------
+        #---------------------------------------------------
         obj = form.save(commit=False)
         obj.tenant = request.user.tenant
         obj.create_user = request.user

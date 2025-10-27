@@ -2307,3 +2307,189 @@ class ProductViewTests(TestCase):
 
         # 件数確認
         self.assertEqual(Product.objects.count(), 0)
+
+class ProductCategoryViewTests(TestCase):
+    """商品マスタ - 商品カテゴリ管理のテスト"""
+
+    def setUp(self):
+        '''共通データ作成'''
+        self.factory = RequestFactory()
+
+        # テストクライアント生成
+        self.client = Client()
+
+        # テストデータ投入
+        call_command('loaddata', 'test_tenants.json')
+        call_command('loaddata', 'test_registers.json')
+        call_command('loaddata', 'test_product_categories.json')
+        call_command('loaddata', 'test_products.json')
+
+        # 基本は更新ユーザーで実施
+        self.user = get_user_model().objects.get(pk=3)
+        self.client.login(email='editor@example.com', password='pass')
+
+    def test_8_1_1_1(self):
+        """新規登録（正常）"""
+        url = reverse('product_mst:category_manage')
+        data = {
+            'selected_category': '',
+            'product_category_name': '新カテゴリ',
+            'action': 'save',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        # 成功メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('商品カテゴリ「新カテゴリ」を新規作成しました。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'success')
+
+        # DB登録確認
+        self.assertTrue(ProductCategory.objects.filter(
+            tenant=self.user.tenant,
+            product_category_name='新カテゴリ'
+        ).exists())
+
+    def test_8_1_2_1(self):
+        """新規登録：異常系（直リンク）"""
+        self.client.logout()
+        url = reverse('product_mst:category_manage')
+        response = self.client.post(url, {
+            'selected_category': '',
+            'product_category_name': '未ログイン登録',
+            'action': 'save'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+        self.assertIn('next=', response.url)
+
+    def test_8_1_2_2(self):
+        """新規登録：異常系（権限不足）"""
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='viewer@example.com', password='pass')
+        url = reverse('product_mst:category_manage')
+        response = self.client.post(url, {
+            'selected_category': '',
+            'product_category_name': '権限なし登録',
+            'action': 'save'
+        })
+        self.assertEqual(response.status_code, 403)
+
+    def test_8_2_1_1(self):
+        """更新（正常）"""
+        url = reverse('product_mst:category_manage')
+        data = {
+            'selected_category': ProductCategory.objects.first().id,
+            'product_category_name': '更新カテゴリ',
+            'action': 'save',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        # 成功メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('商品カテゴリ「更新カテゴリ」を更新しました。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'success')
+
+        # DB登録確認
+        self.assertTrue(ProductCategory.objects.filter(
+            tenant=self.user.tenant,
+            product_category_name='更新カテゴリ'
+        ).exists())
+
+    def test_8_2_2_1(self):
+        """カテゴリ選択＋名称未入力"""
+        url = reverse('product_mst:category_manage')
+        pc = ProductCategory.objects.filter(tenant=self.user.tenant).first()
+        pc_name_before = pc.product_category_name
+
+        data = {
+            'selected_category': pc.id,
+            'product_category_name': '',
+            'action': 'save',
+        }
+        response = self.client.post(url, data, follow=True)
+        pc.refresh_from_db()
+        self.assertEqual(pc.product_category_name, pc_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('この項目は必須です。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'error')
+
+    def test_8_2_2_2(self):
+        """カテゴリ選択＋名称未入力"""
+        url = reverse('product_mst:category_manage')
+        pc = ProductCategory.objects.filter(tenant=self.user.tenant).first()
+        pc_name_before = pc.product_category_name
+
+        data = {
+            'selected_category': 99999,
+            'product_category_name': 'not exists',
+            'action': 'save',
+        }
+        response = self.client.post(url, data, follow=True)
+        pc.refresh_from_db()
+        self.assertEqual(pc.product_category_name, pc_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('正しく選択してください。選択したものは候補にありません。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'error')
+
+    def test_8_3_1_1(self):
+        """削除処理（正常系）"""
+        url = reverse('product_mst:category_manage')
+        # 削除対象
+        pc = ProductCategory.objects.create(
+            tenant=self.user.tenant,
+            product_category_name='削除対象',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+
+        data = {
+            'selected_category': pc.id,
+            'product_category_name': '',
+            'action': 'delete',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ProductCategory.objects.filter(id=pc.id).exists())
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn(f"商品カテゴリ「{pc.product_category_name}」を削除しました。", str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'success')
+
+    def test_8_3_2_1(self):
+        """削除処理（異常系：対象未選択）"""
+        url = reverse('product_mst:category_manage')
+        pc = ProductCategory.objects.filter(tenant=self.user.tenant).first()
+        pc_name_before = pc.product_category_name
+
+        data = {
+            'selected_category': '',
+            'product_category_name': '',
+            'action': 'delete',
+        }
+        response = self.client.post(url, data, follow=True)
+        pc.refresh_from_db()
+        self.assertEqual(pc.product_category_name, pc_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('削除対象の商品カテゴリを選択してください。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'warning')
+
+    def test_8_3_2_2(self):
+        """削除処理（異常系：関連商品あり）"""
+        url = reverse('product_mst:category_manage')
+        pc = ProductCategory.objects.filter(pk=1).first()
+        pc_name_before = pc.product_category_name
+
+        data = {
+            'selected_category': 1,
+            'product_category_name': '',
+            'action': 'delete',
+        }
+        response = self.client.post(url, data, follow=True)
+        pc.refresh_from_db()
+        self.assertEqual(pc.product_category_name, pc_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn(f'商品カテゴリ「{pc.product_category_name}」は使用中カテゴリのため、削除できません。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'warning')

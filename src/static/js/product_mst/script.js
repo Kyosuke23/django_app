@@ -60,7 +60,7 @@ $(function () {
                 placeholder: '選択してください',
             };
 
-            product_category_eidtor.select2({...opt, placeholder: '--- 新規作成'});
+            product_category_eidtor.select2({...opt, placeholder: '--- 新規作成 ---'});
             product_categories.select2({...opt, placeholder: '-- 全カテゴリ --'});
         });
     })(jQuery);
