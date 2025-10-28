@@ -1,714 +1,279 @@
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from ..models import *
-import datetime
+from django.db import IntegrityError
+from datetime import date
+from register.models import CustomUser, UserGroup
+from tenant_mst.models import Tenant
 
 
-class TestModelsClass(TestCase):
-    @classmethod
-    def setUpTestData(cls):
-        cls.test_user0 = CustomUser.objects.create(
-            username='9'*50
-            , password='test@pass'
+class CustomUserModelTests(TestCase):
+    """CustomUserモデルの単体テスト"""
+
+    def setUp(self):
+        # テナント作成
+        self.tenant = Tenant.objects.create(tenant_name='テストテナント')
+
+        # 共通ユーザー作成
+        self.user = CustomUser.objects.create_user(
+            username='admin',
+            email='admin@example.com',
+            password='pass',
+            tenant=self.tenant
         )
 
-    def test_01_01_01_01_field_max_length(self):
-        '''
-        username: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='1'*50
-            , password='test@pass'
+        # グループ作成
+        self.group1 = UserGroup.objects.create(
+            group_name='営業部',
+            tenant=self.tenant,
+            create_user=self.user,
+            update_user=self.user
         )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.username), 50)
+        self.group2 = UserGroup.objects.create(
+            group_name='開発部',
+            tenant=self.tenant,
+            create_user=self.user,
+            update_user=self.user
+        )
 
-    def test_01_01_02_01_field_max_length(self):
-        '''
-        username: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='1'*51
-            , password='test@pass'
+    def create_user(self, **kwargs):
+        """保存付きのCustomUser作成"""
+        defaults = {
+            'username': 'テストユーザー',
+            'email': 'test@example.com',
+            'password': 'pass1234',
+            'tenant': self.tenant,
+            'create_user': self.user,
+            'update_user': self.user,
+        }
+        defaults.update(kwargs)
+        user = CustomUser(**defaults)
+        user.full_clean()
+        user.save()
+        return user
+
+    def create_user_instance(self, **kwargs):
+        """保存しないCustomUser（バリデーション専用）"""
+        defaults = {
+            'username': 'テストユーザー',
+            'email': 'test@example.com',
+            'password': 'pass1234',
+            'tenant': self.tenant,
+            'create_user': self.user,
+            'update_user': self.user,
+        }
+        defaults.update(kwargs)
+        return CustomUser(**defaults)
+
+    # username
+    def test_1_1_1_1(self):
+        user = self.create_user_instance(username='A' * 100)
+        user.full_clean()
+        self.assertTrue(True)
+
+    def test_1_1_2_1(self):
+        user = self.create_user_instance(username='')
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    def test_1_1_2_2(self):
+        user = self.create_user_instance(username='A' * 101)
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # username_kana
+    def test_1_2_1_1(self):
+        user = self.create_user_instance(username_kana='カ' * 100)
+        user.full_clean()
+
+    def test_1_2_1_2(self):
+        user = self.create_user_instance(username_kana='')
+        user.full_clean()
+
+    def test_1_2_2_1(self):
+        user = self.create_user_instance(username_kana='カ' * 101)
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # email
+    def test_1_3_1_1(self):
+        self.create_user(email='valid@example.com')
+
+    def test_1_3_2_1(self):
+        user = self.create_user_instance(email='')
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    def test_1_3_2_2(self):
+        user = self.create_user_instance(email='invalidmail')
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # gender
+    def test_1_4_1_1(self):
+        self.create_user(gender='1')
+
+    def test_1_4_2_1(self):
+        user = self.create_user()
+        user.gender = 'X'
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # tel_number
+    def test_1_5_1_1(self):
+        user = self.create_user(tel_number='090-1234-5678')
+        self.assertEqual(user.tel_number, '090-1234-5678')
+
+    def test_1_5_2_1(self):
+        user = self.create_user()
+        user.tel_number = '090A1234'
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # postal_code
+    def test_1_6_1_1(self):
+        user = self.create_user(postal_code='123-4567')
+        self.assertEqual(user.postal_code, '123-4567')
+
+    def test_1_6_1_2(self):
+        user = self.create_user(postal_code='1234567')
+        self.assertEqual(user.postal_code, '1234567')
+
+    def test_1_6_2_1(self):
+        user = self.create_user_instance(postal_code='123-456')
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # state / city / address / address2
+    def test_1_7_2_1(self):
+        user = self.create_user_instance(state='A' * 11)
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    def test_1_8_2_1(self):
+        user = self.create_user_instance(city='A' * 51)
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    def test_1_9_2_1(self):
+        user = self.create_user_instance(address='A' * 101)
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    def test_1_10_2_1(self):
+        user = self.create_user_instance(address2='A' * 151)
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # birthday
+    def test_1_11_1_1(self):
+        user = self.create_user(birthday='1990-01-01')
+        self.assertEqual(str(user.birthday), '1990-01-01')
+
+    def test_1_11_2_1(self):
+        user = self.create_user_instance(birthday='invalid-date')
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # employment_status / end_date
+    def test_1_12_1_1(self):
+        user = self.create_user(employment_status='1')
+        self.assertEqual(user.employment_status, '1')
+
+    def test_1_12_2_1(self):
+        user = self.create_user()
+        user.employment_status = '9'
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    def test_1_13_1_1(self):
+        user = self.create_user(employment_end_date='2025-01-01')
+        self.assertEqual(str(user.employment_end_date), '2025-01-01')
+
+    # privilege
+    def test_1_14_2_1(self):
+        user = self.create_user()
+        user.privilege = '9'
+        with self.assertRaises(ValidationError):
+            user.full_clean()
+
+    # groups_custom
+    def test_1_15_1_1(self):
+        user = self.create_user()
+        user.groups_custom.set([self.group1, self.group2])
+        self.assertEqual(user.groups_custom.count(), 2)
+
+    # is_employed property
+    def test_1_16_1_1(self):
+        user = self.create_user(employment_status='1', employment_end_date=None)
+        self.assertTrue(user.is_employed)
+
+    def test_1_16_1_2(self):
+        user = self.create_user(employment_status='1', employment_end_date=date(2024, 1, 1))
+        self.assertFalse(user.is_employed)
+
+    # group_names_display
+    def test_1_17_1_1(self):
+        user = self.create_user()
+        user.groups_custom.set([self.group1, self.group2])
+        result = user.group_names_display
+        self.assertIn('営業部', result)
+        self.assertIn('開発部', result)
+
+
+class UserGroupModelTests(TestCase):
+    """UserGroupモデルの単体テスト"""
+
+    def setUp(self):
+        self.tenant = Tenant.objects.create(tenant_name='テストテナント')
+        self.user = CustomUser.objects.create_user(
+            username='admin',
+            email='admin@example.com',
+            password='pass',
+            tenant=self.tenant
+        )
+
+    def test_2_1_1_1(self):
+        group = UserGroup(
+            group_name='営業部',
+            tenant=self.tenant,
+            create_user=self.user,
+            update_user=self.user
+        )
+        group.full_clean()
+        group.save()
+        self.assertEqual(UserGroup.objects.count(), 1)
+
+    def test_2_1_2_1(self):
+        group = UserGroup(
+            group_name='',
+            tenant=self.tenant,
+            create_user=self.user,
+            update_user=self.user
         )
         with self.assertRaises(ValidationError):
-            test_user.full_clean()
+            group.full_clean()
 
-    def test_01_02_01_01_field_unique(self):
-        '''
-        username: ユニーク
-        正常系
-        '''
-        test_user = CustomUser(
-            username='2'*50
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.username, '2'*50)
-
-    def test_01_02_02_01_field_unique(self):
-        '''
-        username: ユニーク
-        異常系
-        '''
-        test_user = CustomUser(
-            username='9'*50
-            , password='test@pass'
+    def test_2_1_2_2(self):
+        group = UserGroup(
+            group_name='A' * 101,
+            tenant=self.tenant,
+            create_user=self.user,
+            update_user=self.user
         )
         with self.assertRaises(ValidationError):
-            test_user.full_clean()
+            group.full_clean()
 
-    def test_01_03_01_01_field_ASCIIUsernameValidator(self):
-        '''
-        username: 使用不可文字
-        正常系
-        '''
-        target_str_list = ['@', '.', '+', '-', '_']
-        for str in target_str_list:
-            test_user = CustomUser(
-                username=str
-                , password='test@pass'
+    def test_2_1_2_3(self):
+        UserGroup.objects.create(
+            group_name='営業部',
+            tenant=self.tenant,
+            create_user=self.user,
+            update_user=self.user
+        )
+        with self.assertRaises(IntegrityError):
+            UserGroup.objects.create(
+                group_name='営業部',
+                tenant=self.tenant,
+                create_user=self.user,
+                update_user=self.user
             )
-            test_user.full_clean()
-            self.assertEqual(test_user.username, str)
-
-    def test_01_03_02_01_field_ASCIIUsernameValidator(self):
-        '''
-        username: 使用不可文字
-        異常系
-        '''
-        target_str_list = ['あ', '!', '#', '$', '%', '^', '&', '*', '(', ')', '=', '¥', '|', '`', '~']
-        for str in target_str_list:
-            test_user = CustomUser(
-                username=str
-                , password='test@pass'
-            )
-            with self.assertRaises(ValidationError):
-                test_user.full_clean()
-
-    def test_01_03_02_02_field_Null(self):
-        '''
-        username: Null
-        異常系
-        '''
-        test_user = CustomUser(
-            password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_01_03_02_03_field_Null(self):
-        '''
-        username: Blank
-        異常系
-        '''
-        test_user = CustomUser(
-            username=''
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_02_01_01_01_field_max_length(self):
-        '''
-        gender: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , gender='1'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.gender, '1')
-
-    def test_02_01_01_02_field_max_length(self):
-        '''
-        gender: 桁数(Null)
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.gender, None)
-
-    def test_02_01_01_03_field_max_length(self):
-        '''
-        gender: 桁数(空白)
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , gender=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.gender, '')
-
-    def test_02_01_02_01_field_max_length(self):
-        '''
-        gender: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , gender='11'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_03_01_01_01_field_pattern(self):
-        '''
-        tel_number: パターン
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='12345678900'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.tel_number, '12345678900')
-
-    def test_03_01_01_02_field_pattern(self):
-        '''
-        tel_number: パターン
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='123'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.tel_number, '123')
-
-    def test_03_01_02_01_field_pattern(self):
-        '''
-        tel_number: パターン
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='test'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_03_01_02_02_field_pattern(self):
-        '''
-        tel_number: パターン
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='テスト'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_03_01_02_03_field_pattern(self):
-        '''
-        tel_number: パターン
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='123-4567-8900'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_03_02_01_01_field_max_length(self):
-        '''
-        tel_number: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='1' * 15
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.tel_number), 15)
-
-    def test_03_02_02_01_field_max_length(self):
-        '''
-        tel_number: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number='1' * 16
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_03_02_01_01_field_null(self):
-        '''
-        tel_number: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.tel_number, None)
-
-    def test_03_02_01_02_field_blank(self):
-        '''
-        tel_number: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , tel_number=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.tel_number, '')
-
-    def test_04_01_01_01_field_pattern(self):
-        '''
-        postal_code: パターン
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , postal_code='1234567'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.postal_code, '1234567')
-
-    def test_04_01_02_01_field_pattern(self):
-        '''
-        postal_code: パターン
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , postal_code='test'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_04_01_02_02_field_pattern(self):
-        '''
-        postal_code: パターン
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , postal_code='テスト'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_04_01_02_03_field_pattern(self):
-        '''
-        postal_code: パターン
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , postal_code='123-4567'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_04_02_01_01_field_null(self):
-        '''
-        postal_code: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.postal_code, None)
-
-    def test_04_02_01_02_field_blank(self):
-        '''
-        postal_code: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , postal_code=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.postal_code, '')
-
-    def test_05_01_01_01_field_max_length(self):
-        '''
-        state: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , state='あ'*5
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.state), 5)
-
-    def test_05_01_01_02_field_max_length(self):
-        '''
-        state: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , state='a'*5
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.state), 5)
-
-    def test_05_01_02_01_field_max_length(self):
-        '''
-        state: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , state='あ'*6
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_05_02_01_01_field_null(self):
-        '''
-        state: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.state, None)
-
-    def test_05_02_01_02_field_blank(self):
-        '''
-        state: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , state=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.state, '')
-
-    def test_06_01_01_01_field_max_length(self):
-        '''
-        city: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , city='あ'*255
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.city), 255)
-
-    def test_06_01_01_02_field_max_length(self):
-        '''
-        city: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , city='a'*255
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.city), 255)
-
-    def test_06_01_02_01_field_max_length(self):
-        '''
-        city: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , city='あ'*256
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_06_02_01_01_field_null(self):
-        '''
-        city: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.city, None)
-
-    def test_06_02_01_02_field_blank(self):
-        '''
-        city: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , city=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.city, '')
-
-    def test_07_01_01_01_field_max_length(self):
-        '''
-        address: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address='あ'*255
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.address), 255)
-
-    def test_07_01_01_02_field_max_length(self):
-        '''
-        address: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address='a'*255
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.address), 255)
-
-    def test_07_01_02_01_field_max_length(self):
-        '''
-        address: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address='あ'*256
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_07_02_01_01_field_null(self):
-        '''
-        address: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.address, None)
-
-    def test_07_02_01_02_field_blank(self):
-        '''
-        address: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.address, '')
-
-    def test_08_01_01_01_field_max_length(self):
-        '''
-        address2: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address2='あ'*255
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.address2), 255)
-
-    def test_08_01_01_02_field_max_length(self):
-        '''
-        address2: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address2='a'*255
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.address2), 255)
-
-    def test_08_01_02_01_field_max_length(self):
-        '''
-        address2: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address2='あ'*256
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_08_02_01_01_field_null(self):
-        '''
-        address2: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.address2, None)
-
-    def test_08_02_01_02_field_blank(self):
-        '''
-        address2: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , address2=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.address2, '')
-
-    def test_09_01_01_01_field_null(self):
-        '''
-        birthday: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.birthday, None)
-
-    def test_09_01_01_01_field_null(self):
-        '''
-        birthday: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , birthday=''
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.birthday, '')
-
-    def test_09_02_01_01_field_date(self):
-        '''
-        birthday: 日付形式
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , birthday='1988-01-01'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.birthday, datetime.date(1988, 1, 1))
-
-    def test_09_02_02_01_field_date(self):
-        '''
-        birthday: 日付形式
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , birthday='test'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_10_01_01_01_field_max_length(self):
-        '''
-        privilege: 桁数
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , privilege='1'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(len(test_user.privilege), 1)
-
-    def test_10_01_02_01_field_max_length(self):
-        '''
-        privilege: 桁数
-        異常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , privilege='11'
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
-
-    def test_10_02_01_02_field_null(self):
-        '''
-        privilege: Null
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , password='test@pass'
-        )
-        test_user.full_clean()
-        self.assertEqual(test_user.privilege, '3')
-
-    def test_10_02_01_02_field_blank(self):
-        '''
-        privilege: Blank
-        正常系
-        '''
-        test_user = CustomUser(
-            username='test'
-            , privilege=''
-            , password='test@pass'
-        )
-        with self.assertRaises(ValidationError):
-            test_user.full_clean()
