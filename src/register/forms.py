@@ -123,8 +123,13 @@ class UserSearchForm(forms.Form):
                 field.widget.attrs.setdefault('class', 'form-control form-control-sm')
 
 
+from django import forms
+from register.models import CustomUser, UserGroup
+
+
 class SignUpForm(forms.ModelForm):
     """ユーザー登録・編集フォーム"""
+
     groups_custom = forms.ModelMultipleChoiceField(
         queryset=UserGroup.objects.filter(is_deleted=False).order_by('group_name'),
         required=False,
@@ -145,21 +150,20 @@ class SignUpForm(forms.ModelForm):
             'gender',
             'privilege',
             'groups_custom',
-
         )
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop('request', None)
         is_update = kwargs.pop('is_update', False)
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         self.is_update = is_update
 
         # privilege選択肢を自分より強い権限を除外
-        if request and hasattr(request, 'user') and hasattr(request.user, 'privilege'):
-            user_privilege = int(request.user.privilege)
+        if self.user and hasattr(self.user, 'privilege'):
             self.fields['privilege'].choices = [
-                (value, label) for value, label in self.fields['privilege'].choices
-                if value == '' or int(value) >= user_privilege
+                c for c in self.fields['privilege'].choices
+                if (c[0] == '' or int(c[0]) >= self.user.privilege)
             ]
 
         # 全項目共通のclassを付与
@@ -168,7 +172,9 @@ class SignUpForm(forms.ModelForm):
 
         # エラーフィールドに警告色を付与
         for error in self.errors:
-            self.fields[error].widget.attrs['class']= f'{self.fields[error].widget.attrs['class']} is-invalid'
+            self.fields[error].widget.attrs['class'] = (
+                f"{self.fields[error].widget.attrs['class']} is-invalid"
+            )
 
         # プレースホルダの設定
         self.fields['username'].widget.attrs['placeholder'] = '例）山田 太郎'
@@ -188,18 +194,31 @@ class SignUpForm(forms.ModelForm):
                 if field_name not in ['privilege', 'groups_custom']:
                     field.required = False
 
-    # 更新時はモデル側の blank=False による必須エラーを除去
     def clean(self):
         cleaned_data = super().clean()
+
         if getattr(self, 'is_update', False):
-            for field_name in list(self._errors.keys()):
-                if field_name not in ['privilege', 'groups_custom']:
-                    self._errors.pop(field_name, None)
+            # モデル側の blank=False チェックを回避
+            if not cleaned_data.get('username'):
+                cleaned_data['username'] = self.instance.username or 'DUMMY_USERNAME'
+
+            if not cleaned_data.get('email'):
+                cleaned_data['email'] = self.instance.email or 'dummy@example.com'
+
+            # 不要な必須エラーを削除
+            removable_fields = ['username', 'email']
+            for field in removable_fields:
+                if field in self.errors:
+                    self.errors.pop(field)
         return cleaned_data
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
-        # 自分以外に同じ username があればエラー
+
+        # 更新時は空入力を許可
+        if getattr(self, 'is_update', False) and not username:
+            return username
+
         qs = CustomUser.objects.exclude(pk=self.instance.pk).filter(username=username)
         if qs.exists():
             raise forms.ValidationError('このユーザー名は既に使用されています。')
