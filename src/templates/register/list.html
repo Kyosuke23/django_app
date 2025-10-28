@@ -74,6 +74,7 @@
           <th>電話番号</th>
           <th>雇用状態</th>
           <th>権限</th>
+          <th>所属グループ</th>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <th>操作</th>
           {% endif %}
@@ -92,6 +93,7 @@
           <td>{{ u.tel_number|default_if_none:'' }}</td>
           <td>{{ u.get_employment_status_display|default_if_none:'' }}</td>
           <td>{{ u.get_privilege_display|default_if_none:'' }}</td>
+          <td>{{ u.group_names_display|default_if_none:'' }}</td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
             <a href="#" class="btn btn-sm btn-outline-secondary"

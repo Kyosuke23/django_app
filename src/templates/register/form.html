@@ -13,7 +13,7 @@
 
   {% if not form.instance.pk or request.user.privilege == PRIVILEGE_SYSTEM %}
     {# ------------------------------------------------ #}
-    {# 登録時（新規）→ 全フォーム入力可               #}
+    {# 登録時（新規）→ 全フォーム入力可                      #}
     {# ------------------------------------------------ #}
     {% bootstrap_form form %}
 
@@ -57,7 +57,7 @@
             <label class="form-label text-muted small">{{ field.label }}</label>
             <div class="form-control-plaintext">
               {% if field.name == "gender" %}
-                {{ form.instance.get_gender_display }}
+                {{ form.instance.get_gender_display|default_if_none:'' }}
               {% elif field.name == "privilege" %}
                 {{ form.instance.get_privilege_display }}
               {% elif field.name == "employment_status" %}
@@ -87,13 +87,11 @@
   <div class="d-flex justify-content-end gap-2 mt-3">
     {% if not form.instance.pk %}
       <button type="submit" class="btn btn-primary" data-action="save">登録</button>
-
-    {% elif request.user.privilege <= 1 %}
+    {% elif request.user.privilege <= '1' %}
       <button type="submit" class="btn btn-primary" data-action="save">保存</button>
       {% if form.instance.pk != request.user.pk %}
         <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
       {% endif %}
-
     {% else %}
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
     {% endif %}

@@ -152,6 +152,11 @@ class CustomUser(AbstractUser, BaseModel):
     def is_employed(self):
         return self.employment_status == '1' and (self.employment_end_date is None)
 
+    @property
+    def group_names_display(self):
+        """所属グループ名をカンマ区切りで表示"""
+        return ", ".join(self.groups_custom.values_list('group_name', flat=True))
+
 class UserGroup(BaseModel):
     '''
     ユーザーグループマスタ

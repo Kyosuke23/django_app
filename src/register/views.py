@@ -155,10 +155,18 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
         self.object = self.get_object()
         form = self.get_form()
         if form.is_valid():
-            self.object = form.save(commit=False)
+            # 更新対象フィールドは権限と所属グループのみ
+            privilege = form.cleaned_data.get('privilege')
+            groups = form.cleaned_data.get('groups_custom')
+            if privilege is not None:
+                self.object.privilege = privilege
+            if groups is not None:
+                self.object.groups_custom.set(groups)
+
+            # 更新者情報
             self.object.update_user = request.user
-            self.object.save()
-            form.save_m2m()
+            self.object.save(update_fields=['privilege', 'update_user', 'updated_at'])
+            set_message(request, '更新', self.object.username)
             set_message(request, '更新', self.object.username)
             return JsonResponse({'success': True})
         else:
@@ -176,6 +184,7 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['request'] = self.request
+        kwargs['is_update'] = True
         return kwargs
 
 
@@ -521,6 +530,9 @@ def filter_data(cleaned_data, queryset):
 
     if cleaned_data.get('search_privilege'):
         queryset = queryset.filter(privilege=cleaned_data['search_privilege'])
+
+    if cleaned_data.get('search_user_group'):
+        queryset = queryset.filter(groups_custom=cleaned_data['search_user_group'])
 
     return queryset
 

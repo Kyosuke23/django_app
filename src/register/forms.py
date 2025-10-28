@@ -5,9 +5,7 @@ from django import forms
 from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
 
 class UserSearchForm(forms.Form):
-    '''
-    ユーザーマスタ検索フォーム
-    '''
+    """ユーザーマスタ検索フォーム"""
     search_keyword = forms.CharField(
         required=False,
         max_length=255,
@@ -15,7 +13,7 @@ class UserSearchForm(forms.Form):
         widget=forms.TextInput(
             attrs={
                 'class': 'form-control',
-                'placeholder': 'ユーザー名 / メールアドレス',
+                'placeholder': 'キーワードを入力してください',
             }
         )
     )
@@ -73,6 +71,15 @@ class UserSearchForm(forms.Form):
         )
     )
 
+    search_user_group = forms.ModelChoiceField(
+        required=False,
+        label='所属グループ',
+        queryset=UserGroup.objects.filter(is_deleted=False).order_by('group_name'),
+        widget=forms.Select(
+            attrs={'class': 'form-select form-select-sm'}
+        )
+    )
+
     sort = forms.ChoiceField(
         required=False,
         label='並び替え',
@@ -117,6 +124,7 @@ class UserSearchForm(forms.Form):
 
 
 class SignUpForm(forms.ModelForm):
+    """ユーザー登録・編集フォーム"""
     groups_custom = forms.ModelMultipleChoiceField(
         queryset=UserGroup.objects.filter(is_deleted=False).order_by('group_name'),
         required=False,
@@ -142,7 +150,9 @@ class SignUpForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop('request', None)
+        is_update = kwargs.pop('is_update', False)
         super().__init__(*args, **kwargs)
+        self.is_update = is_update
 
         # privilege選択肢を自分より強い権限を除外
         if request and hasattr(request, 'user') and hasattr(request.user, 'privilege'):
@@ -171,6 +181,21 @@ class SignUpForm(forms.ModelForm):
             del self.fields['password1']
         if 'password2' in self.fields:
             del self.fields['password2']
+
+        # 更新時は一部フィールドを任意に設定
+        if is_update:
+            for field_name, field in self.fields.items():
+                if field_name not in ['privilege', 'groups_custom']:
+                    field.required = False
+
+    # 更新時はモデル側の blank=False による必須エラーを除去
+    def clean(self):
+        cleaned_data = super().clean()
+        if getattr(self, 'is_update', False):
+            for field_name in list(self._errors.keys()):
+                if field_name not in ['privilege', 'groups_custom']:
+                    self._errors.pop(field_name, None)
+        return cleaned_data
 
     def clean_username(self):
         username = self.cleaned_data.get('username')
