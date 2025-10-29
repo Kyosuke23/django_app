@@ -2347,6 +2347,7 @@ class ProductCategoryViewTests(TestCase):
         # DB登録確認
         pc = ProductCategory.objects.filter(tenant=self.user.tenant, product_category_name='新カテゴリ')
         self.assertTrue(pc.exists())
+        pc = pc.first()
         self.assertEqual(pc.product_category_name, '新カテゴリ')
         self.assertEqual(pc.is_deleted, False)
         self.assertEqual(pc.create_user, self.user)
@@ -2399,7 +2400,7 @@ class ProductCategoryViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
         # 更新ユーザーで更新処理
-        update_user = get_user_model().objects.get(pk=2)
+        update_user = get_user_model().objects.get(pk=3)
         self.client.force_login(update_user)
         data = {
             'selected_category': ProductCategory.objects.filter(product_category_name='対象カテゴリ').first().id,
@@ -2415,10 +2416,7 @@ class ProductCategoryViewTests(TestCase):
         self.assertEqual(messages[0].level_tag, 'success')
 
         # DB登録確認
-        pc = ProductCategory.objects.filter(
-            tenant=self.user.tenant,
-            product_category_name='更新カテゴリ'
-        ).first()
+        pc = ProductCategory.objects.filter(tenant=self.user.tenant, product_category_name='更新カテゴリ').first()
         self.assertEqual(pc.product_category_name, '更新カテゴリ')
         self.assertFalse(pc.is_deleted)
         self.assertEqual(pc.create_user, create_user)
@@ -2446,7 +2444,7 @@ class ProductCategoryViewTests(TestCase):
         self.assertEqual(messages[0].level_tag, 'error')
 
     def test_8_2_2_2(self):
-        """カテゴリ選択＋名称未入力"""
+        """更新 存在しないID指定"""
         url = reverse('product_mst:category_manage')
         pc = ProductCategory.objects.filter(tenant=self.user.tenant).first()
         pc_name_before = pc.product_category_name
@@ -2519,5 +2517,5 @@ class ProductCategoryViewTests(TestCase):
         pc.refresh_from_db()
         self.assertEqual(pc.product_category_name, pc_name_before)
         messages = list(get_messages(response.wsgi_request))
-        self.assertIn(f'商品カテゴリ「{pc.product_category_name}」は使用中カテゴリのため、削除できません。', str(messages[0]))
+        self.assertIn(f'商品カテゴリ「{pc.product_category_name}」は使用中のため、削除できません。', str(messages[0]))
         self.assertEqual(messages[0].level_tag, 'warning')

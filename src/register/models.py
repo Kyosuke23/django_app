@@ -102,13 +102,6 @@ class UserGroup(BaseModel):
     '''
     ユーザーグループマスタ
     '''
-    group_name = models.CharField(
-        max_length=100,
-        unique=False,
-        verbose_name='グループ名',
-        help_text='100文字以内で入力してください。'
-    )
-
     class Meta:
         verbose_name = 'ユーザーグループ'
         verbose_name_plural = 'ユーザーグループマスタ'
@@ -118,6 +111,12 @@ class UserGroup(BaseModel):
                 fields=['tenant', 'group_name'], name='unique_tenant_groupname'
             ),
         ]
+    group_name = models.CharField(
+        max_length=100,
+        unique=False,
+        verbose_name='ユーザーグループ名称',
+        help_text='100文字以内で入力してください。'
+    )
 
     def __str__(self):
         return self.group_name

@@ -479,6 +479,7 @@ class RegisterViewsTests(TestCase):
         # メッセージ確認
         messages = [m.message for m in get_messages(response.wsgi_request)]
         self.assertTrue(any('ユーザー「テストユーザー」を登録しました。' in m for m in messages))
+        self.assertEqual(messages[0].level_tag, 'success')
 
     def test_2_2_1_2(self):
         '''登録処理（正常系: 異なるテナントで同じユーザー名'''
@@ -899,9 +900,9 @@ class RegisterViewsTests(TestCase):
 
     def test_3_2_2_2(self):
         '''
-        登録処理（異常系: 権限不足）
+        更新処理（異常系: 権限不足）
         '''
-        url = reverse('register:create')
+        url = reverse('register:update', args=[1])
 
         # 参照ユーザーでログイン
         self.user = get_user_model().objects.get(pk=1)
@@ -2154,3 +2155,214 @@ class RegisterViewsTests(TestCase):
 
         # 件数確認
         self.assertEqual(CustomUser.objects.count(), 1)
+
+
+class UserGroupManageViewTests(TestCase):
+    """商品マスタ - 商品カテゴリ管理のテスト"""
+
+    def setUp(self):
+        '''共通データ作成'''
+        self.factory = RequestFactory()
+
+        # テストクライアント生成
+        self.client = Client()
+
+        # テストデータ投入
+        call_command('loaddata', 'test_tenants.json')
+        call_command('loaddata', 'test_registers.json')
+
+        # 基本は管理者ユーザーで実施
+        self.user = get_user_model().objects.get(pk=2)
+        self.client.login(email='manager@example.com', password='pass')
+
+    def test_8_1_1_1(self):
+        """新規登録（正常）"""
+        url = reverse('register:group_manage')
+        data = {
+            'selected_group': '',
+            'group_name': '新グループ',
+            'action': 'save',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        # 成功メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('ユーザーグループ「新グループ」を新規作成しました。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'success')
+
+        # DB登録確認
+        ug = UserGroup.objects.filter(tenant=self.user.tenant, group_name='新グループ')
+        self.assertTrue(ug.exists())
+        ug = ug.first()
+        self.assertEqual(ug.group_name, '新グループ')
+        self.assertEqual(ug.is_deleted, False)
+        self.assertEqual(ug.create_user, self.user)
+        self.assertEqual(ug.update_user, self.user)
+        self.assertEqual(ug.tenant, self.user.tenant)
+        self.assertLessEqual(abs((ug.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((ug.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_8_1_2_1(self):
+        """新規登録：異常系（直リンク）"""
+        self.client.logout()
+        url = reverse('register:group_manage')
+        response = self.client.post(url, {
+            'selected_group': '',
+            'group_name': '新グループ',
+            'action': 'save',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+        self.assertIn('next=', response.url)
+
+    def test_8_1_2_2(self):
+        """新規登録：異常系（権限不足）"""
+        # 参照ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='editor@example.com', password='pass')
+        url = reverse('register:group_manage')
+        response = self.client.post(url, {
+            'selected_group': '',
+            'group_name': '新グループ',
+            'action': 'save',
+        })
+        self.assertEqual(response.status_code, 403)
+
+    def test_8_2_1_1(self):
+        """更新（正常）"""
+        create_user = self.user
+        url = reverse('register:group_manage')
+
+        # ログインを追加
+        self.client.force_login(create_user)
+
+        # 更新対象データ
+        data = {
+            'selected_group': '',
+            'group_name': '対象グループ',
+            'action': 'save',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        # システムユーザーで更新処理
+        update_user = get_user_model().objects.get(pk=1)
+        self.client.force_login(update_user)
+        data = {
+            'selected_group': UserGroup.objects.filter(group_name='対象グループ').first().id,
+            'group_name': '更新グループ',
+            'action': 'save',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+
+        # メッセージ確認
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('ユーザーグループ「更新グループ」を更新しました。', str(messages[1]))
+        self.assertEqual(messages[0].level_tag, 'success')
+
+        # DB登録確認
+        pc = UserGroup.objects.filter(tenant=self.user.tenant, group_name='更新グループ').first()
+        self.assertEqual(pc.group_name, '更新グループ')
+        self.assertFalse(pc.is_deleted)
+        self.assertEqual(pc.create_user, create_user)
+        self.assertEqual(pc.update_user, update_user)
+        self.assertEqual(pc.tenant, self.user.tenant)
+        self.assertLessEqual(abs((pc.created_at - timezone.now()).total_seconds()), 5)
+        self.assertLessEqual(abs((pc.updated_at - timezone.now()).total_seconds()), 5)
+
+    def test_8_2_2_1(self):
+        """カテゴリ選択＋名称未入力"""
+        url = reverse('register:group_manage')
+        ug = UserGroup.objects.filter(tenant=self.user.tenant).first()
+        ug_name_before = ug.group_name
+
+        data = {
+            'selected_group': ug.id,
+            'group_name': '',
+            'action': 'save',
+        }
+        response = self.client.post(url, data, follow=True)
+        ug.refresh_from_db()
+        self.assertEqual(ug.group_name, ug_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('この項目は必須です。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'error')
+
+    def test_8_2_2_2(self):
+        """更新 存在しないID指定"""
+        url = reverse('register:group_manage')
+        ug = UserGroup.objects.filter(tenant=self.user.tenant).first()
+        ug_name_before = ug.group_name
+
+        data = {
+            'selected_group': 99999,
+            'group_name': 'not exists',
+            'action': 'save',
+        }
+        response = self.client.post(url, data, follow=True)
+        ug.refresh_from_db()
+        self.assertEqual(ug.group_name, ug_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('エラーが発生しました。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'error')
+
+    def test_8_3_1_1(self):
+        """削除処理（正常系）"""
+        url = reverse('register:group_manage')
+        # 削除対象
+        ug = UserGroup.objects.create(
+            tenant=self.user.tenant,
+            group_name='削除対象',
+            create_user=self.user,
+            update_user=self.user,
+        )
+
+        data = {
+            'selected_group': ug.id,
+            'group_name': '',
+            'action': 'delete',
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(UserGroup.objects.filter(id=ug.id).exists())
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn(f'ユーザーグループ「{ug.group_name}」を削除しました。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'success')
+
+    def test_8_3_2_1(self):
+        """削除処理（異常系：対象未選択）"""
+        url = reverse('register:group_manage')
+        ug = UserGroup.objects.filter(tenant=self.user.tenant).first()
+        ug_name_before = ug.group_name
+
+        data = {
+            'selected_group': '',
+            'group_name': '',
+            'action': 'delete',
+        }
+        response = self.client.post(url, data, follow=True)
+        ug.refresh_from_db()
+        self.assertEqual(ug.group_name, ug_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn('削除対象のユーザーグループを選択してください。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'warning')
+
+    def test_8_3_2_2(self):
+        """削除処理（異常系：関連商品あり）"""
+        url = reverse('register:group_manage')
+        ug = UserGroup.objects.filter(pk=1).first()
+        ug_name_before = ug.group_name
+
+        data = {
+            'selected_group': 1,
+            'group_name': '',
+            'action': 'delete',
+        }
+        response = self.client.post(url, data, follow=True)
+        ug.refresh_from_db()
+        self.assertEqual(ug.group_name, ug_name_before)
+        messages = list(get_messages(response.wsgi_request))
+        self.assertIn(f'ユーザーグループ「{ug.group_name}」は使用中のため、削除できません。', str(messages[0]))
+        self.assertEqual(messages[0].level_tag, 'warning')

@@ -283,13 +283,13 @@ class ProductCategoryManageView(LoginRequiredMixin, PrivilegeRequiredMixin, gene
 
         # 保存処理
         if action == 'save':
-            # 新規登録
+            # 更新
             if selected:
                 selected.product_category_name = name
                 selected.update_user = req.user
                 selected.save(update_fields=['product_category_name', 'update_user', 'updated_at'])
                 messages.success(req, f'商品カテゴリ「{name}」を更新しました。')
-            # 更新
+            # 新規登録
             else:
                 ProductCategory.objects.create(
                     product_category_name=name,
@@ -308,7 +308,7 @@ class ProductCategoryManageView(LoginRequiredMixin, PrivilegeRequiredMixin, gene
                 is_deleted=False
             ).exists()
             if in_use:
-                messages.warning(req, f'商品カテゴリ「{selected.product_category_name}」は使用中カテゴリのため、削除できません。')
+                messages.warning(req, f'商品カテゴリ「{selected.product_category_name}」は使用中のため、削除できません。')
                 return redirect(f"{reverse('product_mst:list')}?category_open=1")
 
             # 削除処理

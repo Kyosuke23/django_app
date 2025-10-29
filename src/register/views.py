@@ -347,48 +347,79 @@ class UserGroupManageView(LoginRequiredMixin, ManagerOverMixin, generic.FormView
     success_url = reverse_lazy('register:group_manage')
 
     def post(self, request, *args, **kwargs):
-        '''グループ名がnullでもバリデーションを通すための処理'''
+        """削除時など、名称未入力でもバリデーション通過させる"""
         if request.POST.get('action') == 'delete':
             form = self.get_form()
             if not form.is_valid():
                 form.cleaned_data = form.cleaned_data if hasattr(form, 'cleaned_data') else {}
             return self.form_valid(form)
-        else:
-            return super().post(request, *args, **kwargs)
+        return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
         req = self.request
         action = req.POST.get('action')
-        selected_group = form.cleaned_data.get('selected_group')
+        selected_id = req.POST.get('selected_group')
         name = form.cleaned_data.get('group_name')
 
+        # グループIDの存在チェック
+        if selected_id:
+            selected = UserGroup.objects.filter(id=int(selected_id), tenant=req.user.tenant).first()
+        else:
+            selected = None
+
+        # 保存処理
         if action == 'save':
-            if not name:
-                messages.warning(req, 'グループ名を入力してください。')
-            elif selected_group:
-                selected_group.group_name = name
-                selected_group.update_user = req.user
-                selected_group.save(update_fields=['group_name', 'update_user', 'updated_at'])
-                messages.success(req, f'グループ「{name}」を更新しました。')
+            # 更新
+            if selected:
+                selected.group_name = name
+                selected.update_user = req.user
+                selected.save(update_fields=['group_name', 'update_user', 'updated_at'])
+                messages.success(req, f'ユーザーグループ「{name}」を更新しました。')
+            # 新規登録
             else:
-                UserGroup.objects.create(group_name=name, tenant_id=req.user.tenant.id, create_user=req.user, update_user=req.user)
-                messages.success(req, f'グループ「{name}」を新規作成しました。')
+                UserGroup.objects.create(
+                    group_name=name,
+                    tenant=req.user.tenant,
+                    create_user=req.user,
+                    update_user=req.user,
+                )
+                messages.success(req, f'ユーザーグループ「{name}」を新規作成しました。')
 
-        elif action == 'delete' and selected_group:
-            selected_group.delete()
-            messages.success(req, f'グループ「{selected_group.group_name}」を削除しました。')
+        # 削除処理
+        elif action == 'delete':
+            # selected がない場合は即警告
+            if not selected:
+                messages.warning(req, '削除対象のユーザーグループを選択してください。')
+                return redirect(f"{reverse('register:list')}?group_open=1")
 
+            # 使用中チェック
+            in_use = CustomUser.objects.filter(
+                tenant=req.user.tenant,
+                is_deleted=False,
+                groups_custom=selected,
+            ).exists()
+
+            if in_use:
+                messages.warning(req, f'ユーザーグループ「{selected.group_name}」は使用中のため、削除できません。')
+                return redirect(f"{reverse('register:list')}?group_open=1")
+
+            # 物理削除
+            selected.delete()
+            messages.success(req, f'ユーザーグループ「{selected.group_name}」を削除しました。')
+            return redirect(f"{reverse('register:list')}?group_open=1")
         return redirect(f"{reverse('register:list')}?group_open=1")
 
     def form_invalid(self, form):
-        messages.error(self.request, '入力内容に誤りがあります。')
-        return super().form_invalid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = self.get_form()  # ← これで初期表示にもフォームが確実に渡る
-        context['groups'] = UserGroup.objects.filter(is_deleted=False).order_by('group_name')
-        return context
+        """未入力などバリデーションエラー時のハンドリング"""
+        if self.request.POST.get('action') == 'save':
+            if 'selected_category' in form.errors:
+                msg = form.errors['selected_category'][0]
+            elif 'group_name' in form.errors:
+                msg = form.errors['group_name'][0]
+            else:
+                msg = 'エラーが発生しました。'
+            messages.error(self.request, msg)
+        return redirect(f"{reverse('register:list')}?category_open=1")
 
 
 #--------------------------

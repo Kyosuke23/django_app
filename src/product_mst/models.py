@@ -92,7 +92,7 @@ class ProductCategory(BaseModel):
 
     product_category_name = models.CharField(
         max_length=100,
-        verbose_name='商品カテゴリ',
+        verbose_name='商品カテゴリ名称',
         help_text='100文字以内で入力してください。'
     )
 
