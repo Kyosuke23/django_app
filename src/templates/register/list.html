@@ -11,13 +11,20 @@
     <h1 class="h2 mb-0"><i class="bi bi-person-fill-gear me-4"></i> ユーザーマスタ管理</h1>
 
     <div class="d-flex gap-2">
+      {% if user.privilege <= PRIVILEGE_MANAGER %}
+      <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
+      <button type="button" id="import-btn" class="btn btn-outline-secondary btn-sm"
+              data-action="{% url 'register:import_csv' %}">
+        <i class="bi bi-upload"></i> Import
+      </button>
+      {% endif %}
       <input type="file" id="file-input" name="file" accept=".csv" class="d-none">
       <button type="button" class="btn btn-outline-secondary btn-sm export-btn"
               data-action="{% url 'register:export_csv' %}">
-        <i class="bi bi-download"></i> CSV
+        <i class="bi bi-download"></i> Export
       </button>
       {% if user.privilege <= PRIVILEGE_MANAGER %}
-      <a class="btn btn-outline-primary btn-sm"
+      <a id="create-btn" class="btn btn-outline-primary btn-sm"
          href="#"
          data-bs-toggle="modal"
          data-bs-target="#userModal"
@@ -64,9 +71,6 @@
     <table class="table table-hover align-middle mb-0">
       <thead class="table-dark">
         <tr>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
-          <th class="text-center"><input type="checkbox" id="check-all"></th>
-          {% endif %}
           <th>ユーザー名</th>
           <th>ユーザー名（カナ）</th>
           <th>メールアドレス</th>
@@ -83,9 +87,6 @@
       <tbody>
         {% for u in users %}
         <tr>
-          {% if user.privilege <= PRIVILEGE_MANAGER %}
-          <td class="text-center"><input type="checkbox" name="ids" value="{{ u.id }}"></td>
-          {% endif %}
           <td>{{ u.username|default_if_none:'' }}</td>
           <td>{{ u.username_kana|default_if_none:'' }}</td>
           <td>{{ u.email|default_if_none:'' }}</td>
@@ -96,7 +97,7 @@
           <td>{{ u.group_names_display|default_if_none:'' }}</td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>
-            <a href="#" class="btn btn-sm btn-outline-secondary"
+            <a href="#" class="btn btn-sm btn-outline-secondary edit-btn"
                data-bs-toggle="modal"
                data-bs-target="#userModal"
                data-url="{% url 'register:update' u.id %}">

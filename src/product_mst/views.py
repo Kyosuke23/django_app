@@ -440,10 +440,8 @@ class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
         #---------------------------------------------------
         form = ProductForm(data=data)
         if not form.is_valid():
-            error_text = '; '.join(
-                [f"{field}: {','.join(errors)}" for field, errors in form.errors.items()]
-            )
-            return None, form
+            error_text = '; '.join(self._format_errors_with_verbose_name(form))
+            return None, f'{idx}行目: {error_text}'
 
         #---------------------------------------------------
         # 重複チェック（tenant + product_name）

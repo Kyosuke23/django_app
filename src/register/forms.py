@@ -148,6 +148,7 @@ class SignUpForm(forms.ModelForm):
             'email',
             'tel_number',
             'gender',
+            'employment_status',
             'privilege',
             'groups_custom',
         )
@@ -159,11 +160,18 @@ class SignUpForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.is_update = is_update
 
+        # 所属グループをテナントごとに絞り込み
+        if request is not None and hasattr(request, 'user'):
+            tenant = getattr(request.user, 'tenant', None)
+            if tenant:
+                self.fields['groups_custom'].queryset = UserGroup.objects.filter(tenant=tenant, is_deleted=False).order_by('group_name')
+
         # privilege選択肢を自分より強い権限を除外
         if self.user and hasattr(self.user, 'privilege'):
+            user_priv = int(self.user.privilege)
             self.fields['privilege'].choices = [
                 c for c in self.fields['privilege'].choices
-                if (c[0] == '' or int(c[0]) >= self.user.privilege)
+                if c[0] == '' or int(c[0]) >= user_priv
             ]
 
         # 全項目共通のclassを付与
@@ -191,7 +199,7 @@ class SignUpForm(forms.ModelForm):
         # 更新時は一部フィールドを任意に設定
         if is_update:
             for field_name, field in self.fields.items():
-                if field_name not in ['privilege', 'groups_custom']:
+                if field_name not in ['employment_status', 'privilege', 'groups_custom']:
                     field.required = False
 
     def clean(self):
@@ -219,9 +227,6 @@ class SignUpForm(forms.ModelForm):
         if getattr(self, 'is_update', False) and not username:
             return username
 
-        qs = CustomUser.objects.exclude(pk=self.instance.pk).filter(username=username)
-        if qs.exists():
-            raise forms.ValidationError('このユーザー名は既に使用されています。')
         return username
 
 

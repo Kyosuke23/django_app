@@ -64,155 +64,119 @@ class CustomUserModelTests(TestCase):
         defaults.update(kwargs)
         return CustomUser(**defaults)
 
-    # username
+    # 1-1 username
     def test_1_1_1_1(self):
+        """1-1-1-1: username 正常 100文字以内で登録できること"""
         user = self.create_user_instance(username='A' * 100)
         user.full_clean()
-        self.assertTrue(True)
 
     def test_1_1_2_1(self):
+        """1-1-2-1: username 異常 未入力"""
         user = self.create_user_instance(username='')
         with self.assertRaises(ValidationError):
             user.full_clean()
 
     def test_1_1_2_2(self):
+        """1-1-2-2: username 異常 101文字超"""
         user = self.create_user_instance(username='A' * 101)
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    # username_kana
+    # 1-2 username_kana
     def test_1_2_1_1(self):
+        """1-2-1-1: username_kana 正常 カナ100文字以内"""
         user = self.create_user_instance(username_kana='カ' * 100)
         user.full_clean()
 
     def test_1_2_1_2(self):
+        """1-2-1-2: username_kana 正常 任意項目"""
         user = self.create_user_instance(username_kana='')
         user.full_clean()
 
     def test_1_2_2_1(self):
+        """1-2-2-1: username_kana 異常 101文字超"""
         user = self.create_user_instance(username_kana='カ' * 101)
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    # email
+    # 1-3 email
     def test_1_3_1_1(self):
+        """1-3-1-1: email 正常 正しい形式"""
         self.create_user(email='valid@example.com')
 
     def test_1_3_2_1(self):
+        """1-3-2-1: email 異常 未入力"""
         user = self.create_user_instance(email='')
         with self.assertRaises(ValidationError):
             user.full_clean()
 
     def test_1_3_2_2(self):
+        """1-3-2-2: email 異常 不正形式"""
         user = self.create_user_instance(email='invalidmail')
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    # gender
+    # 1-4 gender
     def test_1_4_1_1(self):
+        """1-4-1-1: gender 正常 choices内"""
         self.create_user(gender='1')
 
     def test_1_4_2_1(self):
+        """1-4-2-1: gender 異常 choices外"""
         user = self.create_user()
         user.gender = 'X'
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    # tel_number
+    # 1-5 tel_number
     def test_1_5_1_1(self):
+        """1-5-1-1: tel_number 正常 ハイフン付き"""
         user = self.create_user(tel_number='090-1234-5678')
         self.assertEqual(user.tel_number, '090-1234-5678')
 
     def test_1_5_2_1(self):
+        """1-5-2-1: tel_number 異常 不正文字含む"""
         user = self.create_user()
         user.tel_number = '090A1234'
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    # postal_code
+    # 1-6 employment_status
     def test_1_6_1_1(self):
-        user = self.create_user(postal_code='123-4567')
-        self.assertEqual(user.postal_code, '123-4567')
-
-    def test_1_6_1_2(self):
-        user = self.create_user(postal_code='1234567')
-        self.assertEqual(user.postal_code, '1234567')
-
-    def test_1_6_2_1(self):
-        user = self.create_user_instance(postal_code='123-456')
-        with self.assertRaises(ValidationError):
-            user.full_clean()
-
-    # state / city / address / address2
-    def test_1_7_2_1(self):
-        user = self.create_user_instance(state='A' * 11)
-        with self.assertRaises(ValidationError):
-            user.full_clean()
-
-    def test_1_8_2_1(self):
-        user = self.create_user_instance(city='A' * 51)
-        with self.assertRaises(ValidationError):
-            user.full_clean()
-
-    def test_1_9_2_1(self):
-        user = self.create_user_instance(address='A' * 101)
-        with self.assertRaises(ValidationError):
-            user.full_clean()
-
-    def test_1_10_2_1(self):
-        user = self.create_user_instance(address2='A' * 151)
-        with self.assertRaises(ValidationError):
-            user.full_clean()
-
-    # birthday
-    def test_1_11_1_1(self):
-        user = self.create_user(birthday='1990-01-01')
-        self.assertEqual(str(user.birthday), '1990-01-01')
-
-    def test_1_11_2_1(self):
-        user = self.create_user_instance(birthday='invalid-date')
-        with self.assertRaises(ValidationError):
-            user.full_clean()
-
-    # employment_status / end_date
-    def test_1_12_1_1(self):
+        """1-6-1-1: employment_status 正常 choices内"""
         user = self.create_user(employment_status='1')
         self.assertEqual(user.employment_status, '1')
 
-    def test_1_12_2_1(self):
+    def test_1_6_2_1(self):
+        """1-6-2-1: employment_status 異常 choices外"""
         user = self.create_user()
         user.employment_status = '9'
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    def test_1_13_1_1(self):
-        user = self.create_user(employment_end_date='2025-01-01')
-        self.assertEqual(str(user.employment_end_date), '2025-01-01')
+    # 1-7 privilege
+    def test_1_7_1_1(self):
+        """1-7-1-1: privilege 正常 choices内"""
+        user = self.create_user(privilege='3')
+        self.assertEqual(user.privilege, '3')
 
-    # privilege
-    def test_1_14_2_1(self):
+    def test_1_7_2_1(self):
+        """1-7-2-1: privilege 異常 choices外"""
         user = self.create_user()
         user.privilege = '9'
         with self.assertRaises(ValidationError):
             user.full_clean()
 
-    # groups_custom
-    def test_1_15_1_1(self):
+    # 1-8 groups_custom
+    def test_1_8_1_1(self):
+        """1-8-1-1: groups_custom 正常 複数登録可"""
         user = self.create_user()
         user.groups_custom.set([self.group1, self.group2])
         self.assertEqual(user.groups_custom.count(), 2)
 
-    # is_employed property
-    def test_1_16_1_1(self):
-        user = self.create_user(employment_status='1', employment_end_date=None)
-        self.assertTrue(user.is_employed)
-
-    def test_1_16_1_2(self):
-        user = self.create_user(employment_status='1', employment_end_date=date(2024, 1, 1))
-        self.assertFalse(user.is_employed)
-
-    # group_names_display
-    def test_1_17_1_1(self):
+    # 1-10 group_names_display
+    def test_1_9_1_1(self):
+        """1-10-1-1: group_names_display 正常 カンマ区切り"""
         user = self.create_user()
         user.groups_custom.set([self.group1, self.group2])
         result = user.group_names_display
@@ -233,6 +197,7 @@ class UserGroupModelTests(TestCase):
         )
 
     def test_2_1_1_1(self):
+        """2-1-1-1: group_name 正常 100文字以内"""
         group = UserGroup(
             group_name='営業部',
             tenant=self.tenant,
@@ -244,6 +209,7 @@ class UserGroupModelTests(TestCase):
         self.assertEqual(UserGroup.objects.count(), 1)
 
     def test_2_1_2_1(self):
+        """2-1-2-1: group_name 異常 未入力"""
         group = UserGroup(
             group_name='',
             tenant=self.tenant,
@@ -254,6 +220,7 @@ class UserGroupModelTests(TestCase):
             group.full_clean()
 
     def test_2_1_2_2(self):
+        """2-1-2-2: group_name 異常 101文字超"""
         group = UserGroup(
             group_name='A' * 101,
             tenant=self.tenant,
@@ -264,6 +231,7 @@ class UserGroupModelTests(TestCase):
             group.full_clean()
 
     def test_2_1_2_3(self):
+        """2-1-2-3: group_name 異常 一意制約"""
         UserGroup.objects.create(
             group_name='営業部',
             tenant=self.tenant,

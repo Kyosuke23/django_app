@@ -745,7 +745,7 @@ class PartnerViewTests(TestCase):
 
     def test_3_1_2_3(self):
         '''
-        更新処理（異常系：存在しないデータを開く）
+        更新画面表示（異常系：存在しないデータを開く）
         '''
         # リクエスト作成
         url = reverse('partner_mst:update', args=[99999])
@@ -1325,7 +1325,6 @@ class PartnerViewTests(TestCase):
         # レスポンス確認
         self.assertEqual(response.status_code, 200)
         res_json = response.json()
-        self.assertIn('件削除しました', res_json['message'])
         self.assertIn('2件削除しました', res_json['message'])
 
         # DB確認
@@ -1504,6 +1503,7 @@ class PartnerViewTests(TestCase):
         # 削除が実行されていないこと（ロールバック確認）
         self.assertTrue(Partner.objects.filter(id=partner.id).exists())
 
+
     #----------------
     # ExportCSV
     #----------------
@@ -1564,7 +1564,7 @@ class PartnerViewTests(TestCase):
         url = reverse('partner_mst:export_csv')
         rows = self._request_and_parse(url)
 
-        # 件数チェック（事前に8件のデータがある想定）
+        # 件数チェック
         self.assertEqual(len(rows) - 1, 18)
 
         partners = Partner.objects.filter(
@@ -1605,7 +1605,7 @@ class PartnerViewTests(TestCase):
         url = reverse('partner_mst:export_csv')
         rows = self._request_and_parse(url)
 
-        # 件数チェック（事前に8件のデータがある想定）
+        # 件数チェック
         self.assertEqual(len(rows) - 1, 18)
 
         partners = Partner.objects.filter(

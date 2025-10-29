@@ -10,11 +10,12 @@ urlpatterns = [
     path('update_profile/', views.ProfileUpdateView.as_view(), name='update_profile'),
     path('<int:pk>/delete/', views.UserDeleteView.as_view(), name='delete'),
     path('change_password/', views.UserChangePassword.as_view(), name='change_password'),
+    path('import/csv', views.ImportCSV.as_view(), name='import_csv'),
     path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
+    path('export/check/', views.ExportCheckView.as_view(), name='export_check'),
     path('export/excel', views.ExportExcel.as_view(), name='export_excel'),
     path('bulk_delete/', views.UserBulkDeleteView.as_view(), name='bulk_delete'),
     path('group_manage/', views.UserGroupManageView.as_view(), name='group_manage'),
     path('initial_user/create/', views.InitialUserCreateView.as_view(), name='initial_user_create'),
     path('initial/done/', views.InitialUserRegisterDoneView.as_view(), name='initial_done'),
-
 ]

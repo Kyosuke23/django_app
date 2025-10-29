@@ -58,67 +58,12 @@ class CustomUser(AbstractUser, BaseModel):
         help_text='数字とハイフンのみ使用できます。'
     )
 
-    postal_code = models.CharField(
-        max_length=10,
-        validators=[RegexValidator(r'^\d{3}-?\d{4}$', '郵便番号の形式が正しくありません。')],
-        blank=True,
-        null=True,
-        verbose_name='郵便番号',
-        help_text='ハイフンあり、またはなしで入力可能です。'
-    )
-
-    state = models.CharField(
-        max_length=10,
-        blank=True,
-        null=True,
-        verbose_name='都道府県',
-        help_text='都道府県名を10文字以内で入力してください。（任意）'
-    )
-
-    city = models.CharField(
-        max_length=50,
-        blank=True,
-        null=True,
-        verbose_name='市区町村',
-        help_text='市区町村名を50文字以内で入力してください。（任意）'
-    )
-
-    address = models.CharField(
-        max_length=100,
-        blank=True,
-        null=True,
-        verbose_name='住所',
-        help_text='番地などを100文字以内で入力してください。（任意）'
-    )
-
-    address2 = models.CharField(
-        max_length=150,
-        blank=True,
-        null=True,
-        verbose_name='住所2',
-        help_text='建物名・部屋番号などを150文字以内で入力してください。（任意）'
-    )
-
-    birthday = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name='誕生日',
-        help_text='生年月日を「YYYY-MM-DD」形式で入力してください。（任意）'
-    )
-
     employment_status = models.CharField(
         max_length=1,
         choices=Constant.EMPLOYMENT_STATUS_CHOICES,
         default='1',
         verbose_name='雇用状態',
         help_text='現在の雇用状態を選択してください。'
-    )
-
-    employment_end_date = models.DateField(
-        null=True,
-        blank=True,
-        verbose_name='退職日',
-        help_text='退職済みの場合は退職日を入力してください。（任意）'
     )
 
     privilege = models.CharField(
@@ -149,10 +94,6 @@ class CustomUser(AbstractUser, BaseModel):
         return reverse('register:list', kwargs={'pk': self.pk})
 
     @property
-    def is_employed(self):
-        return self.employment_status == '1' and (self.employment_end_date is None)
-
-    @property
     def group_names_display(self):
         """所属グループ名をカンマ区切りで表示"""
         return ", ".join(self.groups_custom.values_list('group_name', flat=True))
@@ -163,7 +104,7 @@ class UserGroup(BaseModel):
     '''
     group_name = models.CharField(
         max_length=100,
-        unique=True,
+        unique=False,
         verbose_name='グループ名',
         help_text='100文字以内で入力してください。'
     )
@@ -172,6 +113,11 @@ class UserGroup(BaseModel):
         verbose_name = 'ユーザーグループ'
         verbose_name_plural = 'ユーザーグループマスタ'
         ordering = ['group_name']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['tenant', 'group_name'], name='unique_tenant_groupname'
+            ),
+        ]
 
     def __str__(self):
         return self.group_name

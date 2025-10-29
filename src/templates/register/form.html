@@ -48,9 +48,9 @@
       {% endfor %}
 
     {% elif request.user.privilege == PRIVILEGE_MANAGER %}
-      {# 権限1以下 → privilege, groups_customのみ編集可 #}
+      {# 権限1以下 → employment_status, privilege, groups_customのみ編集可 #}
       {% for field in form %}
-        {% if field.name == "privilege" or field.name == "groups_custom" %}
+        {% if field.name == "employment_status" or field.name == "privilege" or field.name == "groups_custom" %}
           {% bootstrap_field field %}
         {% else %}
           <div class="mb-3">
@@ -58,16 +58,6 @@
             <div class="form-control-plaintext">
               {% if field.name == "gender" %}
                 {{ form.instance.get_gender_display|default_if_none:'' }}
-              {% elif field.name == "privilege" %}
-                {{ form.instance.get_privilege_display }}
-              {% elif field.name == "employment_status" %}
-                {{ form.instance.get_employment_status_display }}
-              {% elif field.name == "groups_custom" %}
-                {% for g in form.instance.groups_custom.all %}
-                  {{ g.group_name }}{% if not forloop.last %}, {% endif %}
-                {% empty %}
-                  -
-                {% endfor %}
               {% else %}
                 {{ field.value|default_if_none:"" }}
               {% endif %}

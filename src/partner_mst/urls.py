@@ -9,7 +9,7 @@ urlpatterns = [
     #--------------
     path('', views.PartnerListView.as_view(), name='list'),
     path('<int:pk>/delete/', views.PartnerDeleteView.as_view(), name='delete'),
-    path("import/csv", views.ImportCSV.as_view(), name='import_csv'),
+    path('import/csv', views.ImportCSV.as_view(), name='import_csv'),
     path('export/csv', views.ExportCSV.as_view(), name='export_csv'),
     path('export/check/', views.ExportCheckView.as_view(), name='export_check'),
     path('create/', views.PartnerCreateView.as_view(), name='create'),

@@ -1,14 +1,28 @@
 $(function () {
     // =====================================================
-    // Exportボタン
+    // Export
     // =====================================================
     $('.export-btn').on('click', function () {
         const url = $(this).data('action');
+        const checkUrl = $(this).data('check-action'); // 件数チェック用URL
         const $form = $('#search_form');
         const query = $form.serialize();
-        const fullUrl = query ? `${url}?${query}` : url;
-        window.location.href = fullUrl;
+
+        // 1. まず件数チェックAPIを叩く
+        $.get(`${checkUrl}?${query}`, function (res) {
+            if (res.warning) {
+                // 上限超過メッセージを警告表示
+                if (!confirm(res.warning + '\n\n続行して先頭データを出力しますか？')) {
+                    return; // ユーザーがキャンセル
+                }
+            }
+
+            // 2. OKなら実際にエクスポート開始
+            const fullUrl = query ? `${url}?${query}` : url;
+            window.location.href = fullUrl;
+        });
     });
+
 
     // =====================================================
     // Importボタン

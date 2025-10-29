@@ -150,6 +150,7 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
         return JsonResponse({'success': True, 'html': html})
 
     def post(self, request, *args, **kwargs):
+        # 存在チェック
         try:
             self.object = self.get_object()
         except Http404:
@@ -157,6 +158,7 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
                 messages.error(request, 'この取引先は既に削除されています。')
                 return JsonResponse({'success': False}, status=404)
 
+        # バリデーションチェック（Form）
         form = self.get_form()
         if form.is_valid():
             return self.form_valid(form)
@@ -198,12 +200,15 @@ class PartnerDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View
     success_url = reverse_lazy('product_mst:list')
 
     def post(self, request, *args, **kwargs):
+        # 存在チェック
         try:
             obj = get_object_or_404(Partner, pk=kwargs['pk'])
         except Http404:
             if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
                 messages.error(request, 'この取引先は既に削除されています。')
                 return JsonResponse({'success': False}, status=404)
+
+        # 削除処理
         obj.delete()
         set_message(self.request, '削除', obj.partner_name)
         if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -338,9 +343,7 @@ class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
         # ------------------------------------------------------
         form = PartnerForm(data=data)
         if not form.is_valid():
-            error_text = '; '.join(
-                [f"{field}: {','.join(errors)}" for field, errors in form.errors.items()]
-            )
+            error_text = '; '.join(self._format_errors_with_verbose_name(form))
             return None, f'{idx}行目: {error_text}'
 
         # ------------------------------------------------------
@@ -354,7 +357,7 @@ class ImportCSV(LoginRequiredMixin, PrivilegeRequiredMixin, CSVImportBaseView):
         existing.add(key)
 
         # ------------------------------------------------------
-        # Partner オブジェクト作成
+        # オブジェクト作成
         # ------------------------------------------------------
         obj = form.save(commit=False)
         obj.tenant = request.user.tenant
@@ -402,7 +405,7 @@ def filter_data(cleaned_data, queryset):
             | Q(address2__icontains=keyword)
         )
 
-    # キーワード入力が取引先区分値にあればに変換
+    # キーワードが取引先区分にあれば値に変換
     mapped_value = None
     for key, val in Partner.PARTNER_TYPE_MAP.items():
         if keyword not in (None, '') and keyword in key:

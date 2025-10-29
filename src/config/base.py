@@ -115,16 +115,14 @@ class CSVImportBaseView(View):
         messages = []
         for field, errs in form.errors.items():
             try:
-                # フィールド定義に label（フォーム）or verbose_name（モデル）があれば使う
-                if hasattr(form.fields[field], 'label'):
+                if hasattr(form.fields[field], 'label') and form.fields[field].label:
                     label = form.fields[field].label
                 else:
                     label = self.model_class._meta.get_field(field).verbose_name
             except Exception:
-                # 万一取得できなければ英語フィールド名のまま
                 label = field
-            messages.append(f"{label}: {'; '.join(errs)}")
-        return ' / '.join(messages)
+            messages.append(f"{label}: {', '.join(errs)}")
+        return messages
 
     # ------------------------------------------------------------
     # POST: CSVインポート処理
@@ -262,7 +260,13 @@ class CSVImportBaseView(View):
         # ------------------------------------------------------------
         try:
             with transaction.atomic():
-                self.model_class.objects.bulk_create(objects_to_create)
+                for obj in objects_to_create:
+                    form = getattr(obj, "_form_instance", None)
+                    obj.save()
+
+                    if form:
+                        form.instance = obj
+                        form.save_m2m()
         except IntegrityError as e:
             return JsonResponse({'error': '登録中にDBエラーが発生しました。', 'details': [str(e)]}, status=500)
 

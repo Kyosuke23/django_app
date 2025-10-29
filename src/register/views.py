@@ -1,33 +1,44 @@
 import secrets
 from django.contrib.auth.hashers import make_password
 from django.views import generic
+from django.db import transaction
 from django.urls import reverse, reverse_lazy
 from django.core.mail import send_mail
 from django.utils.crypto import get_random_string
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.template.loader import render_to_string
 from django.shortcuts import redirect, get_object_or_404
 from django.db.models import Q
-from django.db.models.deletion import ProtectedError
 from .models import CustomUser, UserGroup
 from .forms import UserSearchForm, SignUpForm, ChangePasswordForm, UserGroupForm, InitialUserForm, SignUpForm
 from config.common import Common
-from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin, SystemUserOnlyMixin
+from config.base import CSVExportBaseView, CSVImportBaseView, ExcelExportBaseView, PrivilegeRequiredMixin, SystemUserOnlyMixin, ManagerOverMixin
 from django.contrib.auth.views import PasswordChangeView
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.conf import settings
-from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES, PRIVILEGE_MANAGER
 from tenant_mst.models import Tenant
+from .constants import (
+    PRIVILEGE_CHOICES
+    , EMPLOYMENT_STATUS_CHOICES
+    , GENDER_CHOICES
+    , PRIVILEGE_MANAGER
+    , GENDER_CHOICES_MAP
+    , PRIVILEGE_CHOICES_MAP
+    , EMPLOYMENT_STATUS_CHOICES_MAP
+)
 
 
 # 出力カラム定義
 HEADER_MAP = {
     'ユーザー名': 'username',
+    'ユーザー名（カナ）': 'username_kana',
     'メールアドレス': 'email',
     '性別': 'gender',
     '電話番号': 'tel_number',
-    '雇用形態': 'employment_status',
+    '雇用状態': 'employment_status',
     '権限': 'privilege',
+    '所属グループ': 'groups_custom'
 }
 
 # 出力ファイル名定義
@@ -36,7 +47,7 @@ FILENAME_PREFIX = 'user_mst'
 #--------------------------
 # User CRUD
 #--------------------------
-class UserListView(PrivilegeRequiredMixin, generic.ListView):
+class UserListView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.ListView):
     '''
     ユーザー一覧画面
     '''
@@ -74,7 +85,7 @@ class UserListView(PrivilegeRequiredMixin, generic.ListView):
         return context
 
 
-class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
+class UserCreateView(LoginRequiredMixin, ManagerOverMixin, generic.CreateView):
     '''
     ユーザー登録
     '''
@@ -89,7 +100,7 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
             {
                 'form': form,
                 'form_action': reverse('register:create'),
-                'modal_title': 'ユーザー新規登録',
+                'modal_title': 'ユーザー: 新規登録',
             },
             request
         )
@@ -116,7 +127,7 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
                 {
                     'form': form,
                     'form_action': reverse('register:create'),
-                    'modal_title': 'ユーザー新規登録',
+                    'modal_title': 'ユーザー: 新規登録',
                 },
                 self.request
             )
@@ -129,7 +140,7 @@ class UserCreateView(PrivilegeRequiredMixin, generic.CreateView):
         return kwargs
 
 
-class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
+class UserUpdateView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
     '''
     ユーザー更新
     '''
@@ -138,7 +149,11 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
     template_name = 'register/form.html'
 
     def get(self, request, *args, **kwargs):
-        self.object = self.get_object()
+        try:
+            self.object = self.get_object()
+        except Http404:
+            messages.error(request, 'このユーザーは既に削除されています。')
+            return JsonResponse({'success': False}, status=404)
         form = self.get_form()
         html = render_to_string(
             self.template_name,
@@ -152,24 +167,39 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
         return JsonResponse({'success': True, 'html': html})
 
     def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
+        # 存在チェック
+        try:
+            self.object = self.get_object()
+        except Http404:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'このユーザーは既に削除されています。')
+                return JsonResponse({'success': False}, status=404)
+        # バリデーションチェック（Form）
         form = self.get_form()
         if form.is_valid():
-            # 更新対象フィールドは権限と所属グループのみ
-            privilege = form.cleaned_data.get('privilege')
-            groups = form.cleaned_data.get('groups_custom')
-            if privilege is not None:
-                self.object.privilege = privilege
-            if groups is not None:
-                self.object.groups_custom.set(groups)
-
-            # 更新者情報
-            self.object.update_user = request.user
-            self.object.save(update_fields=['privilege', 'update_user', 'updated_at'])
-            set_message(request, '更新', self.object.username)
-            set_message(request, '更新', self.object.username)
-            return JsonResponse({'success': True})
+            return self.form_valid(form)
         else:
+            return self.form_invalid(form)
+
+    def form_valid(self, form):
+        # 更新対象フィールドは権限と所属グループのみ
+        privilege = form.cleaned_data.get('privilege')
+        employment_status = form.cleaned_data.get('employment_status')
+        groups = form.cleaned_data.get('groups_custom')
+        if privilege is not None:
+            self.object.privilege = privilege
+        if employment_status is not None:
+            self.object.employment_status = employment_status
+        if groups is not None:
+            self.object.groups_custom.set(groups)
+        # 更新者情報
+        self.object.update_user = self.request.user
+        self.object.save(update_fields=['employment_status', 'privilege', 'update_user', 'updated_at'])
+        set_message(self.request, '更新', self.object.username)
+        return JsonResponse({'success': True})
+
+    def form_invalid(self, form):
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             html = render_to_string(
                 self.template_name,
                 {
@@ -177,9 +207,10 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
                     'form_action': reverse('register:update', kwargs={'pk': self.object.pk}),
                     'modal_title': f'ユーザー更新: {self.object.username}',
                 },
-                request
+                self.request
             )
             return JsonResponse({'success': False, 'html': html})
+        return super().form_invalid(form)
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
@@ -188,7 +219,7 @@ class UserUpdateView(PrivilegeRequiredMixin, generic.UpdateView):
         return kwargs
 
 
-class ProfileUpdateView(generic.UpdateView):
+class ProfileUpdateView(LoginRequiredMixin, generic.UpdateView):
     '''
     ログイン中のユーザーが自分の情報を編集する画面
     - これだけは権限制御なし
@@ -218,7 +249,7 @@ class ProfileUpdateView(generic.UpdateView):
         pass
 
 
-class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
+class UserChangePassword(LoginRequiredMixin, PrivilegeRequiredMixin, PasswordChangeView):
     '''
     パスワードの変更処理
     '''
@@ -230,55 +261,84 @@ class UserChangePassword(PrivilegeRequiredMixin, PasswordChangeView):
         return reverse('dashboard:top')
 
 
-class UserDeleteView(PrivilegeRequiredMixin, generic.View):
+class UserDeleteView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.View):
     '''
     ユーザー削除（物理削除）
     '''
     success_url = reverse_lazy('register:list')
 
     def post(self, request, *args, **kwargs):
-        obj = get_object_or_404(CustomUser, pk=kwargs['pk'])
+        # 存在チェック
+        try:
+            obj = get_object_or_404(CustomUser, pk=kwargs['pk'])
+        except Http404:
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'このユーザーは既に削除されています。')
+                return JsonResponse({'success': False}, status=404)
+
         # 自分自身は削除不可
         if obj.pk == request.user.pk:
-            return JsonResponse({
-                'error': '自分自身のユーザーは削除できません。',
-                'details': ''
-            }, status=400)
-        try:
-            obj.delete()
-            set_message(request, '削除', obj.username)
+            if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                messages.error(request, 'ログイン中のユーザーは削除できません。')
+                return JsonResponse({'success': False}, status=400)
+
+        # 削除処理
+        obj.delete()
+        set_message(self.request, '削除', obj.username)
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': True})
-        except ProtectedError:
-            return JsonResponse({
-                'error': '使用中のユーザーは削除できません。',
-                'details': ''
-            }, status=400)
 
 
-class UserBulkDeleteView(PrivilegeRequiredMixin, generic.View):
+class UserBulkDeleteView(LoginRequiredMixin, ManagerOverMixin, generic.View):
     '''
-    ユーザー一括削除
+    一括削除処理（物理削除）
     '''
     def post(self, request, *args, **kwargs):
         ids = request.POST.getlist('ids')
-        if ids:
-            if str(request.user.pk) in ids:
-                return JsonResponse({
-                    'error': '自分自身のユーザーは削除できません。'
-                }, status=400)
-            try:
-                CustomUser.objects.filter(id__in=ids).delete()
-                return JsonResponse({'message': f'{len(ids)}件削除しました。'})
-            except ProtectedError:
-                return JsonResponse({
-                    'error': '使用中のユーザーは削除できません。'
-                }, status=400)
-        else:
-            messages.warning(request, '削除対象が選択されていません。')
-        return redirect('register:list')
+
+        if not ids:
+            messages.warning(request, '削除対象が選択されていません')
+            return redirect('register:list')
+
+        try:
+            with transaction.atomic():
+                # 対象取得
+                partners = CustomUser.objects.filter(id__in=ids)
+
+                # ログイン中ユーザーは削除禁止
+                if str(request.user.pk) in ids:
+                    if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                        messages.error(request, 'ログイン中のユーザーは削除できません。')
+                        return JsonResponse({'success': False}, status=400)
+
+                # 存在しないIDを検出
+                found_ids = set(str(p.id) for p in partners)
+                missing_ids = set(ids) - found_ids
+                if missing_ids:
+                    messages.error(request, 'すでに削除されているユーザーが含まれています。')
+                    return JsonResponse({'success': False}, status=404)
+
+                # 物理削除実行
+                deleted_count, _ = partners.delete()
+
+            return JsonResponse({'message': f'{deleted_count}件削除しました'})
+
+        except ValueError as e:
+            # トランザクションは自動ロールバック
+            messages.error(request, str(e))
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': str(e)}, status=400)
+            return redirect('register:list')
+
+        except Exception:
+            # 想定外エラー（DBエラーなど）
+            messages.error(request, '削除処理中にエラーが発生しました。')
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'error': '削除処理中にエラーが発生しました。'}, status=500)
+            return redirect('register:list')
 
 
-class UserGroupManageView(generic.FormView):
+class UserGroupManageView(LoginRequiredMixin, ManagerOverMixin, generic.FormView):
     '''
     ユーザーグループ管理（新規作成・更新・削除）
     '''
@@ -334,7 +394,7 @@ class UserGroupManageView(generic.FormView):
 #--------------------------
 # Export / Import
 #--------------------------
-class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
+class ExportExcel(LoginRequiredMixin, ExcelExportBaseView):
     model_class = CustomUser
     filename_prefix = FILENAME_PREFIX
     headers = HEADER_MAP
@@ -346,8 +406,25 @@ class ExportExcel(PrivilegeRequiredMixin, ExcelExportBaseView):
     def row(self, rec):
         return get_row(rec)
 
+class ExportCheckView(LoginRequiredMixin, generic.View):
+    '''CSV出力前の件数チェック'''
+    def get(self, request):
+        form = UserSearchForm(request.GET or None)
+        queryset = CustomUser.objects.filter(is_deleted=False, tenant=request.user.tenant)
 
-class ExportCSV(CSVExportBaseView):
+        if form.is_valid():
+            queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
+
+        count = queryset.count()
+        if count > settings.MAX_EXPORT_ROWS:
+            return JsonResponse({
+                'warning': f"出力件数が上限（{settings.MAX_EXPORT_ROWS:,}件）を超えています。"
+                           f"先頭{settings.MAX_EXPORT_ROWS:,}件のみを出力します。"
+            })
+
+        return JsonResponse({'ok': True})
+
+class ExportCSV(LoginRequiredMixin, CSVExportBaseView):
     '''
     ユーザーマスタのCSV出力
     - 共通の get_row を利用
@@ -358,16 +435,17 @@ class ExportCSV(CSVExportBaseView):
     headers = list(HEADER_MAP.keys())
 
     def get_queryset(self, request):
-        form = UserSearchForm(request.GET or None)
+        req = self.request
+        form = UserSearchForm(req.GET or None)
 
-        # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
-        queryset = CustomUser.objects.filter(is_deleted=False, tenant=request.user.tenant)
+        # 初期クエリセット（削除フラグ：False, 所属テナント限定）
+        queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
 
-        # フォームが有効なら検索条件を反映
+        # 検索フォーム有効時のフィルタ
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
 
-        # 並び替え
+        # 並び替え処理
         sort = form.cleaned_data.get('sort') if form.is_valid() else ''
         queryset = set_table_sort(queryset=queryset, sort=sort)
 
@@ -378,36 +456,80 @@ class ExportCSV(CSVExportBaseView):
         return get_row(rec=rec)
 
 
-class ImportCSV(PrivilegeRequiredMixin, CSVImportBaseView):
-    expected_headers = HEADER_MAP
+class ImportCSV(LoginRequiredMixin, ManagerOverMixin, CSVImportBaseView):
+    expected_headers = list(HEADER_MAP.keys())
     model_class = CustomUser
-    unique_field = 'email'
+    unique_field = ('email')
+    HEADER_MAP = HEADER_MAP
 
     def validate_row(self, row, idx, existing, request):
-        email = row.get('email')
-        if not email:
-            return None, f'{idx}行目: メールアドレス が空です'
-        if email in existing:
-            return None, f'{idx}行目: メールアドレス "{email}" は既に存在します'
+        data = row.copy()
 
-        obj = CustomUser(
-            username=row.get('username'),
-            email=email,
-            gender=row.get('gender') or '',
-            tel_number=row.get('tel_number') or '',
-            employment_status=row.get('employment_status') or '1',
-            employment_end_date=row.get('employment_end_date') or None,
-            privilege=row.get('privilege') or '3',
-            create_user=request.user,
-            update_user=request.user
-        )
+        # ------------------------------------------------------
+        # 日本語→コード変換
+        # ------------------------------------------------------
+        gender_map = dict(GENDER_CHOICES_MAP)
+        val = data.get('gender')
+        if val in gender_map:
+            data['gender'] = gender_map[val]
+
+        employment_map = dict(EMPLOYMENT_STATUS_CHOICES_MAP)
+        val = data.get('employment_status')
+        if val in employment_map:
+            data['employment_status'] = employment_map[val]
+
+        privilege_map = dict(PRIVILEGE_CHOICES_MAP)
+        val = data.get('privilege')
+        if val in privilege_map:
+            data['privilege'] = privilege_map[val]
+
+        # ------------------------------------------------------
+        # 所属グループ（カンマ区切り）を ID リストに変換
+        # ------------------------------------------------------
+        group_value = data.get('groups_custom')
+        group_ids = []
+        if group_value:
+            group_names = [g.strip() for g in group_value.split(',') if g.strip()]
+            group_ids = list(
+                UserGroup.objects.filter(
+                    tenant=request.user.tenant,
+                    group_name__in=group_names,
+                    is_deleted=False
+                ).values_list('id', flat=True)
+            )
+        data['groups_custom'] = group_ids
+
+        # ------------------------------------------------------
+        # 重複チェック（email）
+        # ------------------------------------------------------
+        email = data.get('email')
+        if email in existing:
+            return None, f'{idx}行目: メールアドレス「{email}」は既に存在します。'
+        existing.add(email)
+
+        # ------------------------------------------------------
+        # Djangoフォームバリデーション
+        # ------------------------------------------------------
+        form = SignUpForm(data=data)
+        if not form.is_valid():
+            error_text = '; '.join(self._format_errors_with_verbose_name(form))
+            return None, f'{idx}行目: {error_text}'
+
+        # ------------------------------------------------------
+        # オブジェクト作成
+        # ------------------------------------------------------
+        obj = form.save(commit=False)
+        obj.tenant = request.user.tenant
+        obj.create_user = request.user
+        obj.update_user = request.user
+        obj._form_instance = form
         return obj, None
 
 
 # ------------------------------------------------------
 # 初期ユーザー登録（システム管理者専用）
 # ------------------------------------------------------
-class InitialUserCreateView(SystemUserOnlyMixin, generic.FormView):
+class InitialUserCreateView(LoginRequiredMixin, SystemUserOnlyMixin, generic.FormView):
     template_name = 'register/initial_user_form.html'
     form_class = InitialUserForm
 
@@ -488,27 +610,66 @@ class InitialUserRegisterDoneView(generic.TemplateView):
 # 共通関数
 #--------------------------
 def get_row(rec):
+    group_names = ', '.join(rec.groups_custom.values_list('group_name', flat=True))
+
     return [
         rec.username,
-        rec.email,
+        rec.username_kana or '',
+        rec.email or '',
         rec.get_gender_display(),
-        rec.tel_number,
-        rec.employment_status,
+        rec.tel_number or '',
+        rec.get_employment_status_display(),
         rec.get_privilege_display(),
+        group_names,
     ]
 
 def filter_data(cleaned_data, queryset):
-    ''' ユーザーマスタ一覧の検索条件付与 '''
+    """ユーザーマスタ一覧の検索条件付与"""
+    keyword = cleaned_data.get('search_keyword', '').strip()
+    q = Q()
+
     #------------------------
     # キーワード検索
     #------------------------
-    keyword = cleaned_data.get('search_keyword', '').strip()
     if keyword:
-        queryset = queryset.filter(
+        q |= (
             Q(username__icontains=keyword)
             | Q(username_kana__icontains=keyword)
             | Q(email__icontains=keyword)
+            | Q(tel_number__icontains=keyword)
+            | Q(groups_custom__group_name__icontains=keyword)
         )
+
+    # 性別のキーワード検策
+    mapped_value = None
+    for key, val in GENDER_CHOICES_MAP:
+        if keyword and keyword in key:
+            mapped_value = val
+            break
+    if mapped_value:
+        q |= Q(gender=mapped_value)
+
+    # 雇用状態のキーワード検策
+    mapped_value = None
+    for key, val in EMPLOYMENT_STATUS_CHOICES_MAP:
+        if keyword and keyword in key:
+            mapped_value = val
+            break
+    if mapped_value:
+        q |= Q(employment_status=mapped_value)
+
+    # 権限のキーワード検策
+    mapped_value = None
+    for key, val in PRIVILEGE_CHOICES_MAP:
+        if keyword and keyword in key:
+            mapped_value = val
+            break
+    if mapped_value:
+        q |= Q(privilege=mapped_value)
+
+    # Q条件を適用
+    if q:
+        queryset = queryset.filter(q)
 
     #------------------------
     # 詳細検索
@@ -534,7 +695,7 @@ def filter_data(cleaned_data, queryset):
     if cleaned_data.get('search_user_group'):
         queryset = queryset.filter(groups_custom=cleaned_data['search_user_group'])
 
-    return queryset
+    return queryset.distinct()
 
 def set_table_sort(queryset, sort):
     '''
