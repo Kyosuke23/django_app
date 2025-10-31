@@ -275,11 +275,11 @@ class InitialUserForm(forms.Form):
     '''
     company_name = forms.CharField(label='企業名', max_length=255)
     username = forms.CharField(label='氏名', max_length=100)
-    email = forms.EmailField(label='メールアドレス')
+    email = forms.EmailField(label='メールアドレス', max_length=254)
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
-        if Tenant.objects.filter(email=email).exists():
+        if CustomUser.objects.filter(email=email).exists():
             raise forms.ValidationError('このメールアドレスは既に登録されています。')
 
         return email

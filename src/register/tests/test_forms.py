@@ -1,5 +1,5 @@
 from django.test import TestCase
-from register.forms import UserSearchForm, SignUpForm, ChangePasswordForm
+from register.forms import UserSearchForm, SignUpForm, ChangePasswordForm, InitialUserForm
 from tenant_mst.form import TenantEditForm
 from register.models import UserGroup, CustomUser
 from tenant_mst.models import Tenant
@@ -538,3 +538,70 @@ class TenantEditFormTests(TestCase):
         form = TenantEditForm(data=data)
         self.assertFalse(form.is_valid())
         self.assertIn('address2', form.errors)
+
+class InitialUserFormTests(TestCase):
+    """InitialUserForm の単体テスト"""
+
+    def test_5_1_1_1(self):
+        """5-1-1-1: company_name 正常 255文字以内"""
+        form = InitialUserForm({'company_name': 'A' * 255, 'username': '山田', 'email': 'yamada@example.com'})
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_5_1_2_1(self):
+        """5-1-2-1: company_name 異常 256文字超"""
+        form = InitialUserForm({'company_name': 'A' * 256, 'username': '山田', 'email': 'yamada@example.com'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('company_name', form.errors)
+
+    def test_5_2_1_1(self):
+        """5-2-1-1: username 正常 100文字以内"""
+        form = InitialUserForm({'company_name': '株式会社テスト', 'username': 'A' * 100, 'email': 'user@example.com'})
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_5_2_2_1(self):
+        """5-2-2-1: username 異常 101文字超"""
+        form = InitialUserForm({'company_name': '株式会社テスト', 'username': 'A' * 101, 'email': 'user@example.com'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+
+    def test_5_3_1_1(self):
+        """5-3-1-1: email 正常 正しいメール形式"""
+        form = InitialUserForm({'company_name': 'テスト株式会社', 'username': '山田太郎', 'email': 'valid@example.com'})
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_5_3_2_1(self):
+        """5-3-2-1: email 異常 メール形式不正"""
+        form = InitialUserForm({'company_name': 'テスト株式会社', 'username': '山田太郎', 'email': 'invalid-email'})
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+
+    def test_5_3_2_2(self):
+        """5-3-2-2: email 異常 unique=True により同一Email重複"""
+        self.tenant = Tenant.objects.create(tenant_name='テナントA')
+        CustomUser.objects.create_user(
+                    username='重複ユーザー',
+                    email='dup@example.com',
+                    password='pass1234',
+                    privilege='2',
+                    tenant=self.tenant,
+                )
+        form = InitialUserForm({'company_name': '株式会社テスト', 'username': '山田', 'email': 'dup@example.com'})
+        # unique=True はModelFormではなくDB制約で動くため、ここでは同一メールでもエラーにはならない
+        # ただし clean_email 実装があれば ValidationError を期待
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+        self.assertIn('このメールアドレスは既に登録されています。', form.errors['email'][0])
+
+    def test_5_4_1_1(self):
+        """5-4-1-1: 全項目 正常 すべて正しい入力"""
+        data = {'company_name': '株式会社テスト', 'username': '山田太郎', 'email': 'taro@example.com'}
+        form = InitialUserForm(data)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_5_4_2_1(self):
+        """5-4-2-1: 全項目 異常 必須項目未入力"""
+        form = InitialUserForm({})
+        self.assertFalse(form.is_valid())
+        self.assertIn('company_name', form.errors)
+        self.assertIn('username', form.errors)
+        self.assertIn('email', form.errors)

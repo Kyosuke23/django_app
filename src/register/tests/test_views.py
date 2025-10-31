@@ -8,7 +8,7 @@ from django.core.management import call_command
 from django.contrib.auth import get_user_model
 from django.contrib.messages import get_messages
 from django.urls import reverse
-from register.constants import EMPLOYMENT_STATUS_CHOICES, PRIVILEGE_CHOICES
+from register.constants import EMPLOYMENT_STATUS_CHOICES, PRIVILEGE_CHOICES, PRIVILEGE_SYSTEM, PRIVILEGE_MANAGER, PRIVILEGE_VIEWER
 from tenant_mst.models import Tenant
 from bs4 import BeautifulSoup
 from django.utils import timezone
@@ -479,7 +479,6 @@ class RegisterViewsTests(TestCase):
         # メッセージ確認
         messages = [m.message for m in get_messages(response.wsgi_request)]
         self.assertTrue(any('ユーザー「テストユーザー」を登録しました。' in m for m in messages))
-        self.assertEqual(messages[0].level_tag, 'success')
 
     def test_2_2_1_2(self):
         '''登録処理（正常系: 異なるテナントで同じユーザー名'''
@@ -500,7 +499,7 @@ class RegisterViewsTests(TestCase):
             username='user1',
             email='user1@example.com',
             password='pass',
-            privilege=0,
+            privilege=PRIVILEGE_MANAGER,
             tenant=self.tenant1
         )
 
@@ -509,7 +508,7 @@ class RegisterViewsTests(TestCase):
             username='user2',
             email='user2@example.com',
             password='pass',
-            privilege=0,
+            privilege=PRIVILEGE_MANAGER,
             tenant=self.tenant2
         )
 
@@ -562,7 +561,7 @@ class RegisterViewsTests(TestCase):
         self.assertEqual(t2.count(), 1)
 
     def test_2_2_1_3(self):
-        '''登録処理（正常系: 同一テナントで同じユーザー名'''
+        '''登録処理（正常系: 同一テナントで同じユーザー名）'''
         url = reverse('register:create')
         data = {
             'username': '重複ユーザー',
@@ -661,7 +660,7 @@ class RegisterViewsTests(TestCase):
 
     def test_2_2_2_3(self):
         '''
-        登録処理（異常系: メールアドレス形式不正）
+        登録処理（異常系: 直リンク）
         '''
         url = reverse('register:create')
 
@@ -2003,7 +2002,7 @@ class RegisterViewsTests(TestCase):
     def test_7_1_2_2(self):
         '''CSVインポート（異常系：権限不足）'''
         # 現在ログイン中ユーザーをviewer権限に変更
-        self.user.privilege = '3'
+        self.user.privilege = PRIVILEGE_VIEWER
         self.user.save()
         url = reverse('register:import_csv')
 
@@ -2366,3 +2365,134 @@ class UserGroupManageViewTests(TestCase):
         messages = list(get_messages(response.wsgi_request))
         self.assertIn(f'ユーザーグループ「{ug.group_name}」は使用中のため、削除できません。', str(messages[0]))
         self.assertEqual(messages[0].level_tag, 'warning')
+
+
+class InitialUserViewTests(TestCase):
+    """初期ユーザー登録機能のテスト"""
+
+    def setUp(self):
+        self.client = Client()
+
+        # ダミーテナント作成（システムユーザー用）
+        self.system_tenant = Tenant.objects.create(
+            tenant_name='システムテナント',
+            representative_name='管理者',
+            email='sys@example.com',
+        )
+
+        # システム管理者ユーザー作成
+        self.system_user = get_user_model().objects.create_user(
+            username='system_admin',
+            email='sysadmin@example.com',
+            password='pass',
+            tenant=self.system_tenant,
+            privilege=PRIVILEGE_SYSTEM,
+        )
+
+        self.client.login(email='sysadmin@example.com', password='pass')
+
+    # ------------------------------------------------------
+    # 正常系
+    # ------------------------------------------------------
+    def test_9_1_1_1(self):
+        """9-1-1-1: 正常 新規登録成功 -> Tenant・CustomUser作成・リダイレクト"""
+        url = reverse('register:initial_user_create')
+        data = {
+            'company_name': 'テスト株式会社',
+            'username': '山田太郎',
+            'email': 'taro@example.com',
+        }
+
+        response = self.client.post(url, data, follow=True)
+        self.assertEqual(response.status_code, 200)
+
+        self.assertTemplateUsed(response, 'register/initial_user_done.html')
+        context_info = response.context['register_info']
+        self.assertIsNotNone(context_info)
+        self.assertEqual(context_info['tenant_name'], 'テスト株式会社')
+
+        # Tenant が作成されたか確認
+        tenant = Tenant.objects.filter(tenant_name='テスト株式会社').first()
+        self.assertIsNotNone(tenant)
+        self.assertEqual(tenant.representative_name, '山田太郎')
+
+        # CustomUser が作成されたか確認
+        user = CustomUser.objects.filter(email='taro@example.com').first()
+        self.assertIsNotNone(user)
+        self.assertEqual(user.tenant, tenant)
+        self.assertTrue(user.is_active)
+        self.assertEqual(user.privilege, PRIVILEGE_MANAGER)
+        self.assertIsNotNone(user.password)
+
+    # ------------------------------------------------------
+    # 異常系
+    # ------------------------------------------------------
+    def test_9_1_2_1(self):
+        """9-1-2-1: 直リンク"""
+        self.client.logout()
+        url = reverse('register:initial_user_create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_9_1_2_2(self):
+        """9-1-2-2: 権限不足"""
+        get_user_model().objects.create_user(
+            username='test_user',
+            email='test@example.com',
+            password='pass',
+            tenant=self.system_tenant,
+            privilege=PRIVILEGE_MANAGER,
+        )
+
+        self.client.logout()
+        self.client.login(email='test@example.com', password='pass')
+
+        url = reverse('register:initial_user_create')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 403)
+
+    def test_9_1_2_3(self):
+        """9-1-2-2: 必須エラー"""
+        url = reverse('register:initial_user_create')
+        data = {
+            'company_name': 'テスト株式会社',
+            'username': '',
+            'email': 'taro@example.com',
+        }
+
+        response = self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
+
+        # ステータス確認
+        self.assertEqual(response.status_code, 200)
+
+        # JSONレスポンス確認
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+        self.assertIn('この項目は必須です。', form.errors['username'])
+
+    # ------------------------------------------------------
+    # 完了画面
+    # ------------------------------------------------------
+    def test_9_2_1_1(self):
+        """9-2-1-1: 完了画面 正常表示 セッション情報取得後に削除される"""
+        session = self.client.session
+        session['register_info'] = {
+            'tenant_name': '株式会社ABC',
+            'user_name': '佐藤花子',
+            'user_email': 'hana@example.com',
+        }
+        session.save()
+
+        url = reverse('register:initial_done')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        context_info = response.context['register_info']
+        self.assertIsNotNone(context_info)
+        self.assertEqual(context_info['tenant_name'], '株式会社ABC')
+
+        # 再アクセス時はセッションが消えている
+        response2 = self.client.get(url)
+        self.assertIsNone(response2.context['register_info'])

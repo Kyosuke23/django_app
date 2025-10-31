@@ -628,7 +628,7 @@ class InitialUserCreateView(LoginRequiredMixin, SystemUserOnlyMixin, generic.For
 
         return redirect(reverse('register:initial_done'))
 
-class InitialUserRegisterDoneView(generic.TemplateView):
+class InitialUserRegisterDoneView(LoginRequiredMixin, SystemUserOnlyMixin, generic.TemplateView):
     template_name = 'register/initial_user_done.html'
 
     def get_context_data(self, **kwargs):
