@@ -222,7 +222,6 @@ class UserUpdateView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
 class ProfileUpdateView(LoginRequiredMixin, generic.UpdateView):
     '''
     ログイン中のユーザーが自分の情報を編集する画面
-    - これだけは権限制御なし
     '''
     model = CustomUser
     template_name = 'register/update_profile.html'
@@ -246,10 +245,10 @@ class ProfileUpdateView(LoginRequiredMixin, generic.UpdateView):
         return super().form_valid(form)
 
     def form_invalid(self, form):
-        pass
+        return self.render_to_response(self.get_context_data(form=form))
 
 
-class UserChangePassword(LoginRequiredMixin, PrivilegeRequiredMixin, PasswordChangeView):
+class UserChangePassword(LoginRequiredMixin, PasswordChangeView):
     '''
     パスワードの変更処理
     '''

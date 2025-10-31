@@ -63,7 +63,7 @@ class RegisterViewsTests(TestCase):
 
     def test_1_1_1_2(self):
         '''初期表示（正常系: 参照権限）'''
-        # 参照ユーザーでログイン
+        # 更新ユーザーでログイン
         self.user = get_user_model().objects.get(pk=1)
         self.client.login(email='editor@example.com', password='pass')
 
@@ -638,8 +638,8 @@ class RegisterViewsTests(TestCase):
         '''
         url = reverse('register:create')
 
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        # 更新ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=2)
         self.client.login(email='editor@example.com', password='pass')
 
         data = {
@@ -764,7 +764,7 @@ class RegisterViewsTests(TestCase):
     def test_3_1_2_2(self):
         '''更新画面表示（異常系：権限不足）'''
         # 更新ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        self.user = get_user_model().objects.get(pk=3)
         self.client.login(email='editor@example.com', password='pass')
 
         url = reverse('register:update', args=[1])
@@ -904,7 +904,7 @@ class RegisterViewsTests(TestCase):
         url = reverse('register:update', args=[1])
 
         # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        self.user = get_user_model().objects.get(pk=4)
         self.client.login(email='viewer@example.com', password='pass')
 
         data = {
@@ -1082,7 +1082,7 @@ class RegisterViewsTests(TestCase):
         '''削除処理（異常系：権限不足）'''
 
         # 更新ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        self.user = get_user_model().objects.get(pk=3)
         self.client.login(email='editor@example.com', password='pass')
 
         # 事前データ作成
@@ -1343,8 +1343,8 @@ class RegisterViewsTests(TestCase):
     def test_5_1_2_2(self):
         '''一括削除処理（異常系：権限不足）'''
 
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        # 更新ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=3)
         self.client.login(email='editor@example.com', password='pass')
 
         # 削除対象データ作成
@@ -1577,7 +1577,7 @@ class RegisterViewsTests(TestCase):
         '''CSVエクスポート（正常系：更新ユーザー）'''
 
         # 更新ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        self.user = get_user_model().objects.get(pk=3)
         self.client.login(email='editor@example.com', password='pass')
 
         url = reverse('register:export_csv')
@@ -2217,8 +2217,8 @@ class UserGroupManageViewTests(TestCase):
 
     def test_8_1_2_2(self):
         """新規登録：異常系（権限不足）"""
-        # 参照ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        # 更新ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=3)
         self.client.login(email='editor@example.com', password='pass')
         url = reverse('register:group_manage')
         response = self.client.post(url, {
@@ -2496,3 +2496,227 @@ class InitialUserViewTests(TestCase):
         # 再アクセス時はセッションが消えている
         response2 = self.client.get(url)
         self.assertIsNone(response2.context['register_info'])
+
+
+class ProfileUpdateViewTests(TestCase):
+    """
+    ProfileUpdateView の単体テスト
+    """
+    def setUp(self):
+        # テナント作成
+        self.tenant = Tenant.objects.create(
+            tenant_name='テストテナント',
+            representative_name='代表者テスト',
+            email='tenant@example.com'
+        )
+        # テスト用ユーザー
+        self.user = CustomUser.objects.create_user(
+            username='テストユーザー',
+            email='test@example.com',
+            password='testpass123',
+            privilege=PRIVILEGE_VIEWER,
+            tenant_id=self.tenant.id
+        )
+        self.client.login(email='test@example.com', password='testpass123')
+        self.url = reverse('register:update_profile')
+
+    # --------------------------------------------------------
+    # 正常系
+    # --------------------------------------------------------
+    def test_10_1_1_1(self):
+        """
+        10-1-1-1: 正常系（全項目正しく入力 -> 更新成功）
+        """
+        # 参照ユーザーでログイン
+        self.client.login(email='test@example.com', password='testpass123')
+
+        data = {
+            'username': '更新後ユーザー',
+            'username_kana': 'コウシンゴユーザー',
+            'email': 'updated@example.com',
+            'tel_number': '090-1111-2222',
+            'gender': '1',
+            'employment_status': '1',
+            'privilege': '1',
+        }
+
+        response = self.client.post(self.url, data, follow=True)
+
+        # ステータス200＋テンプレート表示
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'register/update_profile.html')
+
+        # データ更新確認
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.username, '更新後ユーザー')
+        self.assertEqual(self.user.email, 'updated@example.com')
+
+        # 成功メッセージ確認
+        messages = [m.message for m in get_messages(response.wsgi_request)]
+        self.assertIn('プロフィールを更新しました。', messages)
+
+    # --------------------------------------------------------
+    # 異常系（必須未入力）
+    # --------------------------------------------------------
+    def test_10_2_1_1(self):
+        """
+        10-2-1-1: 異常系（必須: username 未入力）
+        """
+        data = {
+            'username': '',
+            'email': 'updated@example.com',
+        }
+
+        response = self.client.post(self.url, data)
+
+        # ステータス200（再表示）
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'register/update_profile.html')
+
+        # フォームエラー確認
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('username', form.errors)
+        self.assertIn('この項目は必須です。', form.errors['username'])
+
+    # --------------------------------------------------------
+    # 異常系（メール形式不正）
+    # --------------------------------------------------------
+    def test_10_2_2_1(self):
+        """
+        10-2-2-1: 異常系（email 不正フォーマット）
+        """
+        data = {
+            'username': 'テスト太郎',
+            'email': 'invalid_email',
+        }
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('email', form.errors)
+        self.assertIn('有効なメールアドレスを入力してください。', form.errors['email'])
+
+    # --------------------------------------------------------
+    # 異常系（ログインなしアクセス）
+    # --------------------------------------------------------
+    def test_10_3_1_1(self):
+        """
+        10-3-1-1: 異常系（未ログイン時アクセス）
+        """
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.url)
+
+
+class UserChangePasswordTests(TestCase):
+    """
+    UserChangePassword の単体テスト
+    """
+
+    def setUp(self):
+        # テナント作成
+        self.tenant = Tenant.objects.create(
+            tenant_name='テストテナント',
+            representative_name='代表者テスト',
+            email='tenant@example.com'
+        )
+        # テスト用ユーザー
+        self.user = CustomUser.objects.create_user(
+            username='テストユーザー',
+            email='test@example.com',
+            password='oldpass123',
+            privilege=PRIVILEGE_VIEWER,
+            tenant_id=self.tenant.id
+        )
+        self.client.login(email='test@example.com', password='oldpass123')
+        self.url = reverse('register:change_password')
+
+    # --------------------------------------------------------
+    # 11-1-1-1: 正常系（パスワード変更成功）
+    # --------------------------------------------------------
+    def test_11_1_1_1(self):
+        """
+        11-1-1-1: 正常系（正しい旧パスワード・新パスワードで変更成功）
+        """
+        self.client.login(email='test@example.com', password='oldpass123')
+
+        data = {
+            'old_password': 'oldpass123',
+            'new_password1': 'newpass456',
+            'new_password2': 'newpass456',
+        }
+
+        response = self.client.post(self.url, data, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertRedirects(response, reverse('dashboard:top'))
+
+        # メッセージ確認
+        messages = [m.message for m in get_messages(response.wsgi_request)]
+        self.assertIn('パスワードが変更されました。', messages)
+
+        # DB更新確認
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('newpass456'))
+
+    # --------------------------------------------------------
+    # 11-2-1-1: 異常系（旧パスワード誤り）
+    # --------------------------------------------------------
+    def test_11_2_1_1(self):
+        """
+        11-2-1-1: 異常系（旧パスワード誤り）
+        """
+        self.client.login(email='test@example.com', password='oldpass123')
+
+        data = {
+            'old_password': 'wrongpass',
+            'new_password1': 'newpass456',
+            'new_password2': 'newpass456',
+        }
+
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'register/password_change.html')
+
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('old_password', form.errors)
+        self.assertIn('元のパスワードが間違っています。もう一度入力してください。', form.errors['old_password'])
+
+    # --------------------------------------------------------
+    # 11-2-2-1: 異常系（新パスワード不一致）
+    # --------------------------------------------------------
+    def test_11_2_2_1(self):
+        """
+        11-2-2-1: 異常系（新パスワードが一致しない）
+        """
+        self.client.login(email='test@example.com', password='oldpass123')
+
+        data = {
+            'old_password': 'oldpass123',
+            'new_password1': 'newpass456',
+            'new_password2': 'newpass789',
+        }
+
+        response = self.client.post(self.url, data)
+        self.assertEqual(response.status_code, 200)
+        form = response.context['form']
+        self.assertFalse(form.is_valid())
+        self.assertIn('new_password2', form.errors)
+        self.assertIn('確認用パスワードが一致しません。', form.errors['new_password2'])
+
+    # --------------------------------------------------------
+    # 11-3-1-1: 異常系（未ログインアクセス）
+    # --------------------------------------------------------
+    def test_11_3_1_1(self):
+        """
+        11-3-1-1: 異常系（未ログインアクセス）
+        """
+        # 直リンク状態でアクセス
+        self.client.logout()
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login', response.url)
