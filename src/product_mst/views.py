@@ -62,8 +62,8 @@ class ProductListView(LoginRequiredMixin, generic.ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = ProductSearchForm(self.request.GET or None)
-        context['product_category_form'] = ProductCategoryForm(self.request.GET or None)
+        context['search_form'] = ProductSearchForm(self.request.GET or None, user=self.request.user)
+        context['manage_category_form'] = ProductCategoryForm(self.request.GET or None, user=self.request.user)
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
@@ -78,12 +78,17 @@ class ProductCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Crea
     form_class = ProductForm
     template_name = 'product_mst/form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get(self, request, *args, **kwargs):
         form = self.get_form()
         html = render_to_string(
             self.template_name,
             {
-                'form': form,
+                'edit_form': form,
                 'form_action': reverse('product_mst:create'),
                 'modal_title': '商品: 新規登録',
             },
@@ -109,7 +114,7 @@ class ProductCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Crea
             html = render_to_string(
                 self.template_name,
                 {
-                    'form': form,
+                    'edit_form': form,
                     'form_action': reverse('product_mst:create'),
                     'modal_title': '商品: 新規登録',
                 },
@@ -129,6 +134,11 @@ class ProductUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
     form_class = ProductForm
     template_name = 'product_mst/form.html'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def get(self, request, *args, **kwargs):
         try:
             self.object = self.get_object()
@@ -140,7 +150,7 @@ class ProductUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
         html = render_to_string(
             self.template_name,
             {
-                'form': form,
+                'edit_form': form,
                 'form_action': reverse('product_mst:update', kwargs={'pk': self.object.pk}),
                 'modal_title': f'商品更新: {self.object.product_name}',
             },

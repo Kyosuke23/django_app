@@ -3,7 +3,7 @@ from .models import Product, ProductCategory
 
 class ProductSearchForm(forms.Form):
     '''
-    商品マスタ検索フォーム
+    商品マスタ管理画面：検索フォーム
     '''
     # 基本検索
     search_keyword = forms.CharField(
@@ -29,7 +29,7 @@ class ProductSearchForm(forms.Form):
     search_category = forms.ModelChoiceField(
         required=False,
         label='商品カテゴリ',
-        queryset=ProductCategory.objects.all(),
+        queryset=ProductCategory.objects.none(),
         empty_label='すべて',
         widget=forms.Select(attrs={'class': 'form-select form-select-sm'})
     )
@@ -86,6 +86,8 @@ class ProductSearchForm(forms.Form):
     )
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        self.tenant = getattr(user, 'tenant', None)
         super().__init__(*args, **kwargs)
 
         # optgroup構造を設定
@@ -95,6 +97,13 @@ class ProductSearchForm(forms.Form):
             choices.append((group_label, [(val, lbl) for val, lbl in options]))
         self.fields['sort'].choices = choices
 
+        # 検索フォームの商品カテゴリへのフィルタ設定
+        if user and hasattr(user, 'tenant'):
+            self.fields['search_category'].queryset = ProductCategory.objects.filter(tenant=user.tenant, is_deleted=False).order_by('product_category_name')
+        else:
+            # 匿名やテスト時などは空クエリセット
+            self.fields['search_category'].queryset = ProductCategory.objects.none()
+
         # 各フィールド共通属性
         for name, field in self.fields.items():
             if name != 'search_keyword':
@@ -102,6 +111,9 @@ class ProductSearchForm(forms.Form):
 
 
 class ProductForm(forms.ModelForm):
+    '''
+    商品マスタ管理画面：登録・更新フォーム
+    '''
     unit_price = forms.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -126,7 +138,7 @@ class ProductForm(forms.ModelForm):
 
         if user is not None:
             # 商品カテゴリをテナント内に限定
-            self.fields['product_category'].queryset = (self.fields['product_category'].queryset.filter(tenant=user.tenant))
+            self.fields['product_category'].queryset = (self.fields['product_category'].queryset.filter(tenant=user.tenant, is_deleted=False))
 
         self.fields['unit'].required = False
 
@@ -146,6 +158,9 @@ class ProductForm(forms.ModelForm):
         return cleaned_data
 
 class ProductCategoryForm(forms.ModelForm):
+    '''
+    商品マスタ管理画面：商品カテゴリ管理フォーム
+    '''
     selected_category = forms.ModelChoiceField(
         queryset=ProductCategory.objects.none(),
         required=False,
@@ -168,8 +183,10 @@ class ProductCategoryForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        self.tenant = getattr(user, 'tenant', None)
         super().__init__(*args, **kwargs)
-        self.fields['selected_category'].queryset = ProductCategory.objects.filter(is_deleted=False).order_by('product_category_name')
+        self.fields['selected_category'].queryset = ProductCategory.objects.filter(tenant=user.tenant, is_deleted=False).order_by('product_category_name')
 
         # 削除アクション時は必須チェックを無効化
         action = self.data.get('action') or self.initial.get('action')

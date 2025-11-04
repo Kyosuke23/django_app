@@ -52,10 +52,10 @@ class ProductViewTests(TestCase):
         # ステータスコード確認
         self.assertEqual(response.status_code, 200)
 
-        # 取得データ確認
-        list = response.context['products']
-        self.assertEqual(list.count(), 13)
-        self.assertTrue(all(tid == 1 for tid in list.values_list('tenant_id', flat=True)))
+        # 取得データ確認（商品マスタ）
+        products = response.context['products']
+        self.assertEqual(products.count(), 13)
+        self.assertTrue(all(tid == 1 for tid in products.values_list('tenant_id', flat=True)))
 
         # 要素の取得を確認
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -66,6 +66,32 @@ class ProductViewTests(TestCase):
         self.assertIsNotNone(soup.select_one('#check-all'))
         self.assertIsNotNone(soup.select_one('.check-item'))
         self.assertIsNotNone(soup.select_one('#category_manage'))
+
+        # 商品カテゴリマスタ：DB値取得
+        db_categories = list(
+            ProductCategory.objects.filter(
+                tenant=self.user.tenant, is_deleted=False
+            ).values_list('product_category_name', flat=True)
+        )
+        # 商品カテゴリ管理のドロップダウンを取得
+        form = response.context['manage_category_form']
+        field = form.fields.get('selected_category')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_categories), len(labels))
+        # 内容チェック
+        for name in db_categories:
+            self.assertIn(name, labels)
+
+        # 検索フォームのカテゴリドロップダウンを取得
+        form = response.context['search_form']
+        field = form.fields.get('search_category')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_categories), len(labels))
+        # 内容チェック
+        for name in db_categories:
+            self.assertIn(name, labels)
 
     def test_1_1_1_2(self):
         '''初期表示（正常系: 参照権限）'''
@@ -345,6 +371,23 @@ class ProductViewTests(TestCase):
 
         # 画面要素を確認
         self.assertEqual(modal_title, '商品: 新規登録')
+
+        # 商品カテゴリマスタ：DB値取得
+        db_categories = list(
+            ProductCategory.objects.filter(
+                tenant=self.user.tenant, is_deleted=False
+            ).values_list('product_category_name', flat=True)
+        )
+
+        # 登録フォームのカテゴリドロップダウンを取得
+        form = response.context['edit_form']
+        field = form.fields.get('product_category')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_categories), len(labels))
+        # 内容チェック
+        for name in db_categories:
+            self.assertIn(name, labels)
 
     def test_2_1_2_1(self):
         '''登録画面表示（異常系：直リンク）'''
@@ -700,6 +743,22 @@ class ProductViewTests(TestCase):
 
         # モーダルタイトル確認
         self.assertEqual(modal_title, '商品更新: 商品001')
+        # 商品カテゴリマスタ：DB値取得
+        db_categories = list(
+            ProductCategory.objects.filter(
+                tenant=self.user.tenant, is_deleted=False
+            ).values_list('product_category_name', flat=True)
+        )
+
+        # 登録フォームのカテゴリドロップダウンを取得
+        form = response.context['edit_form']
+        field = form.fields.get('product_category')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_categories), len(labels))
+        # 内容チェック
+        for name in db_categories:
+            self.assertIn(name, labels)
 
     def test_3_1_2_1(self):
         '''更新画面表示（異常系：直リンク）'''

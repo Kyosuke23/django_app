@@ -8,13 +8,13 @@
 <form method="post" id="editForm"
       action="{{ form_action }}"
       data-save-url="{{ form_action }}"
-      data-delete-url="{% if form.instance.pk %}{% url 'product_mst:delete' form.instance.pk %}{% endif %}">
+      data-delete-url="{% if edit_form.instance.pk %}{% url 'product_mst:delete' edit_form.instance.pk %}{% endif %}">
   {% csrf_token %}
-  {% bootstrap_form form %}
+  {% bootstrap_form edit_form %}
 
   <div class="d-flex justify-content-end gap-2 mt-3">
     <button type="submit" id="save-btn" class="btn btn-primary" data-action="save">保存</button>
-    {% if form.instance.pk %}
+    {% if edit_form.instance.pk %}
       <button type="submit" id="delete-btn" class="btn btn-danger" data-action="delete">削除</button>
     {% endif %}
   </div>
