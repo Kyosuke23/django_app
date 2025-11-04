@@ -45,7 +45,7 @@ class ProductListView(LoginRequiredMixin, generic.ListView):
 
     def get_queryset(self):
         req = self.request
-        form = ProductSearchForm(req.GET or None)
+        form = ProductSearchForm(req.GET or None, user=req.user)
 
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = Product.objects.filter(is_deleted=False, tenant=req.user.tenant)
@@ -186,7 +186,7 @@ class ProductUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
             html = render_to_string(
                 self.template_name,
                 {
-                    'form': form,
+                    'edit_form': form,
                     'form_action': reverse(
                         'product_mst:update',
                         kwargs={'pk': obj.pk} if obj else {}
