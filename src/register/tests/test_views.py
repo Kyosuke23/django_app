@@ -51,7 +51,7 @@ class RegisterViewTests(TestCase):
 
         # 取得データ確認
         users = response.context['users']
-        self.assertEqual(users.count(), 9)
+        self.assertEqual(users.count(), 8)
         self.assertTrue(all(tid == 1 for tid in users.values_list('tenant_id', flat=True)))
 
         # 要素の取得を確認
@@ -87,10 +87,14 @@ class RegisterViewTests(TestCase):
         for name in db_vals:
             self.assertIn(name, labels)
 
+        # システム権限ユーザーが取得されないこと
+        for user in users:
+            self.assertNotEqual(PRIVILEGE_SYSTEM, user.privilege)
+
     def test_1_1_1_2(self):
         '''初期表示（正常系: 参照権限）'''
         # 更新ユーザーでログイン
-        self.user = get_user_model().objects.get(pk=1)
+        self.user = get_user_model().objects.get(pk=4)
         self.client.login(email='editor@example.com', password='pass')
 
         # レスポンス取得
@@ -100,9 +104,9 @@ class RegisterViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # 取得データ確認
-        list = response.context['users']
-        self.assertEqual(list.count(), 9)
-        self.assertTrue(all(tid == 1 for tid in list.values_list('tenant_id', flat=True)))
+        users = response.context['users']
+        self.assertEqual(users.count(), 8)
+        self.assertTrue(all(tid == 1 for tid in users.values_list('tenant_id', flat=True)))
 
         # 要素の取得を確認
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -111,7 +115,42 @@ class RegisterViewTests(TestCase):
         self.assertIsNone(soup.select_one('#bulk-delete-btn'))
         self.assertIsNone(soup.select_one('#user_group_manage'))
 
+        # システム権限ユーザーが取得されないこと
+        for user in users:
+            self.assertNotEqual(PRIVILEGE_SYSTEM, user.privilege)
+
     def test_1_1_1_3(self):
+        '''初期表示（正常系: システム権限）'''
+        # 更新ユーザーでログイン
+        self.user = get_user_model().objects.get(pk=1)
+        self.client.login(email='system@example.com', password='pass')
+
+        # レスポンス取得
+        response = self.client.get(reverse('register:list'))
+
+        # ステータスコード確認
+        self.assertEqual(response.status_code, 200)
+
+        # 取得データ確認
+        users = response.context['users']
+        self.assertEqual(users.count(), 9)
+        self.assertTrue(all(tid == 1 for tid in users.values_list('tenant_id', flat=True)))
+
+        # 要素の取得を確認
+        soup = BeautifulSoup(response.content, 'html.parser')
+        self.assertIsNotNone(soup.select_one('#create-btn'))
+        self.assertIsNotNone(soup.select_one('.edit-btn'))
+        self.assertIsNotNone(soup.select_one('#bulk-delete-btn'))
+        self.assertIsNotNone(soup.select_one('#user_group_manage'))
+
+        # システム権限ユーザーが取得されていること
+        sys_privilege = False
+        for user in users:
+            if user.privilege == PRIVILEGE_SYSTEM:
+                sys_privilege = True
+        self.assertTrue(sys_privilege)
+
+    def test_1_1_1_4(self):
         '''検索処理（正常系: 結果0件）'''
         # 検索値
 
@@ -185,7 +224,7 @@ class RegisterViewTests(TestCase):
 
         # 取得データ確認
         list = response.context['users']
-        self.assertEqual(list.count(), 7)
+        self.assertEqual(list.count(), 6)
 
         # プロパティに検索値が含まれていることを確認
         for p in list:
@@ -262,7 +301,7 @@ class RegisterViewTests(TestCase):
     def test_1_2_1_5(self):
         '''検索処理（正常系: ユーザー名）'''
         # 検索値
-        key = 'system'
+        key = 'viewer'
 
         # レスポンス取得
         response = self.client.get(reverse('register:list'), {'search_username': key})
@@ -273,13 +312,13 @@ class RegisterViewTests(TestCase):
         # 取得データ確認
         list = response.context['users']
         self.assertEqual(list.count(), 1)
-        self.assertEqual('system_user', list[0].username)
+        self.assertEqual('viewer_user', list[0].username)
         self.assertEqual(key, response.context['search_form']['search_username'].value())
 
     def test_1_2_1_6(self):
         '''検索処理（正常系: メールアドレス）'''
         # 検索値
-        key = 'm@'
+        key = 'tor@'
 
         # レスポンス取得
         response = self.client.get(reverse('register:list'), {'search_email': key})
@@ -290,7 +329,7 @@ class RegisterViewTests(TestCase):
         # 取得データ確認
         list = response.context['users']
         self.assertEqual(list.count(), 1)
-        self.assertEqual('system@example.com', list[0].email)
+        self.assertEqual('editor@example.com', list[0].email)
         self.assertEqual(key, response.context['search_form']['search_email'].value())
 
     def test_1_2_1_7(self):
@@ -348,7 +387,7 @@ class RegisterViewTests(TestCase):
     def test_1_2_1_10(self):
         '''検索処理（正常系: 権限）'''
         # 検索値
-        key_label = 'システム'
+        key_label = '更新'
         key_value = [k for k, v in PRIVILEGE_CHOICES if v == key_label][0]
 
         # レスポンス取得
@@ -360,7 +399,7 @@ class RegisterViewTests(TestCase):
         # 取得データ確認
         list = response.context['users']
         self.assertEqual(list.count(), 1)
-        self.assertEqual('system_user', list[0].username)
+        self.assertEqual('editor_user', list[0].username)
         self.assertEqual(key_value, response.context['search_form']['search_privilege'].value())
 
     def test_1_2_1_11(self):

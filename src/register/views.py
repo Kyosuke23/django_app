@@ -26,6 +26,7 @@ from .constants import (
     , GENDER_CHOICES_MAP
     , PRIVILEGE_CHOICES_MAP
     , EMPLOYMENT_STATUS_CHOICES_MAP
+    , PRIVILEGE_SYSTEM
 )
 
 
@@ -58,10 +59,15 @@ class UserListView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.ListView)
 
     def get_queryset(self):
         req = self.request
-        form = UserSearchForm(req.GET or None, user=req.user)
+        user = req.user
+        form = UserSearchForm(req.GET or None, user=user)
 
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
+
+        # システム権限以外のユーザーにはシステム権限ユーザーを見せない
+        if user.privilege != PRIVILEGE_SYSTEM:
+            queryset = queryset.exclude(privilege=PRIVILEGE_SYSTEM)
 
         # フォームが有効なら検索条件を反映
         if form.is_valid():
@@ -93,7 +99,12 @@ class UserCreateView(LoginRequiredMixin, ManagerOverMixin, generic.CreateView):
     template_name = 'register/form.html'
 
     def get(self, request, *args, **kwargs):
+
         form = self.get_form()
+
+        # 権限選択肢を制限
+        form.fields['privilege'].choices = filter_privilege(request.user)
+
         html = render_to_string(
             self.template_name,
             {
@@ -148,12 +159,18 @@ class UserUpdateView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
     template_name = 'register/form.html'
 
     def get(self, request, *args, **kwargs):
+        # 存在チェック
         try:
             self.object = self.get_object()
         except Http404:
             messages.error(request, 'このユーザーは既に削除されています。')
             return JsonResponse({'success': False}, status=404)
+
         form = self.get_form()
+
+        # 権限選択肢を制限
+        form.fields['privilege'].choices = filter_privilege(request.user)
+
         html = render_to_string(
             self.template_name,
             {
@@ -741,3 +758,7 @@ def set_table_sort(queryset, sort):
 
 def set_message(request, action, username):
     messages.success(request, f'ユーザー「{username}」を{action}しました。')
+
+def filter_privilege(user):
+    """ログインユーザーと同等・下位の権限のみを返す"""
+    return [c for c in PRIVILEGE_CHOICES if c[0] >= user.privilege]
