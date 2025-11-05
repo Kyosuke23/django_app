@@ -493,7 +493,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
     def test_2_2_1_2(self):
-        '''登録処理（正常系: 異なるテナントで同じ取引先名称）'''
+        '''登録処理（正常系: 異なるテナントで同じメールアドレス）'''
         # テナントを2つ作成
         self.tenant1 = Tenant.objects.create(
             tenant_name='テナントA',
@@ -658,7 +658,7 @@ class PartnerViewTests(TestCase):
 
         # 先に1件目を登録
         data1 = {
-            'partner_name': 'テスト株式会社',
+            'partner_name': 'テスト株式会社1',
             'partner_type': 'customer',
             'email': 'test@example.com',
         }
@@ -671,10 +671,10 @@ class PartnerViewTests(TestCase):
         res_json1 = json.loads(response1.content)
         self.assertTrue(res_json1['success'])
 
-        # 同じ取引先名称で2件目を登録
+        # 同じメールアドレスで2件目を登録
         data2 = {
-            'partner_name': 'テスト株式会社',
-            'partner_type': 'customer',
+            'partner_name': 'テスト株式会社2',
+            'partner_type': 'both',
             'email': 'test@example.com',
         }
         response2 = self.client.post(
@@ -691,8 +691,7 @@ class PartnerViewTests(TestCase):
 
         # エラーメッセージをHTMLから抽出
         soup = BeautifulSoup(res_json2['html'], 'html.parser')
-        self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_partner_name + .invalid-feedback').get_text())
-        self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
+        self.assertIn('同じメールアドレスが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
 
     #----------------
@@ -853,7 +852,7 @@ class PartnerViewTests(TestCase):
         self.assertLessEqual(abs((partner.updated_at - timezone.now()).total_seconds()), 5)
 
     def test_3_2_1_2(self):
-        '''更新処理（正常系：異なるテナントで同じ取引先名称+メールアドレスに変更）'''
+        '''更新処理（正常系：異なるテナントに存在するメールアドレスに変更）'''
         # テナントを2つ作成
         self.tenant1 = Tenant.objects.create(
             tenant_name='テナントA',
@@ -975,13 +974,8 @@ class PartnerViewTests(TestCase):
             'address2': 'ビル3F',
         }
 
-        response = self.client.post(
-            url,
-            data,
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-
         # レスポンス確認
+        response = self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 302)
 
     def test_3_2_2_2(self):
@@ -1008,15 +1002,10 @@ class PartnerViewTests(TestCase):
             'address2': 'ビル3F',
         }
 
-        # 処理実行
-        response = self.client.post(
-            url,
-            data,
-            HTTP_X_REQUESTED_WITH='XMLHttpRequest'
-        )
-
         # レスポンス確認
+        response = self.client.post(url, data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.assertEqual(response.status_code, 403)
+
 
     def test_3_2_2_3(self):
         '''更新処理（異常系：メールアドレス形式不正）'''
@@ -1051,9 +1040,9 @@ class PartnerViewTests(TestCase):
         self.assertEqual('有効なメールアドレスを入力してください。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
     def test_3_2_2_4(self):
-        '''更新処理（異常系：同一テナント内で取引先名称＋メールアドレス重複）'''
-        # 既存データ1
-        partner1 = Partner.objects.create(
+        '''更新処理（異常系：同一テナント内でメールアドレス重複）'''
+        # 既存データ
+        Partner.objects.create(
             tenant=self.user.tenant,
             partner_name='テスト株式会社',
             email='test@example.com',
@@ -1090,8 +1079,7 @@ class PartnerViewTests(TestCase):
 
         # エラーメッセージ確認
         soup = BeautifulSoup(res_json['html'], 'html.parser')
-        self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_partner_name + .invalid-feedback').get_text())
-        self.assertIn('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
+        self.assertIn('同じメールアドレスが既に登録されています。', soup.select_one('#id_email + .invalid-feedback').get_text())
 
     def test_3_2_2_5(self):
         '''

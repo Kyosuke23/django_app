@@ -95,7 +95,6 @@ class PartnerSearchForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # optgroup構造を設定（ProductSearchFormと同じロジック）
         choices = [('', '並び替え')]
         for group_label, options in self.SORT_GROUPS.items():
             choices.append((group_label, [(val, lbl) for val, lbl in options]))
@@ -144,17 +143,14 @@ class PartnerForm(forms.ModelForm):
         # views.pyのget_form()後のバリデーション（同一テナント内での重複チェック）
         cleaned_data = super().clean()
         tenant = self.initial.get('tenant') or getattr(self.instance, 'tenant', None)
-        partner_name = cleaned_data.get('partner_name')
         email = cleaned_data.get('email')
-
         self.fields['partner_type'].required = True
 
-        # 同一テナント内で同じ取引先・メールアドレスの組み合わせを禁止
-        if tenant and partner_name and email:
-            qs = Partner.objects.filter(tenant=tenant, partner_name=partner_name, email=email)
+        # 同一テナント内で同じメールアドレスを禁止
+        if tenant and email:
+            qs = Partner.objects.filter(tenant=tenant, email=email)
             if self.instance.pk:
                 qs = qs.exclude(pk=self.instance.pk)
             if qs.exists():
-                self.add_error('partner_name', '同じ取引先名称とメールアドレスの組み合わせが既に登録されています。')
-                self.add_error('email', '同じ取引先名称とメールアドレスの組み合わせが既に登録されています。')
+                self.add_error('email', '同じメールアドレスが既に登録されています。')
         return cleaned_data

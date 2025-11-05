@@ -143,7 +143,7 @@ class ProductUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
         try:
             self.object = self.get_object()
         except Http404:
-            messages.error(request, 'この取引先は既に削除されています。')
+            messages.error(request, 'この商品は既に削除されています。')
             return JsonResponse({'success': False}, status=404)
 
         form = self.get_form()
