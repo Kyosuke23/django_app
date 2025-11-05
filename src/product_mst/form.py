@@ -185,7 +185,16 @@ class ProductCategoryForm(forms.ModelForm):
         user = kwargs.pop('user', None)
         self.tenant = getattr(user, 'tenant', None)
         super().__init__(*args, **kwargs)
-        self.fields['selected_category'].queryset = ProductCategory.objects.filter(tenant=user.tenant, is_deleted=False).order_by('product_category_name')
+
+        # user がいる場合はテナント内カテゴリ、いない場合は全カテゴリ or none()
+        if self.tenant:
+            qs = ProductCategory.objects.filter(
+                tenant=self.tenant, is_deleted=False
+            ).order_by('product_category_name')
+        else:
+            qs = ProductCategory.objects.all().order_by('product_category_name')
+
+        self.fields['selected_category'].queryset = qs
 
         # 削除アクション時は必須チェックを無効化
         action = self.data.get('action') or self.initial.get('action')

@@ -185,12 +185,23 @@ class ProductFormTests(TestCase):
 class ProductSearchFormTests(TestCase):
 
     def setUp(self):
+        # テナント作成
         self.tenant = Tenant.objects.create(tenant_name="TenantC")
+
+        # ユーザー作成
+        self.user = CustomUser.objects.create_user(
+            username="tester",
+            email="tester@example.com",
+            password="pass",
+            tenant=self.tenant
+        )
+
+        # カテゴリ作成
         self.category = ProductCategory.objects.create(
             tenant=self.tenant,
             product_category_name="飲料",
-            create_user=None,
-            update_user=None,
+            create_user=self.user,
+            update_user=self.user,
         )
 
     # 2-1-1-1
@@ -204,7 +215,7 @@ class ProductSearchFormTests(TestCase):
             'search_unit_price_min': '100',
             'search_unit_price_max': '200',
             'sort': 'product_name',
-        })
+        }, user=self.user)
         self.assertTrue(form.is_valid())
 
     # 2-2-1-1
@@ -264,12 +275,22 @@ class ProductSearchFormTests(TestCase):
 class ProductCategoryFormTests(TestCase):
 
     def setUp(self):
-        self.tenant = Tenant.objects.create(tenant_name="TenantD")
+        # テナント作成
+        self.tenant = Tenant.objects.create(tenant_name="TenantC")
+
+        # ユーザー作成
+        self.user = CustomUser.objects.create_user(
+            username="tester",
+            email="tester@example.com",
+            password="pass",
+            tenant=self.tenant
+        )
+
         self.category1 = ProductCategory.objects.create(
             tenant=self.tenant,
             product_category_name="既存カテゴリ",
-            create_user=None,
-            update_user=None
+            create_user=self.user,
+            update_user=self.user
         )
 
     def test_3_1_1_1(self):
@@ -287,7 +308,7 @@ class ProductCategoryFormTests(TestCase):
         form = ProductCategoryForm(data={
             'selected_category': self.category1.id,
             'product_category_name': '変更後カテゴリ',
-        })
+        }, user=self.user)
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data['product_category_name'], '変更後カテゴリ')
 

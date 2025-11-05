@@ -270,6 +270,11 @@ class ProductCategoryManageView(LoginRequiredMixin, PrivilegeRequiredMixin, gene
     form_class = ProductCategoryForm
     success_url = reverse_lazy('product_mst:category_manage')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def post(self, request, *args, **kwargs):
         """削除時など、名称未入力でもバリデーション通過させる"""
         if request.POST.get('action') == 'delete':
@@ -332,10 +337,11 @@ class ProductCategoryManageView(LoginRequiredMixin, PrivilegeRequiredMixin, gene
     def form_invalid(self, form):
         """未入力などバリデーションエラー時のハンドリング"""
         if self.request.POST.get('action') == 'save':
-            if 'selected_category' in form.errors:
-                msg = form.errors['selected_category'][0]
-            elif 'product_category_name' in form.errors:
+            # 名称エラーを優先
+            if 'product_category_name' in form.errors:
                 msg = form.errors['product_category_name'][0]
+            elif 'selected_category' in form.errors:
+                msg = form.errors['selected_category'][0]
             else:
                 msg = 'エラーが発生しました。'
             messages.error(self.request, msg)
