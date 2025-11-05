@@ -58,7 +58,7 @@ class UserListView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.ListView)
 
     def get_queryset(self):
         req = self.request
-        form = UserSearchForm(req.GET or None)
+        form = UserSearchForm(req.GET or None, user=req.user)
 
         # クエリセットを初期化（削除フラグ：False, 所属テナント限定）
         queryset = CustomUser.objects.filter(is_deleted=False, tenant=req.user.tenant)
@@ -75,9 +75,8 @@ class UserListView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.ListView)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        form = UserSearchForm(self.request.GET or None)
-        context['form'] = form
-        context['user_group_form'] = UserGroupForm(self.request.GET or None)
+        context['search_form'] = UserSearchForm(self.request.GET or None, user=self.request.user)
+        context['user_group_form'] = UserGroupForm(self.request.GET or None, user=self.request.user)
         context['GENDER_CHOICES'] = GENDER_CHOICES
         context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
         context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
@@ -98,7 +97,7 @@ class UserCreateView(LoginRequiredMixin, ManagerOverMixin, generic.CreateView):
         html = render_to_string(
             self.template_name,
             {
-                'form': form,
+                'edit_form': form,
                 'form_action': reverse('register:create'),
                 'modal_title': 'ユーザー: 新規登録',
             },
@@ -125,7 +124,7 @@ class UserCreateView(LoginRequiredMixin, ManagerOverMixin, generic.CreateView):
             html = render_to_string(
                 self.template_name,
                 {
-                    'form': form,
+                    'edit_form': form,
                     'form_action': reverse('register:create'),
                     'modal_title': 'ユーザー: 新規登録',
                 },
@@ -158,7 +157,7 @@ class UserUpdateView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
         html = render_to_string(
             self.template_name,
             {
-                'form': form,
+                'edit_form': form,
                 'form_action': reverse('register:update', kwargs={'pk': self.object.pk}),
                 'modal_title': f'ユーザー更新: {self.object.username}',
             },
@@ -203,7 +202,7 @@ class UserUpdateView(LoginRequiredMixin, ManagerOverMixin, generic.UpdateView):
             html = render_to_string(
                 self.template_name,
                 {
-                    'form': form,
+                    'edit_form': form,
                     'form_action': reverse('register:update', kwargs={'pk': self.object.pk}),
                     'modal_title': f'ユーザー更新: {self.object.username}',
                 },
@@ -344,6 +343,11 @@ class UserGroupManageView(LoginRequiredMixin, ManagerOverMixin, generic.FormView
     template_name = 'register/user_group_mst.html'
     form_class = UserGroupForm
     success_url = reverse_lazy('register:group_manage')
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def post(self, request, *args, **kwargs):
         """削除時など、名称未入力でもバリデーション通過させる"""

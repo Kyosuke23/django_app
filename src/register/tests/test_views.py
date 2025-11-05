@@ -18,7 +18,7 @@ import io
 import json
 
 
-class RegisterViewsTests(TestCase):
+class RegisterViewTests(TestCase):
     '''ユーザーマスタ 単体テスト'''
 
     def setUp(self):
@@ -50,9 +50,9 @@ class RegisterViewsTests(TestCase):
         self.assertEqual(response.status_code, 200)
 
         # 取得データ確認
-        list = response.context['users']
-        self.assertEqual(list.count(), 9)
-        self.assertTrue(all(tid == 1 for tid in list.values_list('tenant_id', flat=True)))
+        users = response.context['users']
+        self.assertEqual(users.count(), 9)
+        self.assertTrue(all(tid == 1 for tid in users.values_list('tenant_id', flat=True)))
 
         # 要素の取得を確認
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -60,6 +60,32 @@ class RegisterViewsTests(TestCase):
         self.assertIsNotNone(soup.select_one('.edit-btn'))
         self.assertIsNotNone(soup.select_one('#bulk-delete-btn'))
         self.assertIsNotNone(soup.select_one('#user_group_manage'))
+
+        # ユーザーグループマスタ：DB値取得
+        db_vals = list(
+            UserGroup.objects.filter(
+                tenant=self.user.tenant, is_deleted=False
+            ).values_list('group_name', flat=True)
+        )
+        # ユーザーグループ管理のドロップダウンを取得
+        form = response.context['user_group_form']
+        field = form.fields.get('selected_group')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_vals), len(labels))
+        # 内容チェック
+        for name in db_vals:
+            self.assertIn(name, labels)
+
+        # 検索フォームのグループドロップダウンを取得
+        form = response.context['search_form']
+        field = form.fields.get('search_user_group')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_vals), len(labels))
+        # 内容チェック
+        for name in db_vals:
+            self.assertIn(name, labels)
 
     def test_1_1_1_2(self):
         '''初期表示（正常系: 参照権限）'''
@@ -144,7 +170,7 @@ class RegisterViewsTests(TestCase):
             )
 
         # 検索後のフォーム確認
-        self.assertEqual(key, response.context['form']['search_keyword'].value())
+        self.assertEqual(key, response.context['search_form']['search_keyword'].value())
 
     def test_1_2_1_2(self):
         '''検索処理（正常系: キーワード->性別）'''
@@ -173,7 +199,7 @@ class RegisterViewsTests(TestCase):
             )
 
         # 検索後のフォーム確認
-        self.assertEqual(key, response.context['form']['search_keyword'].value())
+        self.assertEqual(key, response.context['search_form']['search_keyword'].value())
 
     def test_1_2_1_3(self):
         '''検索処理（正常系: キーワード->雇用状態）'''
@@ -202,7 +228,7 @@ class RegisterViewsTests(TestCase):
             )
 
         # 検索後のフォーム確認
-        self.assertEqual(key, response.context['form']['search_keyword'].value())
+        self.assertEqual(key, response.context['search_form']['search_keyword'].value())
 
     def test_1_2_1_4(self):
         '''検索処理（正常系: キーワード->権限）'''
@@ -231,7 +257,7 @@ class RegisterViewsTests(TestCase):
             )
 
         # 検索後のフォーム確認
-        self.assertEqual(key, response.context['form']['search_keyword'].value())
+        self.assertEqual(key, response.context['search_form']['search_keyword'].value())
 
     def test_1_2_1_5(self):
         '''検索処理（正常系: ユーザー名）'''
@@ -248,7 +274,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('system_user', list[0].username)
-        self.assertEqual(key, response.context['form']['search_username'].value())
+        self.assertEqual(key, response.context['search_form']['search_username'].value())
 
     def test_1_2_1_6(self):
         '''検索処理（正常系: メールアドレス）'''
@@ -265,7 +291,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('system@example.com', list[0].email)
-        self.assertEqual(key, response.context['form']['search_email'].value())
+        self.assertEqual(key, response.context['search_form']['search_email'].value())
 
     def test_1_2_1_7(self):
         '''検索処理（正常系: 性別）'''
@@ -282,7 +308,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('manager_user', list[0].username)
-        self.assertEqual(key, response.context['form']['search_gender'].value())
+        self.assertEqual(key, response.context['search_form']['search_gender'].value())
 
     def test_1_2_1_8(self):
         '''検索処理（正常系: 電話番号）'''
@@ -299,7 +325,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('editor_user', list[0].username)
-        self.assertEqual(key, response.context['form']['search_tel_number'].value())
+        self.assertEqual(key, response.context['search_form']['search_tel_number'].value())
 
     def test_1_2_1_9(self):
         '''検索処理（正常系: 雇用状態）'''
@@ -317,7 +343,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('user_4', list[0].username)
-        self.assertEqual(key_value, response.context['form']['search_employment_status'].value())
+        self.assertEqual(key_value, response.context['search_form']['search_employment_status'].value())
 
     def test_1_2_1_10(self):
         '''検索処理（正常系: 権限）'''
@@ -335,7 +361,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('system_user', list[0].username)
-        self.assertEqual(key_value, response.context['form']['search_privilege'].value())
+        self.assertEqual(key_value, response.context['search_form']['search_privilege'].value())
 
     def test_1_2_1_11(self):
         '''検索処理（正常系: 所属グループ）'''
@@ -354,7 +380,7 @@ class RegisterViewsTests(TestCase):
         list = response.context['users']
         self.assertEqual(list.count(), 1)
         self.assertEqual('manager_user', list[0].username)
-        self.assertEqual(str(pk), response.context['form']['search_user_group'].value())
+        self.assertEqual(str(pk), response.context['search_form']['search_user_group'].value())
 
     def test_1_2_1_12(self):
         """ページング（正常系: 1ページあたり20件、21件目が次ページに表示）"""
@@ -415,6 +441,23 @@ class RegisterViewsTests(TestCase):
 
         # モーダルタイトル確認
         self.assertEqual(modal_title, 'ユーザー: 新規登録')
+
+        # ユーザーグループマスタ：DB値取得
+        db_vals = list(
+            UserGroup.objects.filter(
+                tenant=self.user.tenant, is_deleted=False
+            ).values_list('group_name', flat=True)
+        )
+
+        # 登録フォームのカテゴリドロップダウンを取得
+        form = response.context['edit_form']
+        field = form.fields.get('groups_custom')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_vals), len(labels))
+        # 内容チェック
+        for name in db_vals:
+            self.assertIn(name, labels)
 
     def test_2_1_2_1(self):
         '''登録画面表示（異常系：直リンク）'''
@@ -746,6 +789,23 @@ class RegisterViewsTests(TestCase):
 
         # モーダルタイトル確認
         self.assertEqual(modal_title, 'ユーザー更新: system_user')
+
+        # ユーザーグループマスタ：DB値取得
+        db_vals = list(
+            UserGroup.objects.filter(
+                tenant=self.user.tenant, is_deleted=False
+            ).values_list('group_name', flat=True)
+        )
+
+        # 登録フォームのカテゴリドロップダウンを取得
+        form = response.context['edit_form']
+        field = form.fields.get('groups_custom')
+        labels = [str(opt[1]) for opt in field.choices if opt[0]]
+        # 件数チェック
+        self.assertEqual(len(db_vals), len(labels))
+        # 内容チェック
+        for name in db_vals:
+            self.assertIn(name, labels)
 
     def test_3_1_2_1(self):
         '''更新画面表示（異常系：直リンク）'''

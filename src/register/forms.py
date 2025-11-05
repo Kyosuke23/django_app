@@ -108,7 +108,11 @@ class UserSearchForm(forms.Form):
     }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        if user is not None:
+            self.fields['search_user_group'].queryset = (self.fields['search_user_group'].queryset.filter(tenant=user.tenant, is_deleted=False))
 
         # optgroup構造を設定
         choices = [('', '並び替え')]
@@ -265,8 +269,9 @@ class UserGroupForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        self.fields['selected_group'].queryset = UserGroup.objects.filter(is_deleted=False).order_by('group_name')
+        self.fields['selected_group'].queryset = UserGroup.objects.filter(tenant=user.tenant, is_deleted=False).order_by('group_name')
 
 
 class InitialUserForm(forms.Form):

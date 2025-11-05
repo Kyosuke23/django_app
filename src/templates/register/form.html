@@ -8,14 +8,14 @@
 <form method="post" id="editForm"
       action="{{ form_action }}"
       data-save-url="{{ form_action }}"
-      data-delete-url="{% if form.instance.pk %}{% url 'register:delete' form.instance.pk %}{% endif %}">
+      data-delete-url="{% if edit_form.instance.pk %}{% url 'register:delete' edit_form.instance.pk %}{% endif %}">
   {% csrf_token %}
 
-  {% if not form.instance.pk or request.user.privilege == PRIVILEGE_SYSTEM %}
+  {% if not edit_form.instance.pk or request.user.privilege == PRIVILEGE_SYSTEM %}
     {# ------------------------------------------------ #}
     {# 登録時（新規）→ 全フォーム入力可                      #}
     {# ------------------------------------------------ #}
-    {% bootstrap_form form %}
+    {% bootstrap_form edit_form %}
 
   {% else %}
     {# ------------------------------------------------ #}
@@ -23,19 +23,19 @@
     {# ------------------------------------------------ #}
     {% if request.user.privilege >= PRIVILEGE_EDITOR %}
       {# 権限2以上 → 全項目テキスト表示（縦配置） #}
-      {% for field in form %}
+      {% for field in edit_form %}
         <div class="mb-3">
           <label class="form-label text-muted small">{{ field.label }}</label>
           <div class="form-control-plaintext">
             {# 性別などchoicesを持つ項目は表示名を出す #}
             {% if field.name == "gender" %}
-              {{ form.instance.get_gender_display }}
+              {{ edit_form.instance.get_gender_display }}
             {% elif field.name == "privilege" %}
-              {{ form.instance.get_privilege_display }}
+              {{ edit_form.instance.get_privilege_display }}
             {% elif field.name == "employment_status" %}
-              {{ form.instance.get_employment_status_display }}
+              {{ edit_form.instance.get_employment_status_display }}
             {% elif field.name == "groups_custom" %}
-              {% for g in form.instance.groups_custom.all %}
+              {% for g in edit_form.instance.groups_custom.all %}
                 {{ g.group_name }}{% if not forloop.last %}, {% endif %}
               {% empty %}
                 -
@@ -49,7 +49,7 @@
 
     {% elif request.user.privilege == PRIVILEGE_MANAGER %}
       {# 権限1以下 → employment_status, privilege, groups_customのみ編集可 #}
-      {% for field in form %}
+      {% for field in edit_form %}
         {% if field.name == "employment_status" or field.name == "privilege" or field.name == "groups_custom" %}
           {% bootstrap_field field %}
         {% else %}
@@ -57,7 +57,7 @@
             <label class="form-label text-muted small">{{ field.label }}</label>
             <div class="form-control-plaintext">
               {% if field.name == "gender" %}
-                {{ form.instance.get_gender_display|default_if_none:'' }}
+                {{ edit_form.instance.get_gender_display|default_if_none:'' }}
               {% else %}
                 {{ field.value|default_if_none:"" }}
               {% endif %}
@@ -68,18 +68,18 @@
     {% endif %}
   {% endif %}
 
-  {% if not form.instance.pk %}
+  {% if not edit_form.instance.pk %}
     <div class="alert alert-info mt-3" role="alert">
       登録後、自動生成された初期パスワードがユーザーにメール通知されます。
     </div>
   {% endif %}
 
   <div class="d-flex justify-content-end gap-2 mt-3">
-    {% if not form.instance.pk %}
+    {% if not edit_form.instance.pk %}
       <button type="submit" class="btn btn-primary" data-action="save">登録</button>
     {% elif request.user.privilege <= '1' %}
       <button type="submit" class="btn btn-primary" data-action="save">保存</button>
-      {% if form.instance.pk != request.user.pk %}
+      {% if edit_form.instance.pk != request.user.pk %}
         <button type="submit" class="btn btn-danger" data-action="delete">削除</button>
       {% endif %}
     {% else %}

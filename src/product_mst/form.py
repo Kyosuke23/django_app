@@ -133,7 +133,6 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
-        self.tenant = getattr(user, 'tenant', None)
         super().__init__(*args, **kwargs)
 
         if user is not None:
