@@ -60,7 +60,7 @@ class PartnerListView(LoginRequiredMixin, generic.ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['form'] = PartnerSearchForm(self.request.GET or None)
+        context['search_form'] = PartnerSearchForm(self.request.GET or None)
         context['partner_types'] = Partner.PARTNER_TYPE_CHOICES
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
@@ -81,7 +81,7 @@ class PartnerCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Crea
         html = render_to_string(
             self.template_name,
             {
-                'form': form,
+                'edit_form': form,
                 'form_action': reverse('partner_mst:create'),
                 'modal_title': '取引先: 新規登録',
             },
@@ -110,7 +110,7 @@ class PartnerCreateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Crea
             html = render_to_string(
                 self.template_name,
                 {
-                    'form': form,
+                    'edit_form': form,
                     'form_action': reverse('partner_mst:create'),
                     'modal_title': '取引先: 新規登録',
                 },
@@ -141,7 +141,7 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
         html = render_to_string(
             self.template_name,
             {
-                'form': form,
+                'edit_form': form,
                 'form_action': reverse('partner_mst:update', kwargs={'pk': self.object.pk}),
                 'modal_title': f'取引先更新: {self.object.partner_name}',
             },
@@ -179,7 +179,7 @@ class PartnerUpdateView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.Upda
             html = render_to_string(
                 self.template_name,
                 {
-                    'form': form,
+                    'edit_form': form,
                     'form_action': reverse(
                         'partner_mst:update',
                         kwargs={'pk': obj.pk} if obj else {}

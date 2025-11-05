@@ -84,7 +84,7 @@
           <td>{{ partner.tel_number }}</td>
           <td>
             {% if partner.postal_code %}〒{% endif %}
-            {{ partner.postal_code }} {{ partner.state }}{{ partner.city }}{{ partner.address }}{{ partner.address2 }}
+            {{ partner.postal_code|default_if_none:'' }} {{ partner.state|default_if_none:'' }}{{ partner.city|default_if_none:'' }}{{ partner.address|default_if_none:'' }}{{ partner.address2|default_if_none:'' }}
           </td>
           {% if user.privilege <= PRIVILEGE_EDITOR %}
           <td>

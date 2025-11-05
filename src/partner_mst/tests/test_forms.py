@@ -214,7 +214,7 @@ class PartnerFormTests(TestCase):
         self.assertEqual('有効なメールアドレスを入力してください。', form.errors['email'][0])
 
     def test_F05e(self):
-        '''F05e: tenant + partner_name + email の重複（フォームバリデーション）'''
+        '''F05e: tenant + pemail の重複（フォームバリデーション）'''
         # 既存レコードを作成
         Partner.objects.create(
             tenant=self.tenant,
@@ -236,10 +236,8 @@ class PartnerFormTests(TestCase):
         # 同一データをフォーム入力
         form = PartnerForm(data=self.valid_data.copy(), initial={'tenant': self.tenant})
         self.assertFalse(form.is_valid())
-        self.assertIn('partner_name', form.errors)
-        self.assertEqual('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', form.errors['partner_name'][0])
         self.assertIn('email', form.errors)
-        self.assertEqual('同じ取引先名称とメールアドレスの組み合わせが既に登録されています。', form.errors['email'][0])
+        self.assertEqual('同じメールアドレスが既に登録されています。', form.errors['email'][0])
 
 
     # ------------------------------------------------------

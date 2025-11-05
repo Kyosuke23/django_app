@@ -160,7 +160,7 @@ class PartnerViewTests(TestCase):
             )
 
         # 検索後のフォーム確認
-        self.assertEqual(key, response.context['form']['search_keyword'].value())
+        self.assertEqual(key, response.context['search_form']['search_keyword'].value())
 
     def test_1_2_1_2(self):
         '''検索処理（正常系: キーワード->取引先区分）'''
@@ -182,7 +182,7 @@ class PartnerViewTests(TestCase):
             self.assertEqual('仕入先', p.get_partner_type_display())
 
         # 検索後のフォーム確認
-        self.assertEqual(key, response.context['form']['search_keyword'].value())
+        self.assertEqual(key, response.context['search_form']['search_keyword'].value())
 
     def test_1_2_1_3(self):
         '''検索処理（正常系: 取引先名称）'''
@@ -199,7 +199,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('株式会社アルファ', list[0].partner_name)
-        self.assertEqual(key, response.context['form']['search_partner_name'].value())
+        self.assertEqual(key, response.context['search_form']['search_partner_name'].value())
 
     def test_1_2_1_4(self):
         '''検索処理（正常系: 取引先区分）'''
@@ -216,7 +216,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('有限会社ベータ商事', list[0].partner_name)
-        self.assertEqual(key, response.context['form']['search_partner_type'].value())
+        self.assertEqual(key, response.context['search_form']['search_partner_type'].value())
 
     def test_1_2_1_5(self):
         '''検索処理（正常系: 担当者名）'''
@@ -233,7 +233,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('大阪商会', list[0].partner_name)
-        self.assertEqual(key, response.context['form']['search_contact_name'].value())
+        self.assertEqual(key, response.context['search_form']['search_contact_name'].value())
 
     def test_1_2_1_6(self):
         '''検索処理（正常系: メールアドレス）'''
@@ -250,7 +250,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('北海道フーズ', list[0].partner_name)
-        self.assertEqual(key, response.context['form']['search_email'].value())
+        self.assertEqual(key, response.context['search_form']['search_email'].value())
 
     def test_1_2_1_7(self):
         '''検索処理（正常系: 電話番号）'''
@@ -267,7 +267,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('大阪商会', list[0].partner_name)
-        self.assertEqual(key, response.context['form']['search_tel_number'].value())
+        self.assertEqual(key, response.context['search_form']['search_tel_number'].value())
 
     def test_1_2_1_8(self):
         '''検索処理（正常系: 都道府県）'''
@@ -284,10 +284,10 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('北海道', list[0].state)
-        self.assertEqual(key, response.context['form']['search_address'].value())
+        self.assertEqual(key, response.context['search_form']['search_address'].value())
 
     def test_1_2_1_9(self):
-        '''検索処理（正常系: シク長槍ん）'''
+        '''検索処理（正常系: 市区町村）'''
         # 検索値
         key = '千代田'
 
@@ -301,7 +301,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('千代田区千代田1-1', list[0].city)
-        self.assertEqual(key, response.context['form']['search_address'].value())
+        self.assertEqual(key, response.context['search_form']['search_address'].value())
 
     def test_1_2_1_10(self):
         '''検索処理（正常系: 住所）'''
@@ -318,7 +318,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('フーズビル', list[0].address)
-        self.assertEqual(key, response.context['form']['search_address'].value())
+        self.assertEqual(key, response.context['search_form']['search_address'].value())
 
     def test_1_2_1_11(self):
         '''検索処理（正常系: 住所2）'''
@@ -335,7 +335,7 @@ class PartnerViewTests(TestCase):
         list = response.context['partners']
         self.assertEqual(list.count(), 1)
         self.assertEqual('セカンドアドレス', list[0].address2)
-        self.assertEqual(key, response.context['form']['search_address'].value())
+        self.assertEqual(key, response.context['search_form']['search_address'].value())
 
     def test_1_2_1_12(self):
         '''ページング（正常系: 1ページあたり20件、21件目が次ページに表示）'''
