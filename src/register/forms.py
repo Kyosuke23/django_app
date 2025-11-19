@@ -2,7 +2,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from .models import CustomUser, UserGroup
 from tenant_mst.models import Tenant
 from django import forms
-from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES
+from .constants import  PRIVILEGE_CHOICES, EMPLOYMENT_STATUS_CHOICES, GENDER_CHOICES, PRIVILEGE_SYSTEM
 
 class UserSearchForm(forms.Form):
     """ユーザーマスタ検索フォーム"""
@@ -113,6 +113,13 @@ class UserSearchForm(forms.Form):
 
         if user is not None:
             self.fields['search_user_group'].queryset = (self.fields['search_user_group'].queryset.filter(tenant=user.tenant, is_deleted=False))
+
+        # システム権限以外なら選択肢からシステム権限を除去
+        if user and getattr(user, 'privilege', None) != PRIVILEGE_SYSTEM:
+            self.fields['search_privilege'].choices = [
+                c for c in self.fields['search_privilege'].choices
+                if c[0] == '' or c[0] != PRIVILEGE_SYSTEM
+            ]
 
         # optgroup構造を設定
         choices = [('', '並び替え')]

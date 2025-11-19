@@ -229,9 +229,12 @@ class SalesOrderForm(forms.ModelForm):
                 tenant=user.tenant, is_deleted=False
             ).order_by('username')
 
-            # partner をテナント内に限定
+            # partner をテナント内、かつ区分が"顧客"または"両方"に限定
             self.fields['partner'].queryset = (
-                self.fields['partner'].queryset.filter(tenant=user.tenant)
+                self.fields['partner'].queryset.filter(
+                    tenant=user.tenant,
+                    partner_type__in=['customer', 'both']
+                )
             )
 
             # reference_users: 同じテナント所属 & 管理者以上のユーザーを候補に

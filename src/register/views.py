@@ -69,6 +69,7 @@ class UserListView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.ListView)
         if user.privilege != PRIVILEGE_SYSTEM:
             queryset = queryset.exclude(privilege=PRIVILEGE_SYSTEM)
 
+
         # フォームが有効なら検索条件を反映
         if form.is_valid():
             queryset = filter_data(cleaned_data=form.cleaned_data, queryset=queryset)
@@ -85,7 +86,6 @@ class UserListView(LoginRequiredMixin, PrivilegeRequiredMixin, generic.ListView)
         context['user_group_form'] = UserGroupForm(self.request.GET or None, user=self.request.user)
         context['GENDER_CHOICES'] = GENDER_CHOICES
         context['EMPLOYMENT_STATUS_CHOICES'] = EMPLOYMENT_STATUS_CHOICES
-        context['PRIVILEGE_CHOICES'] = PRIVILEGE_CHOICES
         context = Common.set_pagination(context, self.request.GET.urlencode())
         return context
 
