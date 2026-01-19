@@ -1,10 +1,11 @@
 $(function () {
     const initSelect2ForModal = function ($modal) {
+        const $modalRoot = $modal.closest('.modal');
         const opt = {
             width: '100%',
             allowClear: true,
             tags: false,
-            dropdownParent: $modal.closest('.modal'),
+            dropdownParent: $modalRoot.find('.modal-content'),
             placeholder: '選択してください',
         };
         $modal.find('#id_header-assignee').select2({ ...opt, placeholder: '受注担当者を選択...' });
