@@ -16,3 +16,4 @@ requests==2.32.5
 setuptools==75.6.0
 sqlparse==0.5.3
 urllib3==2.5.0
+weasyprint==67.0

@@ -23,6 +23,10 @@
 /* =======================================================
  * 全体
  * ======================================================= */
+html {
+  font-size: 14px;
+}
+
 body {
   background-color: var(--color-bg-content);
   color: var(--color-text-base);
@@ -34,7 +38,7 @@ main.container-fluid {
   padding: 1.5rem;
   background-color: var(--color-bg-content);
   min-height: 100vh;
-  margin-left: var(--sidebar-width); /* ← サイドバー幅分を確保 */
+  margin-left: calc(var(--sidebar-width) - 50px); /* ← サイドバー幅分を確保 */
   transition: margin-left 0.3s ease;
 }
 
@@ -297,7 +301,9 @@ main.container-fluid {
 /* テーブル枠と丸み */
 .table-responsive {
   border-radius: 0.25rem;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* =======================================================
