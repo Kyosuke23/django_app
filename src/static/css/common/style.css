@@ -8,7 +8,7 @@
   --color-text-base: #212529;
   --color-accent: #0d6efd;
   --color-border: #dee2e6;
-  --sidebar-width: 280px; /* ← サイドバー幅ここで調整 */
+  --sidebar-width: 200px; /* ← サイドバー幅ここで調整 */
 }
 
 [data-theme="dark"] {
@@ -24,7 +24,7 @@
  * 全体
  * ======================================================= */
 html {
-  font-size: 14px;
+  font-size: 12px;
 }
 
 body {
@@ -38,7 +38,7 @@ main.container-fluid {
   padding: 1.5rem;
   background-color: var(--color-bg-content);
   min-height: 100vh;
-  margin-left: calc(var(--sidebar-width) - 50px); /* ← サイドバー幅分を確保 */
+  margin-left: var(--sidebar-width); /* ← サイドバー幅分を確保 */
   transition: margin-left 0.3s ease;
 }
 
@@ -253,8 +253,8 @@ label:has(+ input[required])::after {
 
 /* サイドバー基本設定 */
 .sidebar {
-  width: 240px;
-  min-width: 240px;
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
   background-color: #f8f9fa;
   height: 100vh;
   transition: all 0.3s ease;
@@ -369,7 +369,7 @@ textarea[readonly] {
 
 form label,
 .form-label {
-  font-weight: 600; /* 500〜700 お好みで */
+  font-weight: 500; /* 500〜700 お好みで */
 }
 
 
