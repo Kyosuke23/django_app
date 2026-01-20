@@ -233,6 +233,8 @@ class SalesOrderDetail(BaseModel):
         max_digits=12,
         decimal_places=2,
         verbose_name='数量',
+        blank=True,
+        null=True,
     )
     master_unit_price = models.DecimalField(
         max_digits=12,
@@ -243,6 +245,8 @@ class SalesOrderDetail(BaseModel):
         max_digits=12,
         decimal_places=2,
         verbose_name='請求単価',
+        blank=True,
+        null=True,
     )
     tax_rate = models.DecimalField(
         max_digits=3,

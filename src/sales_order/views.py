@@ -176,6 +176,7 @@ class SalesOrderCreateView(generic.CreateView):
                     'form_action': reverse('sales_order:create'),
                     'modal_title': '受注登録',
                     'is_update': False,
+                    'is_submittable': True,
                 },
                 request,
             )

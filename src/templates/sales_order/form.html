@@ -12,13 +12,6 @@
       data-delete-url="{% if form.instance.pk %}{% url 'sales_order:delete' form.instance.pk %}{% endif %}">
   {% csrf_token %}
 
-  {# form全体のエラー表示 #}
-  {% if formset.non_form_errors %}
-    <div class="alert alert-danger">
-      {{ formset.non_form_errors|safe }}
-    </div>
-  {% endif %}
-
   <div class="row mb-2">
     {# ステータス #}
     <div class="col-md-12">
@@ -60,13 +53,15 @@
     {# 取引先 #}
     <div class="col-md-12 mb-2">
       <label for="{{ form.partner.id_for_label }}" class="form-label">取引先</label>
+       {# 必須属性を手動で表示 #}
+      <input type="text" required class="d-none">
       {% if form.partner.errors %}
         {% render_field form.partner class="form-select is-invalid" %}
         <div class="invalid-feedback d-block">
           {{ form.partner.errors|join:", " }}
         </div>
       {% else %}
-        {% render_field form.partner class="form-select" %}
+        {% render_field form.partner class="form-select required" %}
       {% endif %}
     </div>
     {# 取引先情報 #}
@@ -96,6 +91,9 @@
         <div class="text-danger small">{{ form.remarks.errors }}</div>
       {% endif %}
     </div>
+
+    {# コメント欄 #}
+    {% if form.instance.status_code != 'DRAFT' %}
     <div class="border border-danger-subtle rounded p-3 bg-danger bg-opacity-10 mt-4 mb-3">
       <h6 class="text-danger fw-bold mb-3">
         社内専用コメント欄
@@ -132,42 +130,44 @@
         </div>
       </div>
     </div>
-      {# 全社参照可 #}
-      <div class="col-md-2 mb-2 text-center">
-        <label for="{{ form.is_visible_all.id_for_label }}" class="form-label">全社参照可</label>
-        <div>
-          {% render_field form.is_visible_all class="form-check-input" %}
+    {% endif %}
+
+    {# 全社参照可 #}
+    <div class="col-md-2 mb-2 text-center">
+      <label for="{{ form.is_visible_all.id_for_label }}" class="form-label">全社参照可</label>
+      <div>
+        {% render_field form.is_visible_all class="form-check-input" %}
+      </div>
+    </div>
+
+    {# 参照ユーザー #}
+    <div class="col-md-5 mb-2">
+      <label class="form-label">参照ユーザー</label>
+      {% if form.reference_users.errors %}
+        {% render_field form.reference_users class="form-select is-invalid" %}
+        <div class="invalid-feedback d-block">
+          {{ form.reference_users.errors|join:", " }}
         </div>
-      </div>
-
-      {# 参照ユーザー #}
-      <div class="col-md-5 mb-2">
-        <label class="form-label">参照ユーザー</label>
-        {% if form.reference_users.errors %}
-          {% render_field form.reference_users class="form-select is-invalid" %}
-          <div class="invalid-feedback d-block">
-            {{ form.reference_users.errors|join:", " }}
-          </div>
-        {% else %}
-          {% render_field form.reference_users class="form-select" %}
-        {% endif %}
-      </div>
-
-      {# 参照ユーザーグループ #}
-      <div class="col-md-5 mb-2">
-        <label class="form-label">参照グループ</label>
-        {% if form.reference_groups.errors %}
-          {% render_field form.reference_groups class="form-select is-invalid" %}
-          <div class="invalid-feedback d-block">
-            {{ form.reference_groups.errors|join:", " }}
-          </div>
-        {% else %}
-          {% render_field form.reference_groups class="form-select" %}
-        {% endif %}
-      </div>
-        {% if form.is_visible_all.help_text %}
-        <div class="form-text text-muted small">{{ form.is_visible_all.help_text }}</div>
+      {% else %}
+        {% render_field form.reference_users class="form-select" %}
       {% endif %}
+    </div>
+
+    {# 参照ユーザーグループ #}
+    <div class="col-md-5 mb-2">
+      <label class="form-label">参照グループ</label>
+      {% if form.reference_groups.errors %}
+        {% render_field form.reference_groups class="form-select is-invalid" %}
+        <div class="invalid-feedback d-block">
+          {{ form.reference_groups.errors|join:", " }}
+        </div>
+      {% else %}
+        {% render_field form.reference_groups class="form-select" %}
+      {% endif %}
+    </div>
+      {% if form.is_visible_all.help_text %}
+      <div class="form-text text-muted small">{{ form.is_visible_all.help_text }}</div>
+    {% endif %}
   </div>
 
   {# ======================================= #}
@@ -223,15 +223,27 @@
       </thead>
       <tbody id="detail-body">
         {% for detail_form in formset.forms %}
-        <tr class="align-middle {% if detail_form.errors %}table-danger{% endif %}">
+          <tr class="align-middle
+              {% if detail_form.errors or detail_form.quantity.errors or forloop.first and formset.non_form_errors %}
+                table-danger
+              {% endif %}
+          ">
           {{ detail_form.id }}
           <td>{{ forloop.counter }}</td>
           {# 商品 #}
           <td>
             {{ detail_form.product }}
+
+            {# 明細が0件等の formset 共通エラーを1行目の商品欄に表示 #}
+            {% if forloop.first and formset.non_form_errors %}
+              <div class="text-danger small mt-1">
+                {{ formset.non_form_errors.0 }}
+              </div>
+            {% endif %}
+
             {% if detail_form.product.errors %}
               <div class="text-danger small">
-                {{ detail_form.product.errors.as_text|linebreaksbr }}
+                {{ detail_form.product.errors|join:"<br>"|safe }}
               </div>
             {% endif %}
           </td>
@@ -240,7 +252,7 @@
             {{ detail_form.quantity }}
             {% if detail_form.quantity.errors %}
               <div class="text-danger small">
-                {{ detail_form.quantity.errors.as_text|linebreaksbr }}
+                {{ detail_form.quantity.errors|join:"<br>"|safe }}
               </div>
             {% endif %}
           </td>
@@ -251,13 +263,17 @@
             {{ detail_form.billing_unit_price }}
             {% if detail_form.billing_unit_price.errors %}
               <div class="text-danger small">
-                {{ detail_form.billing_unit_price.errors.as_text|linebreaksbr }}
+                {{ detail_form.billing_unit_price.errors|join:"<br>"|safe }}
               </div>
             {% endif %}
           </td>
+          {# 税率 #}
           <td>{{ detail_form.tax_rate }}</td>
+          {# 除外対象 #}
           <td class="text-center">{{ detail_form.is_tax_exempt }}</td>
+          {# 金額 #}
           <td class="text-end amount">{{ detail_form.instance.amount|intcomma }}</td>
+          {# 削除ボタン #}
           {% if is_submittable %}
           <td class="text-center">
             {% render_field detail_form.DELETE class="form-check-input d-none" %}

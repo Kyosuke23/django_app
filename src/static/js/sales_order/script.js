@@ -1,19 +1,48 @@
 $(function () {
-    const initSelect2ForModal = function ($modal) {
-        const $modalRoot = $modal.closest('.modal');
+    // =====================================================
+    // Select2 utilities
+    // =====================================================
+    const applySelect2InvalidState = ($select) => {
+        const isInvalid = $select.hasClass('is-invalid');
+        const $selection = $select.next('.select2').find('.select2-selection');
+        $selection.toggleClass('is-invalid', isInvalid);
+    };
+
+    const initSelect2ForModal = function ($container) {
+        const $modalRoot = $container.closest('.modal');
+        const $dropdownParent = $modalRoot.find('.modal-content');
+
         const opt = {
             width: '100%',
             allowClear: true,
             tags: false,
-            dropdownParent: $modalRoot.find('.modal-content'),
+            dropdownParent: $dropdownParent,
             placeholder: '選択してください',
         };
-        $modal.find('#id_header-assignee').select2({ ...opt, placeholder: '受注担当者を選択...' });
-        $modal.find('select[id^="id_details-"][id$="-product"]').select2({ ...opt, placeholder: '商品を選択...' });
-        $modal.find('#id_header-partner').select2({ ...opt, placeholder: '取引先を選択...' });
-        $modal.find('#id_header-reference_users').select2({ ...opt, placeholder: 'ユーザーを選択...' });
-        $modal.find('#id_header-reference_groups').select2({ ...opt, placeholder: 'グループを選択...' });
-    }
+
+        const init = ($el, placeholder) => {
+            if (!$el.length) return;
+
+            if ($el.hasClass('select2-hidden-accessible')) {
+                $el.select2('destroy');
+            }
+
+            $el.select2({ ...opt, placeholder });
+
+            applySelect2InvalidState($el);
+
+            $el.on('change', function () {
+                $(this).removeClass('is-invalid');
+                applySelect2InvalidState($(this));
+            });
+        };
+
+        init($container.find('#id_header-assignee'), '受注担当者を選択...');
+        init($container.find('select[id^="id_details-"][id$="-product"]'), '商品を選択...');
+        init($container.find('#id_header-partner'), '取引先を選択...');
+        init($container.find('#id_header-reference_users'), 'ユーザーを選択...');
+        init($container.find('#id_header-reference_groups'), 'グループを選択...');
+    };　
 
     // =====================================================
     // Export
@@ -309,11 +338,8 @@ $(function () {
         $newRow.hide().fadeIn(200).addClass('table-success');
         setTimeout(() => $newRow.removeClass('table-success'), 800);
 
-        const $productSelect = $newRow.find('select[name$="-product"]');
-        if ($productSelect.length) {
-            $productSelect.focus();
-            $productSelect.select2?.('open');
-        }
+        // 新しく追加した行に対して select2 を初期化
+        initSelect2ForModal($newRow);
     });
 
     // =====================================================

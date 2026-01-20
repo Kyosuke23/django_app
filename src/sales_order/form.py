@@ -311,31 +311,48 @@ class BaseSalesOrderDetailFormSet(BaseInlineFormSet):
     def clean(self):
         cleaned_data = super().clean()
         seen = {}
-        dup = set()
+        any_product_selected = False
 
-        for i, row in enumerate(self.forms):
+        for row in self.forms:
             if not hasattr(row, 'cleaned_data'):
                 continue
+
             data = row.cleaned_data
-            if not data or data.get('DELETE'):
+            # if not data or data.get('DELETE'):
+            if data.get('DELETE'):
                 continue
 
             product = data.get('product')
+            quantity = data.get('quantity')
+            billing_unit_price = data.get('billing_unit_price')
 
-            # 商品・単価・数量の相関チェック
+            # 最低1行以上、商品が選択されていること
+            if product:
+                any_product_selected = True
+
+            # 商品が選択されているなら数量/単価は必須
+            if product:
+                if quantity in (None, ''):
+                    row.add_error('quantity', '数量を入力してください。')
+                if billing_unit_price in (None, ''):
+                    row.add_error('billing_unit_price', '単価を入力してください。')
+
+            # 逆：商品未選択なのに数量/単価だけ入ってたら商品を要求
             if not product:
-                if row.cleaned_data.get('quantity') or row.cleaned_data.get('unit_price'):
+                if quantity not in (None, '') or billing_unit_price not in (None, ''):
                     row.add_error('product', '商品を選択してください。')
                 continue
 
             # 同一商品チェック
             if product in seen:
-                dup.add(product)
                 error_msg = f'同一商品が複数行に登録されています（{product.product_name}）。'
                 row.add_error('product', error_msg)
                 seen[product].add_error('product', error_msg)
             else:
                 seen[product] = row
+
+        if not any_product_selected:
+            raise forms.ValidationError('受注明細には、少なくとも1つ以上の商品を選択してください。')
 
         return cleaned_data
 
